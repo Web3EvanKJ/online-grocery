@@ -3,7 +3,14 @@
 
 
 ## 📂 Struktur Folder
-root │── apps/ │ ├── frontend/ # Next.js + Tailwind + TypeScript │ ├── backend/ # Node.js + Express + TypeScript + Prisma │── package.json │── tsconfig.json │── README.md
+```root
+│── apps/
+│   ├── frontend/  # Next.js + Tailwind + TypeScript
+│   ├── backend/   # Node.js + Express + TypeScript + Prisma
+│── package.json
+│── tsconfig.json
+│── README.md
+```
 
 
 ## 🚀 Teknologi yang Digunakan
