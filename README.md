@@ -1,4 +1,4 @@
-# 📌 Project Title
+# 📌 Monorepo template
 "Template monorepo menggunakan Next.js untuk frontend dan Express untuk backend, dengan TypeScript dan Prisma untuk manajemen database."
 
 
