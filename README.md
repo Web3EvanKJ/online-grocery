@@ -1,5 +1,5 @@
 📌 Project Title
-Deskripsi singkat tentang proyek ini. Misalnya:
+Deskripsi singkat tentang proyek ini. \n
 "Template monorepo menggunakan Next.js untuk frontend dan Express untuk backend, dengan TypeScript dan Prisma untuk manajemen database."
 
 📂 Struktur Folder
