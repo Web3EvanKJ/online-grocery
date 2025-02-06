@@ -3,7 +3,8 @@
 
 
 ## 📂 Struktur Folder
-```root
+```
+root
 │── apps/
 │   ├── frontend/  # Next.js + Tailwind + TypeScript
 │   ├── backend/   # Node.js + Express + TypeScript + Prisma
