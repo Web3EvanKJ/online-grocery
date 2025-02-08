@@ -21,7 +21,7 @@ Backend: Node.js, Express, TypeScript, Prisma
 
 ## ⚡ Cara Install & Menjalankan
 ### 1️⃣ Clone repository
-git clone https://github.com/RadidDesfandri/monorepo.git
+```git clone https://github.com/RadidDesfandri/monorepo.git```
 
 ### 2️⃣ Install dependencies
 npm install
