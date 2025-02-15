@@ -1,21 +1,61 @@
-import express from 'express';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { config } from './config/dotenv';
+import { AuthRoutes } from './routers/auth.routers';
 
-dotenv.config();
+class Server {
+  private app: Application;
+  private port: number | string;
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+  constructor() {
+    this.app = express();
+    this.port = config.PORT;
+    this.initializeMiddleware();
+    this.initializeRoutes();
+    this.initializeErrorHandling();
+  }
 
-const PORT = process.env.PORT || 8000;
+  private initializeMiddleware() {
+    this.app.use(cors());
+    this.app.use(express.json());
+  }
 
-app.get('/api', (req, res) => {
-  res.send('Backend is running!');
-});
+  private initializeErrorHandling() {
+    this.app.use((req: Request, res: Response, next: NextFunction) => {
+      res.status(404).send({
+        msg: 'Not Found!',
+        error: `Path ${req.originalUrl} tidak ditemukan`,
+      });
+    });
 
-app.listen(PORT, () => {
-  console.log(
-    `  ✅ Server Api Running... \n  ➜  [API] 🚀 Local: http://localhost:${PORT}`
-  );
-});
+    this.app.use(
+      (err: any, req: Request, res: Response, next: NextFunction) => {
+        console.error('ERROR:', err);
+        res.status(err.status || 500).send({
+          msg: err.msg || 'Internal server error',
+        });
+      }
+    );
+  }
+
+  private initializeRoutes() {
+    const authRouter = new AuthRoutes();
+
+    this.app.get('/api', (req: Request, res: Response) => {
+      res.send('Selamat datang di-Backend Monorepo');
+    });
+
+    this.app.use('/api/auth', authRouter.router);
+  }
+
+  public listen() {
+    this.app.listen(this.port, () => {
+      console.log(
+        `✅ Server Api Running... \n ➜  [API] 🚀 Local: http://localhost:${this.port}`
+      );
+    });
+  }
+}
+
+const server = new Server();
+server.listen();
