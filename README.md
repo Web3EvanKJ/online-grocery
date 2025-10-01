@@ -15,7 +15,7 @@ root
 
 
 ## 🚀 Teknologi yang Digunakan
-Frontend: Next.js, Tailwind CSS, TypeScript
+Frontend: Next.js, Tailwind CSS, TypeScript <br/>
 Backend: Node.js, Express, TypeScript, Prisma
 
 
