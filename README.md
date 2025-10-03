@@ -1,4 +1,4 @@
-# 📌 Monorepo template
+# 📌 Template React + ExpressJs + Prisma
 "Template monorepo menggunakan Next.js untuk frontend dan Express untuk backend, dengan TypeScript dan Prisma untuk manajemen database."
 
 
