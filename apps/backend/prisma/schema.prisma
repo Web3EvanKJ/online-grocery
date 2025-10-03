@@ -20,4 +20,6 @@ model User {
 
   createdAt DateTime @default(now())
   updateAt  DateTime @updatedAt
+
+  @@map("users")
 }

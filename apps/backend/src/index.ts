@@ -4,6 +4,7 @@ import express, { Application, NextFunction, Request, Response } from 'express';
 import { config } from './config/dotenv';
 import { apiRequestLogger } from './helpers/logging.helper';
 import authRouter from './routers/auth.router';
+import { HttpError } from './utils/httpError';
 
 /**
  * @class Server
@@ -37,7 +38,8 @@ class Server {
   }
 
   /**
-   * Mendaftarkan semua router utama ke dalam aplikasi.
+   * @method initializeRoutes
+   * @description Mendaftarkan semua router utama ke dalam aplikasi.
    * Setiap router mewakili sebuah fitur atau modul.
    */
   private initializeRoutes() {
@@ -54,8 +56,9 @@ class Server {
   }
 
   /**
-   * Mengonfigurasi middleware untuk penanganan error.
-   * PENTING: Middleware ini harus didaftarkan SETELAH semua routes.
+   * @method initializeErrorHandling
+   * @description Mengonfigurasi middleware untuk penanganan error.
+   * PENTING: Harus didaftarkan SETELAH SEMUA ROUTES.
    */
   private initializeErrorHandling() {
     // Middleware untuk menangani route yang tidak ditemukan (404 Not Found)
@@ -63,17 +66,33 @@ class Server {
       res.status(404).send({
         msg: 'Not Found!',
         error: `Path ${req.originalUrl} tidak ditemukan`,
+        timestamp: new Date().toISOString(),
       });
     });
 
-    // Middleware global untuk menangani semua error lain (Error 500 atau lainnya)
-    // Error yang dilempar dari mana saja (terutama dari controller) akan ditangkap di sini.
+    /**
+     * @function GlobalErrorHandler
+     * @description Middleware global untuk menangani semua error (Custom Error atau System Error).
+     * Error yang dilempar dari controller (melalui next(error)) akan ditangkap di sini.
+     */
     this.app.use(
       (err: any, req: Request, res: Response, next: NextFunction) => {
-        console.error('GLOBAL_ERROR_HANDLER:', err.stack);
-        res.status(err.status || 500).send({
-          msg: err.message || 'Internal Server Error',
-          error: err.name || 'Error',
+        const isCustomError = err instanceof HttpError;
+
+        const status = isCustomError ? err.status : 500;
+        const message = isCustomError ? err.message : 'Internal Server Error';
+        const errorName = isCustomError ? err.name : 'UnknownError';
+
+        if (status >= 500) {
+          console.error('GLOBAL_SERVER_ERROR:', err.stack);
+        } else {
+          console.warn(`HTTP_ERROR [${status}]: ${err.message}`);
+        }
+
+        res.status(status).send({
+          msg: message,
+          error: errorName,
+          timestamp: new Date().toISOString(),
         });
       }
     );

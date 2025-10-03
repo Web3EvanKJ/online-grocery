@@ -23,6 +23,7 @@ export class AuthController {
   /**
    * @method login
    * @description Menangani request untuk login pengguna.
+   * Proses: Panggil Service -> Jika error, tangkap dan teruskannya (next(error)).
    *
    * @style_guide
    * SEMUA method controller yang akan digunakan sebagai route handler WAJIB
@@ -32,9 +33,10 @@ export class AuthController {
    */
   public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const response = await this.service.login();
+      const response = await this.service.login(req.body.email);
       res.json(response);
     } catch (error) {
+      // Meneruskan error ke middleware error handler global
       console.error('ERROR_LOGIN:', error);
       next(error);
     }
@@ -47,14 +49,16 @@ export class AuthController {
    * @style_guide
    * Jika ingin menggunakan async funtion langsung
    * Anda harus melakukan 'bind' dalam constructor
+   * contoh code -> this.register = this.register.bind(this);
    */
-  async register(req: Request, res: Response) {
+  async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await this.service.register();
+      const response = await this.service.register(req.body.email);
       res.json(response);
     } catch (error) {
+      // Meneruskan error ke middleware error handler global
       console.error('ERROR_REGISTER:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      next(error);
     }
   }
 }

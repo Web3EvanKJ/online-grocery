@@ -29,7 +29,7 @@ export class Database {
   public getInstance(): PrismaClient {
     if (!Database.instance) {
       Database.instance = new PrismaClient();
-      console.log('Connected to database');
+      console.info('Connected to database');
     }
 
     return Database.instance;
