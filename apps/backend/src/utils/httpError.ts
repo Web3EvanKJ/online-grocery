@@ -10,7 +10,7 @@ export class HttpError extends Error {
   public status: number;
   public name: string;
 
-  constructor(status: number, message: string, name: string = 'HttpError') {
+  constructor(status: number, message: string, name = 'HttpError') {
     super(message);
     this.status = status;
     this.name = name;
@@ -24,7 +24,7 @@ export class HttpError extends Error {
  * @description Error 400 Bad Request. Digunakan untuk kegagalan validasi input atau request yang salah format.
  */
 export class BadRequestError extends HttpError {
-  constructor(message: string = 'Bad Request') {
+  constructor(message = 'Bad Request') {
     super(400, message, 'BadRequestError');
   }
 }
@@ -34,7 +34,7 @@ export class BadRequestError extends HttpError {
  * @description Error 401 Unauthorized. Digunakan ketika user tidak terotentikasi (misalnya token hilang/tidak valid).
  */
 export class UnauthorizedError extends HttpError {
-  constructor(message: string = 'Unauthorized') {
+  constructor(message = 'Unauthorized') {
     super(401, message, 'UnauthorizedError');
   }
 }
@@ -44,7 +44,7 @@ export class UnauthorizedError extends HttpError {
  * @description Error 404 Not Found. Digunakan ketika resource yang dicari tidak ditemukan (misalnya user ID tidak ada).
  */
 export class NotFoundError extends HttpError {
-  constructor(message: string = 'Not Found') {
+  constructor(message = 'Not Found') {
     super(404, message, 'NotFoundError');
   }
 }
@@ -54,7 +54,7 @@ export class NotFoundError extends HttpError {
  * @description Error 409 Conflict. Digunakan ketika request akan menciptakan konflik resource (misalnya mencoba registrasi email yang sudah terdaftar).
  */
 export class ConflictError extends HttpError {
-  constructor(message: string = 'Conflict') {
+  constructor(message = 'Conflict') {
     super(409, message, 'Conflict Error');
   }
 }

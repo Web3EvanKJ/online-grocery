@@ -1,6 +1,11 @@
-import { PrismaClient } from '@prisma/client';
 import { Database } from '../config/prisma';
-import { ConflictError, NotFoundError } from '../utils/httpError';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../utils/httpError';
+
+import type { PrismaClient } from '@prisma/client';
 
 /**
  * @class AuthService
@@ -23,6 +28,9 @@ export class AuthService {
    */
   public login = async (email: string) => {
     // TODO: Implementasikan logika validasi user dan password di sini.
+    if (!email) {
+      throw new BadRequestError('Email wajib diisi');
+    }
 
     const user = await this.prisma.user.findUnique({
       where: {
@@ -44,6 +52,9 @@ export class AuthService {
    */
   public register = async (email: string) => {
     // TODO: Implementasikan logika pembuatan user baru di sini.
+    if (!email) {
+      throw new BadRequestError('Email wajib diisi');
+    }
 
     const userExist = await this.prisma.user.findUnique({
       where: {

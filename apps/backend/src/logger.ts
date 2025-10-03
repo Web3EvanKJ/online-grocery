@@ -12,7 +12,7 @@ function getLogFilePath(): string {
 
 const originalLog = console.log;
 
-console.log = (...args: any[]) => {
+console.log = (...args: unknown[]) => {
   const timestamp = new Date().toLocaleString('id-ID', {
     timeZone: 'Asia/Jakarta',
   });

@@ -16,7 +16,7 @@ export class Database {
    * Properti statis ini akan menyimpan satu-satunya instance PrismaClient.
    * Keyword `static` berarti properti ini milik kelas `Database`, bukan objeknya.
    */
-  private static instance: PrismaClient;
+  private static instance: PrismaClient | null = null;
 
   /**
    * @method getInstance

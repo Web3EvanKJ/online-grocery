@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { AuthController } from '../controllers/auth.controller';
 
 /**
@@ -28,6 +29,7 @@ class AuthRouter {
   private initializeRoutes() {
     // GET /register akan ditangani oleh method `register` dari authController.
     // Kita bisa langsung memanggilnya karena method di controller sudah menggunakan arrow function.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     this.router.get('/register', this.authController.register);
 
     // GET /login akan ditangani oleh method `login` dari authController.

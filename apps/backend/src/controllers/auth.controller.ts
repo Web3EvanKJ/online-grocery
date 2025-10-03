@@ -1,5 +1,6 @@
-import { NextFunction, Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
+
+import type { NextFunction, Request, Response } from 'express';
 
 /**
  * @class AuthController
@@ -33,7 +34,8 @@ export class AuthController {
    */
   public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const response = await this.service.login(req.body.email);
+      const { email } = req.body as { email: string };
+      const response = await this.service.login(email);
       res.json(response);
     } catch (error) {
       // Meneruskan error ke middleware error handler global
@@ -53,7 +55,8 @@ export class AuthController {
    */
   async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await this.service.register(req.body.email);
+      const { email } = req.body as { email: string };
+      const response = await this.service.register(email);
       res.json(response);
     } catch (error) {
       // Meneruskan error ke middleware error handler global

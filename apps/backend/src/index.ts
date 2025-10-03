@@ -1,10 +1,13 @@
 import './logger';
 import cors from 'cors';
-import express, { Application, NextFunction, Request, Response } from 'express';
+import express from 'express';
+
 import { config } from './config/dotenv';
 import { apiRequestLogger } from './helpers/logging.helper';
 import authRouter from './routers/auth.router';
 import { HttpError } from './utils/httpError';
+
+import type { Application, NextFunction, Request, Response } from 'express';
 
 /**
  * @class Server
@@ -44,7 +47,7 @@ class Server {
    */
   private initializeRoutes() {
     // Endpoint dasar untuk health check atau selamat datang
-    this.app.get('/api', (req: Request, res: Response) => {
+    this.app.get('/api', (_req: Request, res: Response) => {
       res.send('Selamat datang di-Backend Monorepo');
     });
 
@@ -62,7 +65,7 @@ class Server {
    */
   private initializeErrorHandling() {
     // Middleware untuk menangani route yang tidak ditemukan (404 Not Found)
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
+    this.app.use((req: Request, res: Response, _next: NextFunction) => {
       res.status(404).send({
         msg: 'Not Found!',
         error: `Path ${req.originalUrl} tidak ditemukan`,
@@ -76,17 +79,19 @@ class Server {
      * Error yang dilempar dari controller (melalui next(error)) akan ditangkap di sini.
      */
     this.app.use(
-      (err: any, req: Request, res: Response, next: NextFunction) => {
+      (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
         const isCustomError = err instanceof HttpError;
 
         const status = isCustomError ? err.status : 500;
         const message = isCustomError ? err.message : 'Internal Server Error';
         const errorName = isCustomError ? err.name : 'UnknownError';
 
-        if (status >= 500) {
-          console.error('GLOBAL_SERVER_ERROR:', err.stack);
-        } else {
-          console.warn(`HTTP_ERROR [${status}]: ${err.message}`);
+        if (err instanceof Error) {
+          if (status >= 500) {
+            console.error('GLOBAL_SERVER_ERROR:', err.stack);
+          } else {
+            console.warn(`HTTP_ERROR [${status.toString()}]: ${err.message}`);
+          }
         }
 
         res.status(status).send({
@@ -104,7 +109,7 @@ class Server {
   public listen() {
     this.app.listen(this.port, () => {
       console.info(
-        `✅ Server Api Running... \n ➜  [API] 🚀 Local: http://localhost:${this.port}`
+        `✅ Server Api Running... \n ➜  [API] 🚀 Local: http://localhost:${String(this.port)}`
       );
     });
   }

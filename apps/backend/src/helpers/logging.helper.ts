@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
+
+import type { Request, Response, NextFunction } from 'express';
 
 let hitCounter = 0;
 
@@ -26,7 +27,7 @@ export const apiRequestLogger = (
       statusCode >= 200 && statusCode < 400 ? 'success' : 'failure';
     const duration = Date.now() - start;
 
-    const logMessage = `[${timestamp} | ${method} ${url} | Status: ${status} ${statusCode} | Hit: ${hitCounter} | ${duration}ms]\n`;
+    const logMessage = `[${timestamp} | ${method} ${url} | Status: ${status} ${statusCode.toString()} | Hit: ${hitCounter.toString()} | ${duration.toString()}ms]\n`;
 
     const logDir = path.join(__dirname, '../logs');
     if (!fs.existsSync(logDir)) {
