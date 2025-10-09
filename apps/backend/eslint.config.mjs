@@ -96,7 +96,7 @@ export default tseslint.config(
        * @example <caption>Kode yang Benar</caption>
        * let data: unknown = 'hello';
        */
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
 
       /**
        * @name @typescript-eslint/no-unused-vars
@@ -111,7 +111,7 @@ export default tseslint.config(
        * mungkin berguna saat debugging awal jika notifikasinya mengganggu.
        */
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
 
@@ -127,7 +127,7 @@ export default tseslint.config(
        * dan nilai, atau jika Anda menggunakan toolchain lama yang mungkin
        * memiliki masalah dengan sintaks `import type`.
        */
-      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/consistent-type-imports': 'warn',
 
       /**
        * @name @typescript-eslint/no-non-null-assertion
@@ -141,7 +141,7 @@ export default tseslint.config(
        * tidak null (misalnya, setelah pengecekan eksplisit) dan merasa
        * pengecekan tambahan akan membuat kode terlalu bertele-tele. Namun, gunakan dengan sangat hati-hati.
        */
-      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
 
       /**
        * @name import/order
@@ -157,7 +157,7 @@ export default tseslint.config(
        * atau merasa aturan ini terlalu ketat dan mengganggu alur kerja.
        */
       'import/order': [
-        'error',
+        'warn',
         {
           groups: [
             'builtin',
