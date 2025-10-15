@@ -1,13 +1,12 @@
-import './logger';
 import cors from 'cors';
 import express from 'express';
 
 import { config } from './config/dotenv';
-import { apiRequestLogger } from './helpers/logging.helper';
-import authRouter from './routers/auth.router';
+import authRouter from './routers/example.router';
 import { HttpError } from './utils/httpError';
 
 import type { Application, NextFunction, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 
 /**
  * @class Server
@@ -37,7 +36,12 @@ class Server {
   private initializeMiddleware() {
     this.app.use(cors()); // Mengizinkan request dari origin yang berbeda (Cross-Origin Resource Sharing)
     this.app.use(express.json()); // Mem-parsing body request yang berformat JSON
-    this.app.use(apiRequestLogger); // Middleware custom untuk logging setiap request yang masuk
+
+    const limiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // limit each IP to 100 requests per windowMs
+    });
+    this.app.use(limiter);
   }
 
   /**
