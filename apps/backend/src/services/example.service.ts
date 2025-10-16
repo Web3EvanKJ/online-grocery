@@ -8,13 +8,13 @@ import {
 import type { PrismaClient } from '@prisma/client';
 
 /**
- * @class AuthService
+ * @class ExampleService
  * @description
  * Berisi semua logika bisnis yang terkait dengan autentikasi.
  * Kelas ini bertanggung jawab untuk berinteraksi dengan database dan
  * melakukan validasi data. Service TIDAK BOLEH tahu tentang `req` dan `res` dari Express.
  */
-export class AuthService {
+export class ExampleService {
   private prisma: PrismaClient;
 
   constructor() {

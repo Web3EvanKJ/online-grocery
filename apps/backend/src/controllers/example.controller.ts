@@ -1,4 +1,4 @@
-import { AuthService } from '../services/example.service';
+import { ExampleService } from '../services/example.service';
 
 import type { NextFunction, Request, Response } from 'express';
 
@@ -9,13 +9,13 @@ import type { NextFunction, Request, Response } from 'express';
  * Tanggung jawab utamanya adalah menerima `request`, memanggil `service` yang sesuai,
  * dan mengirim `response` kembali ke client.
  */
-export class AuthController {
-  private service: AuthService;
+export class ExampleController {
+  private service: ExampleService;
 
   constructor() {
     // Dependency Injection: Controller ini bergantung pada AuthService.
     // Kita membuat instance service di sini.
-    this.service = new AuthService();
+    this.service = new ExampleService();
 
     // Lakukan bind jika tidak menggunakan arrow function
     this.register = this.register.bind(this);

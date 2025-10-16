@@ -1,40 +1,40 @@
 import { Router } from 'express';
 
-import { AuthController } from '../controllers/example.controller';
+import { ExampleController } from '../controllers/example.controller';
 
 /**
- * @class AuthRouter
+ * @class ExampleRouter
  * @description
  * Kelas ini bertanggung jawab untuk mendefinisikan semua route yang
  * berhubungan dengan fitur autentikasi.
  * Tujuannya adalah untuk mengelompokkan endpoint agar struktur proyek lebih rapi.
  */
-class AuthRouter {
+class ExampleRouter {
   public router: Router;
-  private authController: AuthController;
+  private exampleController: ExampleController;
 
   constructor() {
     this.router = Router();
-    this.authController = new AuthController();
+    this.exampleController = new ExampleController();
     this.initializeRoutes();
   }
 
   /**
-   * @class AuthRouter
+   * @class ExampleRouter
    * @description
    * Kelas ini bertanggung jawab untuk mendefinisikan semua route yang
    * berhubungan dengan fitur autentikasi.
    * Tujuannya adalah untuk mengelompokkan endpoint agar struktur proyek lebih rapi.
    */
   private initializeRoutes() {
-    // GET /register akan ditangani oleh method `register` dari authController.
+    // GET /register akan ditangani oleh method `register` dari exampleController.
     // Kita bisa langsung memanggilnya karena method di controller sudah menggunakan arrow function.
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    this.router.get('/register', this.authController.register);
+    this.router.get('/register', this.exampleController.register);
 
-    // GET /login akan ditangani oleh method `login` dari authController.
-    this.router.get('/login', this.authController.login);
+    // GET /login akan ditangani oleh method `login` dari exampleController.
+    this.router.get('/login', this.exampleController.login);
   }
 }
 
-export default new AuthRouter().router;
+export default new ExampleRouter().router;

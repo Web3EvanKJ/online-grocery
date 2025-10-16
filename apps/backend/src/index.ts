@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 
 import { config } from './config/dotenv';
-import authRouter from './routers/example.router';
+import exampleRouter from './routers/example.router';
 import { HttpError } from './utils/httpError';
 
 import type { Application, NextFunction, Request, Response } from 'express';
@@ -55,8 +55,8 @@ class Server {
       res.send('Selamat datang di-Backend Monorepo');
     });
 
-    // Semua request yang diawali dengan '/api/auth' akan diarahkan ke authRouter
-    this.app.use('/api/auth', authRouter);
+    // Semua request yang diawali dengan '/api/auth' akan diarahkan ke exampleRouter
+    this.app.use('/api/auth', exampleRouter);
 
     // TODO: Daftarkan router lain di sini jika ada, contoh:
     // this.app.use('/api/products', productRouter);
