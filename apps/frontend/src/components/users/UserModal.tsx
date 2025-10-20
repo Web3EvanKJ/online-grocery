@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 
-import { ConfirmationModal } from './ConfirmationModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 import FormContent from './FormContent';
 import { validationStoreAdminSchema } from '@/lib/validationSchema';
 
@@ -52,7 +52,6 @@ export function UserModal({ open, setOpen, user }: any) {
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleFinalSubmit}
         message={'Are you sure you want to save this data?'}
-        type={'save'}
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ConfirmationModal } from '@/components/users/ConfirmationModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 
 export function UserTable({
   onEdit,
@@ -133,7 +133,7 @@ export function UserTable({
         onClose={() => setOpenConfirm(false)}
         onConfirm={handleConfirmDelete}
         message={`Are you sure you want to delete ${userToDelete?.name}?`}
-        type={'delete'}
+        warning={true}
       />
     </>
   );

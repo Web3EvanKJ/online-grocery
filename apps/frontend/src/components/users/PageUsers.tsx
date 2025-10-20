@@ -7,7 +7,7 @@ import { UserTable } from '@/components/users/UserTable';
 import { UserModal } from '@/components/users/UserModal';
 import { UserFilter } from '@/components/users/UserFilter';
 
-export default function AdminUsersPage() {
+export default function PageUsers() {
   const [openModal, setOpenModal] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState('');

@@ -1,5 +1,5 @@
 import { Formik, Form } from 'formik';
-import { FormField } from './FormField';
+import { FormField } from '../FormField';
 import { Button } from '@/components/ui/button';
 
 const FormContent = ({
@@ -114,7 +114,7 @@ const FormContent = ({
             value={values.address}
             onChange={handleChange}
             onBlur={handleBlur}
-            placeholder="Street name, number, postal code"
+            placeholder="Street name, number"
             required
             error={errors.address}
             touched={touched.address}

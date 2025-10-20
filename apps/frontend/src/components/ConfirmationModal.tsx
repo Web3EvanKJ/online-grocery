@@ -1,17 +1,22 @@
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+// ConfirmationModal.tsx
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-// Confirmation modal component
 export function ConfirmationModal({
   open,
   onClose,
   onConfirm,
-  message,
-  type,
+  message = 'Are you sure?',
+  warning = false,
 }: any) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="rounded-2xl border border-sky-100 bg-white sm:max-w-sm">
+      <DialogContent className="border border-sky-100 bg-white sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-semibold text-sky-700">
             Confirm Action
@@ -30,9 +35,9 @@ export function ConfirmationModal({
           <Button
             onClick={onConfirm}
             className={
-              type == 'save'
-                ? 'bg-sky-500 text-white hover:bg-sky-600'
-                : 'bg-red-500 text-white hover:bg-red-600'
+              warning
+                ? 'bg-red-500 text-white hover:bg-red-600'
+                : 'bg-sky-500 text-white hover:bg-sky-600'
             }
           >
             Yes, Confirm
