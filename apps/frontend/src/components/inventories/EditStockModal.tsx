@@ -10,7 +10,7 @@ import { Formik } from 'formik';
 import { useState } from 'react';
 import { FormField } from '@/components/FormField';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
-import { Product } from '@/lib/types';
+import { Product } from '@/lib/types/products/products';
 import { inventoryValidationSchema } from '@/lib/validationSchema';
 
 type EditStockModalProps = {

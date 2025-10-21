@@ -1,6 +1,7 @@
 import { Formik, Form } from 'formik';
 import { FormField } from '../FormField';
 import { Button } from '@/components/ui/button';
+import { FormContentProps } from '@/lib/types/users/users';
 
 const FormContent = ({
   user,
@@ -8,13 +9,13 @@ const FormContent = ({
   setConfirmOpen,
   setOpen,
   validationSchema,
-}: any) => {
+}: FormContentProps) => {
   const initialValues = {
     name: user?.name || '',
     email: user?.email || '',
-    province: user?.province || '',
+    province: '',
     city: user?.city || '',
-    district: user?.district || '',
+    district: '',
     address: user?.address || '',
   };
 

@@ -1,14 +1,15 @@
+// DiscountTable.tsx
 type Discount = {
   id: number;
-  name: string;
-  type: 'percentage' | 'nominal' | 'bogo';
-  applyTo: 'product' | 'min_purchase';
+  store_id: number;
+  product_name?: string | null;
+  type: 'product' | 'store' | 'B1G1';
+  inputType: 'percentage' | 'nominal';
   value: number;
-  minPurchase?: number;
-  maxDiscount?: number;
-  product?: string;
-  startDate: string;
-  endDate: string;
+  min_purchase?: number | null;
+  max_discount?: number | null;
+  start_date: string;
+  end_date: string;
 };
 
 export function DiscountTable({
@@ -19,13 +20,13 @@ export function DiscountTable({
   onEdit: (discount: Discount) => void;
 }) {
   return (
-    <table className="w-full border-collapse border border-sky-200">
+    <table className="w-full border-collapse overflow-hidden rounded-lg border border-sky-200">
       <thead className="bg-sky-100 text-sky-700">
         <tr>
-          <th className="p-3 text-left">Name</th>
           <th className="p-3 text-left">Type</th>
-          <th className="p-3 text-left">Condition</th>
+          <th className="p-3 text-left">Input Type</th>
           <th className="p-3 text-left">Value</th>
+          <th className="p-3 text-left">Condition</th>
           <th className="p-3 text-left">Active Period</th>
           <th className="p-3 text-center">Action</th>
         </tr>
@@ -36,20 +37,20 @@ export function DiscountTable({
             key={d.id}
             className="border border-sky-200 transition hover:bg-sky-50"
           >
-            <td className="p-3">{d.name}</td>
             <td className="p-3 capitalize">{d.type}</td>
+            <td className="p-3 capitalize">{d.inputType}</td>
             <td className="p-3">
-              {d.applyTo === 'product'
-                ? `Product: ${d.product}`
-                : `Min Purchase: Rp${d.minPurchase?.toLocaleString()}`}
-            </td>
-            <td className="p-3">
-              {d.type === 'percentage'
+              {d.inputType === 'percentage'
                 ? `${d.value}%`
                 : `Rp${d.value.toLocaleString()}`}
             </td>
             <td className="p-3">
-              {d.startDate} - {d.endDate}
+              {d.type === 'store'
+                ? `Min Purchase: Rp${d.min_purchase?.toLocaleString() || '-'}`
+                : `Product: ${d.product_name ?? '-'}`}
+            </td>
+            <td className="p-3">
+              {d.start_date} - {d.end_date}
             </td>
             <td className="p-3 text-center">
               <button

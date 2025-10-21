@@ -63,6 +63,21 @@ export function ProductFormFields({
       </div>
 
       <FormField
+        id="description"
+        name="description"
+        label="Description"
+        type="textarea"
+        value={values.description}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder="Enter product description"
+        required
+        disabled={!isSuperAdmin}
+        error={errors.description}
+        touched={touched.description}
+      />
+
+      <FormField
         id="price"
         name="price"
         label="Price"
@@ -76,21 +91,6 @@ export function ProductFormFields({
         error={errors.price}
         touched={touched.price}
       />
-
-      {/* <FormField
-        id="stock"
-        name="stock"
-        label="Stock"
-        type="number"
-        value={values.stock}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        placeholder="Enter stock"
-        required
-        disabled={!isSuperAdmin}
-        error={errors.stock}
-        touched={touched.stock}
-      /> */}
     </>
   );
 }

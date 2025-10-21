@@ -1,4 +1,4 @@
-import { Product } from '@/lib/types';
+import { Product } from '@/lib/types/products/products';
 
 type InventoryTableProps = {
   data: Product[];

@@ -1,69 +1,37 @@
+// UserTable.tsx
 'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmationModal } from '../ConfirmationModal';
+import { User } from '@/lib/types/users/users';
 
-export function UserTable({
-  onEdit,
-  selectedRole,
-}: {
-  onEdit: (user: any) => void;
+type UserTableProps = {
+  onEdit: (user: User) => void;
   selectedRole: string;
-}) {
-  const users = [
-    {
-      id: 1,
-      name: 'Rina Hartono',
-      email: 'rina@tokoindah.com',
-      role: 'store admin',
-      province: 'Jawa Barat',
-      city: 'Bandung',
-    },
-    {
-      id: 2,
-      name: 'Budi Santoso',
-      email: 'budi@tokoceria.com',
-      role: 'store admin',
-      province: 'DKI Jakarta',
-      city: 'Jakarta Selatan',
-    },
-    {
-      id: 3,
-      name: 'Siti Nurhaliza',
-      email: 'siti@superadmin.com',
-      role: 'super admin',
-      province: 'Jawa Tengah',
-      city: 'Semarang',
-    },
-    {
-      id: 4,
-      name: 'Agus Pratama',
-      email: 'agus@customer.com',
-      role: 'user',
-      province: 'Bali',
-      city: 'Denpasar',
-    },
-  ];
+  users: User[];
+};
 
+export function UserTable({ onEdit, selectedRole, users }: UserTableProps) {
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Filter
+  // Filter by role
   const filteredUsers = selectedRole
     ? users.filter((u) => u.role === selectedRole)
     : users;
 
   // Trigger when delete clicked
-  const handleDeleteClick = (user: any) => {
+  const handleDeleteClick = (user: User) => {
     setUserToDelete(user);
     setOpenConfirm(true);
   };
 
   // Confirm deletion
   const handleConfirmDelete = () => {
-    console.log('Deleting user:', userToDelete);
-    // here you could call your API or update state
+    if (userToDelete) {
+      console.log('Deleting user:', userToDelete);
+    }
     setOpenConfirm(false);
     setUserToDelete(null);
   };
@@ -78,6 +46,7 @@ export function UserTable({
               <th className="p-3 text-left">Email</th>
               <th className="p-3 text-left">Role</th>
               <th className="p-3 text-left">City</th>
+              <th className="p-3 text-left">Address Details</th>
               <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -98,8 +67,9 @@ export function UserTable({
                   <td className="p-3">{u.email}</td>
                   <td className="p-3 capitalize">{u.role}</td>
                   <td className="p-3">{u.city}</td>
+                  <td className="p-3">{u.address}</td>
                   <td className="space-x-2 p-3 text-center">
-                    {u.role == 'store admin' ? (
+                    {u.role === 'store admin' ? (
                       <div className="flex justify-center gap-2">
                         <Button
                           variant="outline"

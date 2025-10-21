@@ -54,7 +54,12 @@ export const FormField: React.FC<FormFieldProps> = ({id, name, label, value, onC
         disabled={disabled}
         className={`w-full rounded-lg border p-2 text-sm text-gray-800 transition-all focus:ring-1 focus:outline-none ${showError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:border-sky-400 focus:ring-sky-400'} `}
       />
-      <div className="mt-1 min-h-[20px]">
+        {disabled && (
+          <div className="text-xs font-medium text-gray-500">
+            (locked)
+          </div>
+        )}
+      <div className="mt-1 min-h-[10px]">
         {showError && <p className="text-xs text-red-500">{errorMessage}</p>}
       </div>
     </div>
