@@ -13,9 +13,9 @@ const FormContent = ({
   const initialValues = {
     name: user?.name || '',
     email: user?.email || '',
-    province: '',
+    province: user?.province || '',
     city: user?.city || '',
-    district: '',
+    district: user?.district || '',
     address: user?.address || '',
   };
 
@@ -54,6 +54,7 @@ const FormContent = ({
             required
             error={errors.name}
             touched={touched.name}
+            disabled={!!user}
           />
 
           <FormField

@@ -7,32 +7,48 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
-
 import { ConfirmationModal } from '../ConfirmationModal';
+import { ErrorModal } from '../ErrorModal';
 import FormContent from './FormContent';
 import { validationStoreAdminSchema } from '@/lib/validationSchema';
+import { userAdminApi } from '@/lib/api/userAdminApi';
 import { User } from '@/lib/types/users/users';
 
 type UserModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   user: User | null;
+  refreshUsers: () => void;
 };
 
-export function UserModal({ open, setOpen, user }: UserModalProps) {
+export function UserModal({
+  open,
+  setOpen,
+  user,
+  refreshUsers,
+}: UserModalProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<Partial<User> | null>(
     null
   );
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     if (!pendingValues) return;
-    const payload = { ...pendingValues, role: 'store admin' as User['role'] };
-    console.log('✅ Final saved data:', payload);
-
-    setConfirmOpen(false);
-    setPendingValues(null);
-    setOpen(false);
+    try {
+      if (user) {
+        await userAdminApi.updateUser(user.id, pendingValues);
+      } else {
+        await userAdminApi.createUser(pendingValues);
+      }
+      setConfirmOpen(false);
+      setPendingValues(null);
+      setOpen(false);
+      refreshUsers();
+    } catch (err: any) {
+      console.log(err.response?.data);
+      setError(err.response?.data?.msg || 'Something went wrong');
+    }
   };
 
   return (
@@ -55,12 +71,17 @@ export function UserModal({ open, setOpen, user }: UserModalProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleFinalSubmit}
         message={'Are you sure you want to save this data?'}
+      />
+
+      <ErrorModal
+        open={!!error}
+        message={error}
+        onClose={() => setError(null)}
       />
     </>
   );

@@ -7,6 +7,7 @@ import {
 import type { PrismaClient } from '@prisma/client';
 import { validationStoreAdminSchema } from '../utils/validationSchema';
 import { getCoordinates } from '../utils/address';
+import { Role } from '@prisma/client';
 
 type dataInput = {
   name: string;
@@ -30,68 +31,62 @@ export class UserAdminService {
   public createStoreAdmin = async (data: dataInput) => {
     await validationStoreAdminSchema.validate(data);
 
-    const existingUser = await this.prisma.users.findUnique({
-      where: { email: data.email },
+    return await this.prisma.$transaction(async (tx) => {
+      const existingUser = await tx.users.findUnique({
+        where: { email: data.email },
+      });
+      if (existingUser) throw new ConflictError('Email already registered');
+
+      const user = await tx.users.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          password: `${data.email}12345`,
+          role: 'store_admin',
+          is_verified: true,
+        },
+      });
+
+      const { latitude, longitude } = await getCoordinates({
+        province: data.province,
+        city: data.city,
+        district: data.district,
+      });
+
+      const store = await tx.stores.create({
+        data: {
+          name: 'temporary',
+          address: data.address,
+          latitude,
+          longitude,
+          province: data.province,
+          city: data.city,
+          district: data.district,
+        },
+      });
+
+      await tx.stores.update({
+        where: { id: store.id },
+        data: { name: `Store ${store.id}` },
+      });
+
+      await tx.store_admins.create({
+        data: { user_id: user.id, store_id: store.id },
+      });
+
+      return { message: 'Store admin created successfully', user, store };
     });
-
-    if (existingUser) {
-      throw new ConflictError('Email already registered');
-    }
-
-    // Create new user with role = store_admin
-    const user = await this.prisma.users.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        password: `${data.email}12345`,
-        role: 'store_admin',
-        is_verified: true,
-      },
-    });
-
-    const { latitude, longitude } = await getCoordinates({
-      province: data.province,
-      city: data.city,
-      district: data.district,
-      address: data.address,
-    });
-
-    const store = await this.prisma.stores.create({
-      data: {
-        name: 'temporary',
-        address: data.address,
-        latitude: latitude,
-        longitude: longitude,
-      },
-    });
-
-    await this.prisma.stores.update({
-      where: { id: store.id },
-      data: { name: `Store ${store.id}` },
-    });
-
-    await this.prisma.store_admins.create({
-      data: {
-        user_id: user.id,
-        store_id: store.id,
-      },
-    });
-
-    return { message: 'Store admin created successfully', user, store };
   };
 
   /**
    * READ - Pagination + Filter
    */
   public getUsers = async (query: any) => {
-    const { page = 1, limit = 10, role, search } = query;
+    const { page = 1, limit = 10, role, search, sortOrder = 'desc' } = query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const whereClause: any = {};
-
-    if (role) {
-      whereClause.role = role;
-    }
+    if (role) whereClause.role = role;
 
     if (search) {
       whereClause.OR = [
@@ -100,14 +95,13 @@ export class UserAdminService {
         {
           store_admins: {
             some: {
-              store: { name: { contains: search, mode: 'insensitive' } },
-            },
-          },
-        },
-        {
-          store_admins: {
-            some: {
-              store: { address: { contains: search, mode: 'insensitive' } },
+              store: {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { address: { contains: search, mode: 'insensitive' } },
+                  { city: { contains: search, mode: 'insensitive' } },
+                ],
+              },
             },
           },
         },
@@ -125,21 +119,59 @@ export class UserAdminService {
               store: true,
             },
           },
+          addresses: true,
         },
-        orderBy: { created_at: 'desc' },
+        orderBy: { created_at: sortOrder }, // ✅ dynamic sort
       }),
       this.prisma.users.count({ where: whereClause }),
     ]);
 
+    const mappedUsers = await Promise.all(
+      users.map(async (u) => {
+        let lat = 0;
+        let lon = 0;
+        let province = '';
+        let city = '';
+        let district = '';
+        let address = '';
+        if (u.role === Role.store_admin) {
+          lat = Number(u.store_admins[0]?.store?.latitude);
+          lon = Number(u.store_admins[0]?.store?.longitude);
+          province = u.store_admins[0]?.store?.province;
+          city = u.store_admins[0]?.store?.city;
+          district = u.store_admins[0]?.store?.district;
+          address = u.store_admins[0]?.store?.address;
+        }
+
+        if (u.role === Role.user) {
+          lat = Number(u.addresses[0]?.latitude);
+          lon = Number(u.addresses[0]?.longitude);
+          province = u.addresses[0]?.province;
+          city = u.addresses[0]?.city;
+          district = u.addresses[0]?.district;
+          address = u.addresses[0]?.address_detail;
+        }
+
+        return {
+          id: u.id,
+          name:
+            u.role === Role.store_admin
+              ? u.store_admins[0]?.store?.name
+              : u.name,
+          email: u.email,
+          role: u.role,
+          latitude: lat,
+          longitude: lon,
+          province,
+          city,
+          district,
+          address,
+        };
+      })
+    );
+
     return {
-      data: users.map((u) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        city: u.store_admins[0]?.store?.address ?? '',
-        address: u.store_admins[0]?.store?.address ?? '',
-      })),
+      data: mappedUsers,
       pagination: {
         total,
         page: Number(page),
@@ -159,6 +191,14 @@ export class UserAdminService {
     if (user.role !== 'store_admin')
       throw new BadRequestError('This user is not a store admin');
 
+    const existingEmail = await this.prisma.users.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingEmail && existingEmail.id !== id) {
+      throw new ConflictError('Email already registered by another user');
+    }
+
     // Update user
     const updatedUser = await this.prisma.users.update({
       where: { id },
@@ -169,14 +209,32 @@ export class UserAdminService {
     const storeAdmin = await this.prisma.store_admins.findFirst({
       where: { user_id: id },
     });
+
+    const { latitude, longitude } = await getCoordinates({
+      province: data.province,
+      city: data.city,
+      district: data.district,
+    });
+    let updatedStore = {};
     if (storeAdmin) {
-      await this.prisma.stores.update({
+      updatedStore = await this.prisma.stores.update({
         where: { id: storeAdmin.store_id },
-        data: { address: data.address },
+        data: {
+          address: data.address,
+          latitude,
+          longitude,
+          province: data.province,
+          city: data.city,
+          district: data.district,
+        },
       });
     }
 
-    return { message: 'Store admin updated successfully', updatedUser };
+    return {
+      message: 'Store admin updated successfully',
+      updatedUser,
+      updatedStore,
+    };
   };
 
   /**

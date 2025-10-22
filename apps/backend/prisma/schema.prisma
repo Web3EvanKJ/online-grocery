@@ -81,6 +81,9 @@ model stores {
   id         Int       @id @default(autoincrement())
   name       String
   address    String
+  province   String
+  city       String
+  district   String
   latitude   Decimal
   longitude  Decimal
   created_at DateTime? @default(now())
@@ -211,6 +214,9 @@ model addresses {
   user_id        Int
   label          String
   address_detail String
+  province       String
+  city           String
+  district       String
   latitude       Decimal
   longitude      Decimal
   is_main        Boolean   @default(false)

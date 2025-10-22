@@ -14,7 +14,7 @@ export function ErrorModal({ open, message, onClose }: any) {
       <DialogContent className="rounded-2xl border border-red-100 bg-white">
         <DialogHeader>
           <DialogTitle className="font-semibold text-red-600">
-            Upload Error
+            Error
           </DialogTitle>
         </DialogHeader>
         <p className="text-sm text-gray-700">{message}</p>

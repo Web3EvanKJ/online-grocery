@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { UserAdminController } from '../controllers/userAdmin.controller';
 
-class UserRouter {
+class UserAdminRouter {
   public router: Router;
   private controller: UserAdminController;
 
@@ -19,4 +19,4 @@ class UserRouter {
   }
 }
 
-export default new UserRouter().router;
+export default new UserAdminRouter().router;

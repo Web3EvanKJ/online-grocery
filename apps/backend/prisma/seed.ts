@@ -9,34 +9,29 @@ import {
   PaymentMethod,
   OrderStatus,
 } from '@prisma/client';
+import { UserAdminService } from '../src/services/userAdmin.service'; // adjust path as needed
 
 const prisma = new PrismaClient();
+const userAdminService = new UserAdminService();
 
 async function main() {
   console.log('🌱 Seeding database with rich sample data...');
 
   // ---------------------------------------------------------------------------
-  // USERS
+  // SUPER ADMIN + NORMAL USERS
   // ---------------------------------------------------------------------------
-  const usersData = [
-    {
+  const superAdmin = await prisma.users.upsert({
+    where: { email: 'superadmin@shop.com' },
+    update: {},
+    create: {
       name: 'Super Admin',
       email: 'superadmin@shop.com',
       role: Role.super_admin,
       is_verified: true,
     },
-    {
-      name: 'Alice StoreAdmin',
-      email: 'alice@store.com',
-      role: Role.store_admin,
-      is_verified: true,
-    },
-    {
-      name: 'Bob StoreAdmin',
-      email: 'bob@store.com',
-      role: Role.store_admin,
-      is_verified: true,
-    },
+  });
+
+  const customersData = [
     {
       name: 'Charlie User',
       email: 'charlie@user.com',
@@ -57,8 +52,8 @@ async function main() {
     },
   ];
 
-  const users = await Promise.all(
-    usersData.map((u) =>
+  const customers = await Promise.all(
+    customersData.map((u) =>
       prisma.users.upsert({
         where: { email: u.email },
         update: {},
@@ -67,33 +62,33 @@ async function main() {
     )
   );
 
-  const superAdmin = users[0];
-  const storeAdmins = users.filter((u) => u.role === Role.store_admin);
-  const customers = users.filter((u) => u.role === Role.user);
+  // ---------------------------------------------------------------------------
+  // STORE ADMINS (use service method)
+  // ---------------------------------------------------------------------------
+  const storeAdminsInput = [
+    {
+      name: 'Alice StoreAdmin',
+      email: 'alice@store.com',
+      province: 'DKI Jakarta',
+      city: 'Jakarta Selatan',
+      district: 'Setiabudi',
+      address: 'Jl. Sudirman No. 99, Jakarta',
+    },
+    {
+      name: 'Bob StoreAdmin',
+      email: 'bob@store.com',
+      province: 'Jawa Barat',
+      city: 'Bandung',
+      district: 'Bandung Wetan',
+      address: 'Jl. Diponegoro No. 12, Bandung',
+    },
+  ];
 
-  // ---------------------------------------------------------------------------
-  // STORES
-  // ---------------------------------------------------------------------------
-  const stores = await prisma.$transaction([
-    prisma.stores.create({
-      data: {
-        name: 'Store 103',
-        address: 'Jl. Sudirman No. 99, Jakarta',
-        latitude: 6.2,
-        longitude: 106.8166,
-        store_admins: { create: { user_id: storeAdmins[0].id } },
-      },
-    }),
-    prisma.stores.create({
-      data: {
-        name: 'Store 23',
-        address: 'Jl. Diponegoro No. 12, Bandung',
-        latitude: 6.9,
-        longitude: 107.6,
-        store_admins: { create: { user_id: storeAdmins[1].id } },
-      },
-    }),
-  ]);
+  const storeAdmins = [];
+  for (const input of storeAdminsInput) {
+    const { user, store } = await userAdminService.createStoreAdmin(input);
+    storeAdmins.push({ user, store });
+  }
 
   // ---------------------------------------------------------------------------
   // CATEGORIES
@@ -111,10 +106,10 @@ async function main() {
   );
 
   // ---------------------------------------------------------------------------
-  // PRODUCTS + IMAGES
+  // PRODUCTS
   // ---------------------------------------------------------------------------
   const products = [];
-  for (const store of stores) {
+  for (const { store } of storeAdmins) {
     for (const category of categories) {
       for (let i = 1; i <= 5; i++) {
         const product = await prisma.products.create({
@@ -136,9 +131,9 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // INVENTORIES + JOURNALS
+  // INVENTORY
   // ---------------------------------------------------------------------------
-  for (const store of stores) {
+  for (const { store } of storeAdmins) {
     for (const product of products.slice(0, 10)) {
       const inv = await prisma.inventories.create({
         data: {
@@ -160,48 +155,6 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // DISCOUNTS
-  // ---------------------------------------------------------------------------
-  for (const store of stores) {
-    await prisma.discounts.create({
-      data: {
-        store_id: store.id,
-        type: DiscountType.store,
-        inputType: DiscountInputType.percentage,
-        value: 5,
-        start_date: new Date('2025-10-01'),
-        end_date: new Date('2025-12-31'),
-      },
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // SHIPPING METHODS
-  // ---------------------------------------------------------------------------
-  const shippingMethods = await prisma.shipping_methods.createMany({
-    data: [
-      {
-        name: 'JNE Regular',
-        provider: 'JNE',
-        base_cost: 10000,
-        cost_per_km: 2000,
-      },
-      {
-        name: 'GoSend Instant',
-        provider: 'GoSend',
-        base_cost: 15000,
-        cost_per_km: 3000,
-      },
-      {
-        name: 'SiCepat Express',
-        provider: 'SiCepat',
-        base_cost: 12000,
-        cost_per_km: 2500,
-      },
-    ],
-  });
-
-  // ---------------------------------------------------------------------------
   // ADDRESSES
   // ---------------------------------------------------------------------------
   const addresses = [];
@@ -210,7 +163,12 @@ async function main() {
       data: {
         user_id: user.id,
         label: 'Home',
-        address_detail: `Jl. Example Street No. ${Math.floor(Math.random() * 100)}`,
+        address_detail: `Jl. Example Street No. ${Math.floor(
+          Math.random() * 100
+        )}`,
+        province: 'DKI Jakarta',
+        city: 'Jakarta Barat',
+        district: 'Kalideres',
         latitude: 6.2 + Math.random() * 0.1,
         longitude: 106.8 + Math.random() * 0.1,
         is_main: true,
@@ -219,92 +177,7 @@ async function main() {
     addresses.push(addr);
   }
 
-  // ---------------------------------------------------------------------------
-  // VOUCHERS + USER VOUCHERS
-  // ---------------------------------------------------------------------------
-  const voucherList = await Promise.all([
-    prisma.vouchers.create({
-      data: {
-        code: 'DISKON10',
-        type: VoucherType.total,
-        discount_type: VoucherDiscountType.percentage,
-        discount_value: 10,
-        expired_at: new Date('2025-12-31'),
-      },
-    }),
-    prisma.vouchers.create({
-      data: {
-        code: 'ONGKIRFREE',
-        type: VoucherType.shipping,
-        discount_type: VoucherDiscountType.nominal,
-        discount_value: 10000,
-        expired_at: new Date('2025-11-30'),
-      },
-    }),
-  ]);
-
-  for (const user of customers) {
-    for (const v of voucherList) {
-      await prisma.user_vouchers.create({
-        data: { user_id: user.id, voucher_id: v.id },
-      });
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // CARTS
-  // ---------------------------------------------------------------------------
-  for (const user of customers) {
-    for (const product of products.slice(0, 5)) {
-      await prisma.carts.create({
-        data: {
-          user_id: user.id,
-          product_id: product.id,
-          quantity: Math.floor(Math.random() * 3 + 1),
-        },
-      });
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // ORDERS + ORDER ITEMS + PAYMENTS
-  // ---------------------------------------------------------------------------
-  for (const user of customers) {
-    const store = stores[Math.floor(Math.random() * stores.length)];
-    const address = addresses.find((a) => a.user_id === user.id)!;
-
-    const order = await prisma.orders.create({
-      data: {
-        user_id: user.id,
-        store_id: store.id,
-        address_id: address.id,
-        shipping_method_id: 1,
-        total_amount: 120000,
-        shipping_cost: 15000,
-        discount_amount: 5000,
-        status: OrderStatus.Diproses,
-        order_items: {
-          create: products.slice(0, 3).map((p) => ({
-            product_id: p.id,
-            quantity: Math.floor(Math.random() * 2 + 1),
-            price: p.price,
-          })),
-        },
-      },
-      include: { order_items: true },
-    });
-
-    await prisma.payments.create({
-      data: {
-        order_id: order.id,
-        method: PaymentMethod.manual_transfer,
-        is_verified: Math.random() > 0.3,
-        verified_by: superAdmin.id,
-      },
-    });
-  }
-
-  console.log('✅ Seeding completed with rich mock data!');
+  console.log('✅ Seeding completed with consistent data!');
 }
 
 main()
