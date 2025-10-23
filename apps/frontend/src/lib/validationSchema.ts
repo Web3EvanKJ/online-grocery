@@ -17,43 +17,42 @@ export const validationStoreAdminSchema = Yup.object({
   address: Yup.string().required('Address is required'),
 });
 
-export const productValidationSchema = (isEdit: boolean) =>
-  Yup.object({
-    name: Yup.string().required('Product name is required'),
-    category: Yup.string().required('Category is required'),
-    price: Yup.number()
-      .typeError('Price must be a number')
-      .positive('Price must be greater than zero')
-      .required('Price is required'),
-    description: Yup.string()
-      .max(500, 'Description cannot exceed 500 characters')
-      .required('Description is required'),
-    images: Yup.array()
-      .of(
-        Yup.mixed<FileWithType>()
-          .test(
-            'fileType',
-            'Only .jpg, .jpeg, .png, .gif are allowed',
-            (value): boolean => {
-              if (!value) return false;
-              return [
-                'image/jpeg',
-                'image/jpg',
-                'image/png',
-                'image/gif',
-              ].includes(value.type);
-            }
-          )
-          .test('fileSize', 'Max file size is 1MB', (value): boolean => {
-            if (!value) return false;
-            return value.size <= 1024 * 1024;
-          })
-      )
-      .test('requiredWhenCreate', 'Product image is required', (value) => {
-        if (isEdit) return true;
-        return !!(value && value.length > 0);
-      }),
-  });
+export const productValidationSchema = Yup.object().shape({
+  name: Yup.string().required('Product name is required'),
+  category: Yup.string().required('Category is required'),
+  price: Yup.number().positive().required('Price is required'),
+  description: Yup.string().required('Description is required'),
+
+  existingUrls: Yup.array()
+    .of(Yup.string())
+    .default([])
+    .test(
+      'at-least-one-image-existing',
+      'At least one product image is required',
+      function (existingUrls) {
+        const { newFiles } = this.parent;
+        const hasExisting =
+          Array.isArray(existingUrls) && existingUrls.length > 0;
+        const hasNew = Array.isArray(newFiles) && newFiles.length > 0;
+        return hasExisting || hasNew;
+      }
+    ),
+
+  newFiles: Yup.array()
+    .of(Yup.mixed())
+    .default([])
+    .test(
+      'at-least-one-image-new',
+      'At least one product image is required',
+      function (newFiles) {
+        const { existingUrls } = this.parent;
+        const hasExisting =
+          Array.isArray(existingUrls) && existingUrls.length > 0;
+        const hasNew = Array.isArray(newFiles) && newFiles.length > 0;
+        return hasExisting || hasNew;
+      }
+    ),
+});
 
 export const inventoryValidationSchema = Yup.object({
   quantity: Yup.number()

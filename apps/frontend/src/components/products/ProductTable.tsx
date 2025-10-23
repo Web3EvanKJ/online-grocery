@@ -1,74 +1,75 @@
-// ProductTable.tsx
-'use client';
-
+import { Products } from '@/lib/types/products/products';
 import { Button } from '@/components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
+
+interface ProductTableProps {
+  products: Products[];
+  onEdit: (product: Products) => void;
+  onDelete: (product: Products) => void;
+  isSuperAdmin: boolean;
+}
 
 export function ProductTable({
   products,
   onEdit,
   onDelete,
   isSuperAdmin,
-}: any) {
+}: ProductTableProps) {
+  if (!products.length) {
+    return <p className="text-center text-sky-700">No products found.</p>;
+  }
+
   return (
-    <div className="overflow-x-auto border border-sky-200 bg-white shadow-sm">
-      <table className="min-w-full text-sm">
-        <thead className="bg-sky-100 text-sky-800">
+    <div className="overflow-x-auto rounded-lg border border-sky-200 shadow-sm">
+      <table className="min-w-full divide-y divide-sky-200 text-sm text-sky-700">
+        <thead className="bg-sky-100">
           <tr>
-            <th className="p-3 text-left">Image</th>
-            <th className="p-3 text-left">Name</th>
-            <th className="p-3 text-left">Category</th>
-            <th className="p-3 text-left">Price</th>
-            {/* <th className="p-3 text-left">Stock</th> */}
-            {isSuperAdmin && <th className="p-3 text-center">Actions</th>}
+            <th className="px-4 py-2 text-left font-semibold">Image</th>
+            <th className="px-4 py-2 text-left font-semibold">Name</th>
+            <th className="px-4 py-2 text-left font-semibold">Category</th>
+            <th className="px-4 py-2 text-left font-semibold">Price</th>
+            <th className="px-4 py-2 text-right font-semibold">Actions</th>
           </tr>
         </thead>
-        <tbody>
-          {products.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="p-4 text-center text-sky-600">
-                No products found.
+        <tbody className="divide-y divide-sky-100 bg-white">
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td className="px-4 py-2">
+                <img
+                  src={product.images?.[0]?.image_url || '/placeholder.png'}
+                  alt={product.name}
+                  className="h-10 w-10 rounded object-cover"
+                />
+              </td>
+              <td className="px-4 py-2">{product.name}</td>
+              <td className="px-4 py-2">{product.category?.name || '-'}</td>
+              <td className="px-4 py-2">
+                Rp {product.price?.toLocaleString()}
+              </td>
+              <td className="px-4 py-2 text-right">
+                <div className="flex justify-end gap-2">
+                  {isSuperAdmin && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => onEdit(product)}
+                      >
+                        <Pencil className="h-4 w-4 text-sky-600" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => onDelete(product)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </td>
             </tr>
-          ) : (
-            products.map((p: any) => (
-              <tr
-                key={p.id}
-                className="border-t border-sky-100 hover:bg-sky-50"
-              >
-                <td className="p-3">
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="h-12 w-12 rounded-md object-cover"
-                  />
-                </td>
-                <td className="p-3">{p.name}</td>
-                <td className="p-3">{p.category}</td>
-                <td className="p-3">Rp {p.price.toLocaleString()}</td>
-                {/* <td className="p-3">{p.stock}</td> */}
-                {isSuperAdmin && (
-                  <td className="p-3 text-center">
-                    <div className="flex justify-center gap-2">
-                      <Button
-                        variant="outline"
-                        className="border-sky-300 text-sky-600 hover:bg-sky-100"
-                        onClick={() => onEdit(p)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-rose-300 text-rose-500 hover:bg-rose-100"
-                        onClick={() => onDelete(p)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))
-          )}
+          ))}
         </tbody>
       </table>
     </div>

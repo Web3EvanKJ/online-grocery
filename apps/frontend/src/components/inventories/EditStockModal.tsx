@@ -10,7 +10,7 @@ import { Formik } from 'formik';
 import { useState } from 'react';
 import { FormField } from '@/components/FormField';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
-import { Product } from '@/lib/types/products/products';
+import { StockProduct } from '@/lib/types/stocks/stocks';
 import { inventoryValidationSchema } from '@/lib/validationSchema';
 
 type EditStockModalProps = {
@@ -22,7 +22,7 @@ type EditStockModalProps = {
     quantity: number;
     note?: string;
   }) => void;
-  product: Product | null;
+  product: StockProduct | null;
   type: 'increase' | 'decrease' | '';
 };
 

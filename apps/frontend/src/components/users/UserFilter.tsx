@@ -16,10 +16,6 @@ type Props = {
 export function UserFilter({ selectedRole, onRoleChange }: Props) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <label className="text-sm font-semibold text-sky-700">
-        Filter by Role:
-      </label>
-
       <Select
         value={selectedRole}
         onValueChange={(value) => onRoleChange(value === 'all' ? '' : value)}

@@ -1,5 +1,4 @@
-'use client';
-
+import { api } from '@/lib/axios';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,6 @@ import { ConfirmationModal } from '../ConfirmationModal';
 import { ErrorModal } from '../ErrorModal';
 import FormContent from './FormContent';
 import { validationStoreAdminSchema } from '@/lib/validationSchema';
-import { userAdminApi } from '@/lib/api/userAdminApi';
 import { User } from '@/lib/types/users/users';
 
 type UserModalProps = {
@@ -37,16 +35,15 @@ export function UserModal({
     if (!pendingValues) return;
     try {
       if (user) {
-        await userAdminApi.updateUser(user.id, pendingValues);
+        await api.put(`/admin/users/${user.id}`, pendingValues);
       } else {
-        await userAdminApi.createUser(pendingValues);
+        await api.post('/admin/users', pendingValues);
       }
       setConfirmOpen(false);
       setPendingValues(null);
       setOpen(false);
       refreshUsers();
     } catch (err: any) {
-      console.log(err.response?.data);
       setError(err.response?.data?.msg || 'Something went wrong');
     }
   };

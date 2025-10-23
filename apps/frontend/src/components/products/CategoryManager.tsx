@@ -1,126 +1,146 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ErrorModal } from '../ErrorModal';
 import { ConfirmationModal } from '../ConfirmationModal';
 
-type Props = {
-  isSuperAdmin: boolean;
+type Category = {
+  id: number;
+  name: string;
 };
 
-export function CategoryManager({ isSuperAdmin }: Props) {
-  const [categories, setCategories] = useState<string[]>([
-    'Electronics',
-    'Clothing',
-    'Food',
-  ]);
-  const [newCat, setNewCat] = useState('');
-  const [editingCat, setEditingCat] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{
+export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editedName, setEditedName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [confirmSave, setConfirmSave] = useState<{
     open: boolean;
-    action: 'add' | 'edit' | 'delete' | null;
+    action: 'add' | 'edit' | null;
+    id?: number;
   }>({ open: false, action: null });
+  const [error, setError] = useState({ open: false, message: '' });
 
-  const isReadOnly = !isSuperAdmin;
+  // pagination
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1 });
 
-  // --- CRUD Handlers ---
-  const handleAddCategory = () => {
-    if (!newCat.trim() || categories.includes(newCat)) return;
-    setConfirmModal({ open: true, action: 'add' });
-  };
-
-  const confirmAdd = () => {
-    setCategories([...categories, newCat]);
-    setNewCat('');
-    setConfirmModal({ open: false, action: null });
-  };
-
-  const handleEditClick = (cat: string) => {
-    setEditingCat(cat);
-    setEditValue(cat);
-    setConfirmModal({ open: true, action: 'edit' });
-  };
-
-  const confirmEdit = () => {
-    if (editValue.trim()) {
-      setCategories(categories.map((c) => (c === editingCat ? editValue : c)));
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get('/admin/categories', {
+        params: { page, limit: 5 },
+      });
+      setCategories(res.data.data);
+      setPagination(res.data.pagination);
+    } catch (err: any) {
+      setError({ open: true, message: err.response?.data?.msg || err.message });
     }
-    setEditingCat(null);
-    setEditValue('');
-    setConfirmModal({ open: false, action: null });
   };
 
-  const handleDeleteClick = (cat: string) => {
-    setDeleteTarget(cat);
-    setConfirmModal({ open: true, action: 'delete' });
+  useEffect(() => {
+    fetchCategories();
+  }, [page]);
+
+  const addCategory = async () => {
+    if (!newCategory.trim()) return;
+    try {
+      await api.post('/admin/categories', { name: newCategory });
+      setNewCategory('');
+      fetchCategories();
+    } catch (err: any) {
+      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } finally {
+      setConfirmSave({ open: false, action: null });
+    }
   };
 
-  const confirmDelete = () => {
-    if (deleteTarget) {
-      setCategories(categories.filter((c) => c !== deleteTarget));
+  const startEdit = (cat: Category) => {
+    setEditingId(cat.id);
+    setEditedName(cat.name);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditedName('');
+  };
+
+  const saveEdit = async (id: number) => {
+    if (!editedName.trim()) return;
+    try {
+      await api.put(`/admin/categories/${id}`, { name: editedName });
+      setEditingId(null);
+      setEditedName('');
+      fetchCategories();
+    } catch (err: any) {
+      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } finally {
+      setConfirmSave({ open: false, action: null });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/admin/categories/${deleteTarget.id}`);
+      fetchCategories();
+    } catch (err: any) {
+      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } finally {
       setDeleteTarget(null);
     }
-    setConfirmModal({ open: false, action: null });
   };
 
   return (
-    <div className="border border-sky-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-lg font-semibold text-sky-700">Categories</h3>
+    <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
+      <h3 className="mb-2 text-lg font-semibold text-sky-700">
+        Category Management
+      </h3>
 
-      <ul className="space-y-2">
+      {/* Category List */}
+      <ul className="mb-3 space-y-2 text-sm">
         {categories.map((cat) => (
           <li
-            key={cat}
-            className="flex items-center justify-between rounded-md bg-sky-50 px-3 py-2 text-sky-800"
+            key={cat.id}
+            className="flex items-center justify-between rounded bg-white p-2 text-sky-700 shadow-sm"
           >
-            {editingCat === cat ? (
-              <div className="flex w-full gap-2">
+            {editingId === cat.id ? (
+              <div className="flex w-full items-center gap-2">
                 <Input
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="text-sky-700"
-                  disabled={isReadOnly}
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
                 />
-                {!isReadOnly && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() =>
-                        setConfirmModal({ open: true, action: 'edit' })
-                      }
-                      className="bg-sky-500 text-white hover:bg-sky-600"
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setEditingCat(null)}
-                      className="border-sky-300 text-sky-600 hover:bg-sky-50"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
+                <Button
+                  size="sm"
+                  className="bg-blue-500 text-white hover:bg-blue-600"
+                  onClick={() =>
+                    setConfirmSave({ open: true, action: 'edit', id: cat.id })
+                  }
+                >
+                  Save
+                </Button>
+                <Button size="sm" variant="outline" onClick={cancelEdit}>
+                  Cancel
+                </Button>
               </div>
             ) : (
               <>
-                <span>{cat}</span>
-                {!isReadOnly && (
+                <span>{cat.name}</span>
+                {isSuperAdmin && (
                   <div className="flex gap-2">
                     <Button
-                      variant="outline"
                       size="sm"
-                      onClick={() => handleEditClick(cat)}
-                      className="border-sky-300 text-sky-600 hover:bg-sky-100"
+                      variant="outline"
+                      onClick={() => startEdit(cat)}
                     >
                       Edit
                     </Button>
                     <Button
-                      variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteClick(cat)}
-                      className="border-rose-300 text-rose-500 hover:bg-rose-100"
+                      variant="destructive"
+                      onClick={() => setDeleteTarget(cat)}
                     >
                       Delete
                     </Button>
@@ -132,39 +152,72 @@ export function CategoryManager({ isSuperAdmin }: Props) {
         ))}
       </ul>
 
-      {!isReadOnly && (
-        <div className="mt-4 flex gap-2">
+      {/* Pagination */}
+      <div className="flex justify-center gap-2 pt-2">
+        <Button
+          variant="outline"
+          disabled={page <= 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          Prev
+        </Button>
+        <span className="px-2 py-1 text-sky-700">
+          Page {page} of {pagination.totalPages}
+        </span>
+        <Button
+          variant="outline"
+          disabled={page >= pagination.totalPages}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Next
+        </Button>
+      </div>
+
+      {/* Add Category */}
+      {isSuperAdmin && (
+        <div className="mt-3 flex gap-2">
           <Input
-            placeholder="Add new category"
-            value={newCat}
-            onChange={(e) => setNewCat(e.target.value)}
+            placeholder="New category name"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
           />
           <Button
-            onClick={handleAddCategory}
-            className="bg-sky-500 text-white hover:bg-sky-600"
+            className="bg-sky-500 hover:bg-sky-600"
+            onClick={() => setConfirmSave({ open: true, action: 'add' })}
           >
             Add
           </Button>
         </div>
       )}
 
-      {/* Confirmation Modal (for add/delete/edit) */}
+      {/* Modals */}
       <ConfirmationModal
-        open={confirmModal.open}
-        onClose={() => setConfirmModal({ open: false, action: null })}
-        onConfirm={
-          confirmModal.action === 'add'
-            ? confirmAdd
-            : confirmModal.action === 'edit'
-              ? confirmEdit
-              : confirmDelete
-        }
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        message={`Are you sure you want to delete "${deleteTarget?.name}"?`}
+        warning
+      />
+
+      <ConfirmationModal
+        open={confirmSave.open}
+        onClose={() => setConfirmSave({ open: false, action: null })}
+        onConfirm={() => {
+          if (confirmSave.action === 'add') addCategory();
+          if (confirmSave.action === 'edit' && confirmSave.id)
+            saveEdit(confirmSave.id);
+        }}
         message={
-          confirmModal.action === 'edit'
-            ? 'Are you sure want to save this categories?'
-            : 'Are you sure want to delete this categories?'
+          confirmSave.action === 'add'
+            ? `Save new category "${newCategory}"?`
+            : `Save changes to "${editedName}"?`
         }
-        warning={confirmModal.action === 'delete'}
+      />
+
+      <ErrorModal
+        open={error.open}
+        message={error.message}
+        onClose={() => setError({ open: false, message: '' })}
       />
     </div>
   );

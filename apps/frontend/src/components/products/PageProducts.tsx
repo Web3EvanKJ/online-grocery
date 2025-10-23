@@ -1,70 +1,80 @@
-// ProductPage.tsx
 'use client';
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ProductModal } from './ProductModal';
 import { ProductTable } from './ProductTable';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { CategoryManager } from './CategoryManager';
+import { Products } from '@/lib/types/products/products';
+import { Input } from '@/components/ui/input';
+import { api } from '@/lib/axios';
+import { ErrorModal } from '../ErrorModal';
 
 export function ProductPage() {
-  const userRole = 'super admin'; // ganti sesuai session user
+  const userRole = 'super admin';
   const isSuperAdmin = userRole === 'super admin';
 
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: 'Wireless Mouse',
-      category: 'Electronics',
-      price: 150000,
-      stock: 50,
-      image: 'https://els.id/wp-content/uploads/2023/09/M210S.png',
-    },
-    {
-      id: 2,
-      name: 'Mechanical Keyboard',
-      category: 'Electronics',
-      price: 650000,
-      stock: 30,
-      image:
-        'https://www.keychron.id/cdn/shop/files/Screenshot2024-03-22103647.png?v=1711143413&width=1214',
-    },
-    {
-      id: 3,
-      name: 'Gaming Headset',
-      category: 'Electronics',
-      price: 350000,
-      stock: 40,
-      image:
-        'https://row.hyperx.com/cdn/shop/files/hyperx_cloud_alpha_wireless_1_main.jpg?v=1745914432',
-    },
-  ]);
-
+  const [products, setProducts] = useState<Products[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Products | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Products | null>(null);
+  const [error, setError] = useState({ open: false, message: '' });
 
-  const handleEdit = (product: any) => {
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'asc' | 'desc' | 'price_asc' | 'price_desc'>(
+    'asc'
+  );
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1 });
+
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get('/admin/products', {
+        params: { search, sort, page, limit: 5 },
+      });
+      setProducts(res.data.data);
+      setPagination(res.data.pagination);
+    } catch (err: any) {
+      setError({ open: true, message: err.response?.data?.msg || err.message });
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [page, sort]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    fetchProducts();
+  };
+
+  const handleEdit = (product: Products) => {
     setSelectedProduct(product);
     setModalOpen(true);
   };
 
-  const handleDelete = (product: any) => {
+  const handleDelete = (product: Products) => {
     setDeleteTarget(product);
     setConfirmDelete(true);
   };
 
-  const confirmDeleteHandler = () => {
-    setProducts(products.filter((p) => p.id !== deleteTarget.id));
-    setConfirmDelete(false);
-    setDeleteTarget(null);
+  const confirmDeleteHandler = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/admin/products/${deleteTarget.id}`);
+      fetchProducts();
+    } catch (err: any) {
+      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } finally {
+      setConfirmDelete(false);
+      setDeleteTarget(null);
+    }
   };
 
   return (
     <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-3">
-      {/* Left side - Product Table */}
       <div className="space-y-4 md:col-span-2">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-sky-800">
@@ -83,21 +93,70 @@ export function ProductPage() {
           )}
         </div>
 
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-wrap items-center justify-between gap-3"
+        >
+          <div className="flex gap-3">
+            <Input
+              placeholder="Search products..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full md:w-64"
+            />
+            <Button type="submit" variant="outline">
+              Search
+            </Button>
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as any)}
+            className="rounded-md border border-sky-300 px-2 py-1 text-sm text-sky-700"
+          >
+            <option value="asc">Sort: A–Z</option>
+            <option value="desc">Sort: Z–A</option>
+            <option value="price_asc">Price: Low–High</option>
+            <option value="price_desc">Price: High–Low</option>
+          </select>
+        </form>
+
         <ProductTable
           products={products}
           onEdit={handleEdit}
           onDelete={handleDelete}
           isSuperAdmin={isSuperAdmin}
         />
+
+        {/* Pagination */}
+        <div className="flex justify-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            Prev
+          </Button>
+          <span className="px-3 py-1 text-sky-700">
+            Page {page} of {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
-      {/* Right side - Categories */}
       <CategoryManager isSuperAdmin={isSuperAdmin} />
 
-      {/* Modals */}
       <ProductModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          fetchProducts();
+        }}
         product={selectedProduct}
         isSuperAdmin={isSuperAdmin}
       />
@@ -107,7 +166,13 @@ export function ProductPage() {
         onClose={() => setConfirmDelete(false)}
         onConfirm={confirmDeleteHandler}
         message="Are you sure you want to delete this product?"
-        warning={true}
+        warning
+      />
+
+      <ErrorModal
+        open={error.open}
+        message={error.message}
+        onClose={() => setError({ open: false, message: '' })}
       />
     </div>
   );

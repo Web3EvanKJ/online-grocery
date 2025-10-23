@@ -1,138 +1,130 @@
-'use client';
-
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Formik, Form } from 'formik';
-import { useEffect, useRef, useState } from 'react';
-import { productValidationSchema } from '@/lib/validationSchema';
+import { ProductFormFields } from './ProductFormFields';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { ErrorModal } from '../ErrorModal';
-import { ProductImageUpload } from './ProductImageUpload';
-import { ProductFormFields } from './ProductFormFields';
+import { Products } from '@/lib/types/products/products';
+import { api } from '@/lib/axios';
+import { useState } from 'react';
 
-export function ProductModal({ open, onClose, product, isSuperAdmin }: any) {
+interface ProductModalProps {
+  open: boolean;
+  onClose: () => void;
+  product?: Products | null;
+  isSuperAdmin: boolean;
+}
+
+export function ProductModal({
+  open,
+  onClose,
+  product,
+  isSuperAdmin,
+}: ProductModalProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<any>(null);
-  const [previews, setPreviews] = useState<string[]>([]);
   const [errorModal, setErrorModal] = useState({ open: false, message: '' });
-  const formikRef = useRef<any>(null);
-
   const isEdit = !!product;
 
-  useEffect(() => {
-    if (open) {
-      if (product?.images && Array.isArray(product.images))
-        setPreviews(product.images);
-      else if (product?.image) setPreviews([product.image]);
-      else setPreviews([]);
-    } else setPreviews([]);
-  }, [open, product]);
-
-  const initialValues = {
-    name: product?.name || '',
-    category: product?.category || '',
-    price: product?.price || '',
-    stock: product?.stock || '',
-    images: [] as File[],
+  const handleSubmit = (values: any) => {
+    setPendingValues(values);
+    setConfirmOpen(true);
   };
 
-  const handleFinalSubmit = () => {
-    console.log('✅ Final saved:', pendingValues);
-    setConfirmOpen(false);
-    setPendingValues(null);
-    onClose();
+  const handleFinalSubmit = async () => {
+    try {
+      if (!pendingValues) return;
+
+      // 🔹 Separate existing URLs and new files
+      console.log(pendingValues);
+
+      const { name, category, description, price, existingUrls, newFiles } =
+        pendingValues;
+
+      let allUrls = [...(existingUrls || [])];
+
+      // 🔹 Upload only new files to Cloudinary via backend
+      if (newFiles && newFiles.length > 0) {
+        const formData = new FormData();
+        newFiles.forEach((file: File) => formData.append('images', file));
+
+        const uploadRes = await api.post('/admin/products/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        allUrls = [...allUrls, ...uploadRes.data.data];
+      }
+
+      // 🔹 Create or Update product (send only URLs)
+      const payload = {
+        name,
+        category_id: Number(category),
+        description,
+        price,
+        imageUrls: allUrls,
+      };
+
+      if (isEdit && product?.id) {
+        await api.put(`/admin/products/${product.id}`, payload);
+      } else {
+        await api.post('/admin/products', payload);
+      }
+
+      setConfirmOpen(false);
+      setPendingValues(null);
+      onClose();
+    } catch (err: any) {
+      setErrorModal({
+        open: true,
+        message: err.response?.data?.msg || err.message,
+      });
+    }
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto rounded-2xl border border-sky-100 bg-white sm:max-w-lg">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="font-semibold text-sky-700">
-              {isEdit ? 'Edit Product' : 'Add Product'}
+        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEdit ? 'Edit Product' : 'Add New Product'}
             </DialogTitle>
           </DialogHeader>
 
-          <Formik
-            innerRef={formikRef}
-            initialValues={initialValues}
-            validationSchema={productValidationSchema(isEdit)}
-            onSubmit={(values) => {
-              console.log('Submitting...', values);
-              setPendingValues({ ...values, previews });
-              setConfirmOpen(true);
+          <ProductFormFields
+            initialValues={{
+              name: product?.name || '',
+              category: product?.category_id || '',
+              description: product?.description || '',
+              price: product?.price || '',
+              existingUrls: product?.images?.map((img) => img.image_url) || [],
+              newFiles: [],
             }}
-            enableReinitialize
-          >
-            {({
-              values,
-              errors,
-              touched,
-              handleChange,
-              handleBlur,
-              setFieldValue,
-              setTouched,
-            }) => (
-              <Form className="space-y-4 pb-4">
-                <ProductImageUpload
-                  previews={previews}
-                  setPreviews={setPreviews}
-                  setErrorModal={setErrorModal}
-                  setFieldValue={setFieldValue}
-                  setTouched={setTouched}
-                  values={values}
-                  errors={errors}
-                  touched={touched}
-                  formikRef={formikRef}
-                  isSuperAdmin={isSuperAdmin}
-                />
-
-                <ProductFormFields
-                  values={values}
-                  errors={errors}
-                  touched={touched}
-                  handleChange={handleChange}
-                  handleBlur={handleBlur}
-                  setFieldValue={setFieldValue}
-                  isSuperAdmin={isSuperAdmin}
-                />
-
-                {isSuperAdmin && (
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button variant="outline" onClick={onClose}>
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      className="bg-sky-500 text-white hover:bg-sky-600"
-                      onClick={() => formikRef.current?.handleSubmit()}
-                    >
-                      Save
-                    </Button>
-                  </div>
-                )}
-              </Form>
-            )}
-          </Formik>
+            onSubmit={handleSubmit}
+            onCancel={onClose}
+            isSuperAdmin={isSuperAdmin}
+          />
         </DialogContent>
       </Dialog>
-
-      <ErrorModal
-        open={errorModal.open}
-        message={errorModal.message}
-        onClose={() => setErrorModal({ open: false, message: '' })}
-      />
 
       <ConfirmationModal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleFinalSubmit}
-        message="Are you sure you want to save this product?"
+        message={
+          isEdit
+            ? 'Are you sure you want to update this product?'
+            : 'Are you sure you want to create this product?'
+        }
+      />
+
+      <ErrorModal
+        open={errorModal.open}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ open: false, message: '' })}
       />
     </>
   );

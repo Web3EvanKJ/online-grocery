@@ -8,6 +8,9 @@ import { HttpError } from './utils/httpError';
 import type { Application, NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import userAdminRouter from './routers/userAdmin.router';
+import productAdminRouter from './routers/productAdmin.router';
+import categoryAdminRouter from './routers/categoryAdmin.router';
+import inventoryAdminRouter from './routers/inventoryAdmin.router';
 
 /**
  * @class Server
@@ -60,6 +63,9 @@ class Server {
     // this.app.use('/api/auth', exampleRouter);
 
     this.app.use('/api/admin/users', userAdminRouter);
+    this.app.use('/api/admin/products', productAdminRouter);
+    this.app.use('/api/admin/categories', categoryAdminRouter);
+    this.app.use('/api/admin/inventories', inventoryAdminRouter);
   }
 
   /**

@@ -1,8 +1,8 @@
-import { Product } from '@/lib/types/products/products';
+import { StockProduct } from '@/lib/types/stocks/stocks';
 
 type InventoryTableProps = {
-  data: Product[];
-  onEditClick: (product: Product, type: 'increase' | 'decrease') => void;
+  data: StockProduct[];
+  onEditClick: (product: StockProduct, type: 'increase' | 'decrease') => void;
 };
 
 export function InventoryTable({ data, onEditClick }: InventoryTableProps) {

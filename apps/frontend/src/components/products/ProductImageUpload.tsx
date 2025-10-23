@@ -1,125 +1,112 @@
 'use client';
+import { useState } from 'react';
+import { ImagePlus, X } from 'lucide-react';
+import { ErrorModal } from '@/components/ErrorModal';
 
-import Image from 'next/image';
-import { Label } from '@/components/ui/label';
-import { ErrorMessage } from 'formik';
+interface ProductImageUploadProps {
+  existingUrls?: string[];
+  onChange: (newFiles: File[], remainingUrls: string[]) => void;
+  disabled?: boolean;
+}
 
 export function ProductImageUpload({
-  previews,
-  setPreviews,
-  setErrorModal,
-  setFieldValue,
-  setTouched,
-  values,
-  errors,
-  touched,
-  formikRef,
-  isSuperAdmin,
-}: any) {
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []) as File[];
-    const validExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-    const maxSize = 1 * 1024 * 1024;
+  existingUrls = [],
+  onChange,
+  disabled,
+}: ProductImageUploadProps) {
+  const [previewUrls, setPreviewUrls] = useState<string[]>(existingUrls);
+  const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-    const validFiles: File[] = [];
-    const err: string[] = [];
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || []);
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    const maxSize = 1 * 1024 * 1024; // 1MB
 
-    for (const file of files) {
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      if (!ext || !validExtensions.includes(ext)) {
-        err.push(`${file.name} invalid format. Use JPG, PNG, GIF`);
-        continue;
-      }
-      if (file.size > maxSize) {
-        err.push(`${file.name} exceeds 1MB limit`);
-        continue;
-      }
-      validFiles.push(file);
-    }
-
-    if (err.length > 0) {
-      setErrorModal({ open: true, message: err.join('\n') });
+    const invalid = newFiles.filter(
+      (f) => !allowedTypes.includes(f.type) || f.size > maxSize
+    );
+    if (invalid.length) {
+      setError(
+        `${invalid.map((f) => f.name).join(', ')} is invalid. Only JPG/PNG/GIF < 1MB allowed.`
+      );
       e.target.value = '';
       return;
     }
 
-    const newPreviews = validFiles.map((f) => URL.createObjectURL(f));
-    setPreviews((prev: string[]) => [...prev, ...newPreviews]);
-    setFieldValue('images', [...values.images, ...validFiles]);
-    setTouched({ images: true });
-    setTimeout(() => formikRef.current?.validateField('images'), 0);
+    setFiles((prev) => [...prev, ...newFiles]);
+    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls((prev) => [...prev, ...newPreviews]);
+    onChange([...files, ...newFiles], previewUrls);
+    e.target.value = '';
   };
 
-  const handleRemove = (index: number) => {
-    setPreviews((prev: string[]) => prev.filter((_, i) => i !== index));
-    setFieldValue(
-      'images',
-      values.images.filter((_: any, i: number) => i !== index)
-    );
-    setTimeout(() => formikRef.current?.validateField('images'), 0);
+  const removeImage = (index: number) => {
+    const isFromDB = index < existingUrls.length;
+    if (isFromDB) {
+      const updatedUrls = previewUrls.filter((_, i) => i !== index);
+      setPreviewUrls(updatedUrls);
+      onChange(files, updatedUrls);
+    } else {
+      const fileIndex = index - existingUrls.length;
+      const updatedFiles = files.filter((_, i) => i !== fileIndex);
+      const updatedPreviews = previewUrls.filter((_, i) => i !== index);
+      setFiles(updatedFiles);
+      setPreviewUrls(updatedPreviews);
+      onChange(updatedFiles, updatedPreviews.slice(0, existingUrls.length));
+    }
   };
 
   return (
     <div>
-      <Label className="text-sky-700">
-        Product Images <span className="text-red-500">*</span>
-      </Label>
+      <label className="mb-1 block text-sm font-medium text-sky-700">
+        Product Images
+      </label>
+      <div className="flex flex-wrap gap-3">
+        {previewUrls.map((src, i) => (
+          <div key={i} className="relative">
+            <img
+              src={src}
+              alt={`preview-${i}`}
+              className="h-20 w-20 rounded border object-cover"
+            />
+            {!disabled && (
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                className="absolute top-1 right-1 rounded-full bg-red-600 p-1 text-white"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
 
-      <div className="mt-1 flex flex-wrap items-center gap-3">
-        <label
-          htmlFor="fileUpload"
-          className={`cursor-pointer rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 ${
-            !isSuperAdmin && 'cursor-not-allowed opacity-60'
-          }`}
-        >
-          Upload Images
-        </label>
-
-        <input
-          id="fileUpload"
-          type="file"
-          multiple
-          accept=".jpg,.jpeg,.png,.gif"
-          onChange={handleImageChange}
-          disabled={!isSuperAdmin}
-          className="hidden"
-        />
+        {!disabled && (
+          <div>
+            <input
+              type="file"
+              id="image-upload"
+              multiple
+              className="hidden"
+              accept="image/*"
+              onChange={handleFiles}
+            />
+            <label
+              htmlFor="image-upload"
+              className="flex h-20 w-20 cursor-pointer items-center justify-center rounded border border-dashed border-sky-300 bg-sky-50 hover:bg-sky-100"
+            >
+              <ImagePlus className="h-5 w-5 text-sky-600" />
+            </label>
+          </div>
+        )}
       </div>
 
-      {previews.length > 0 ? (
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {previews.map((src: string, index: number) => (
-            <div key={index} className="group relative">
-              <Image
-                src={src}
-                alt={`Preview ${index}`}
-                width={200}
-                height={200}
-                className="rounded-md border object-cover"
-              />
-              {isSuperAdmin && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  className="absolute top-1 right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-xs text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-gray-400 italic">No image selected</p>
-      )}
-
-      {touched.images && errors.images && (
-        <ErrorMessage
-          name="images"
-          component="p"
-          className="text-sm text-red-500"
-        />
-      )}
+      <ErrorModal
+        open={!!error}
+        message={error || ''}
+        onClose={() => setError(null)}
+      />
     </div>
   );
 }

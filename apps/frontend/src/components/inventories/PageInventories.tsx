@@ -10,10 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Product } from '@/lib/types/products/products';
+import { StockProduct } from '@/lib/types/stocks/stocks';
 
 const mockStores = ['Toko A', 'Toko B'];
-const mockProducts: Product[] = [
+const mockProducts: StockProduct[] = [
   {
     id: 1,
     name: 'Beras 5kg',
@@ -47,11 +47,11 @@ export default function PageInventories() {
   const isSuperAdmin = true; // ubah sesuai role
   const [selectedStore, setSelectedStore] = useState(mockStores[0]);
 
-  const [data, setData] = useState<Product[]>(mockProducts);
+  const [data, setData] = useState<StockProduct[]>(mockProducts);
   const [modal, setModal] = useState<{
     open: boolean;
     type: 'increase' | 'decrease' | '';
-    product: Product | null;
+    product: StockProduct | null;
   }>({
     open: false,
     type: '',

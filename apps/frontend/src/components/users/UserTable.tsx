@@ -1,10 +1,8 @@
-'use client';
-
+import { api } from '@/lib/axios';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { ErrorModal } from '../ErrorModal';
-import { userAdminApi } from '@/lib/api/userAdminApi';
 import { User } from '@/lib/types/users/users';
 
 type UserTableProps = {
@@ -34,7 +32,7 @@ export function UserTable({
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
     try {
-      await userAdminApi.deleteUser(userToDelete.id);
+      await api.delete(`/admin/users/${userToDelete.id}`);
       fetchUsers();
     } catch (err: any) {
       setError(err.response?.data?.msg || 'Failed to delete user');
