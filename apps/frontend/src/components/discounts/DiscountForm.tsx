@@ -1,25 +1,73 @@
 'use client';
-import { Formik } from 'formik';
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/FormField';
-import { discountValidationSchema } from '@/lib/validationSchema';
-import { ProductSearchField } from './ProductSearchField';
 
-export function DiscountForm({ discount, isEdit, onSubmit, onCancel }: any) {
-  const initialValues = discount || {
-    type: 'product',
-    inputType: 'percentage',
-    value: 0,
-    min_purchase: '',
-    product_name: '',
-    start_date: '',
-    end_date: '',
+import { Formik, Form } from 'formik';
+import * as Yup from 'yup';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ProductSearchField } from './ProductSearchField';
+import { FormField } from '../FormField';
+
+interface DiscountFormProps {
+  discount?: any;
+  onSubmit: (values: any) => void;
+  loading?: boolean;
+  setOpen: (values: boolean) => void;
+}
+
+const validationSchema = Yup.object().shape({
+  type: Yup.string().oneOf(['product', 'store', 'b1g1']).required('Required'),
+  inputType: Yup.string().oneOf(['percentage', 'nominal']).required('Required'),
+  value: Yup.number().required('Required').min(1, 'Must be > 0'),
+  min_purchase: Yup.number().nullable(),
+  max_discount: Yup.number().nullable(),
+  start_date: Yup.string().required('Required'),
+  end_date: Yup.string().required('Required'),
+  product_id: Yup.number().nullable(),
+});
+
+export function DiscountForm({
+  discount,
+  onSubmit,
+  loading,
+  setOpen,
+}: DiscountFormProps) {
+  const initialValues = {
+    type: discount?.type || 'product',
+    inputType: discount?.inputType || 'percentage',
+    value: discount?.value || '',
+    min_purchase: discount?.min_purchase || '',
+    max_discount: discount?.max_discount || '',
+    start_date: discount?.start_date ? discount.start_date.split('T')[0] : '',
+    end_date: discount?.end_date ? discount.end_date.split('T')[0] : '',
+    product_id: discount?.product_id || null,
   };
+
   return (
     <Formik
       initialValues={initialValues}
-      validationSchema={discountValidationSchema}
-      onSubmit={(values) => onSubmit(values)}
+      validationSchema={validationSchema}
+      enableReinitialize
+      onSubmit={(values) => {
+        const data = {
+          ...values,
+          min_purchase: values.min_purchase
+            ? Number(values.min_purchase)
+            : null,
+          max_discount: values.max_discount
+            ? Number(values.max_discount)
+            : null,
+          value: Number(values.value),
+          role: 'super_admin',
+          user_id: 1,
+        };
+        onSubmit(data);
+      }}
     >
       {({
         values,
@@ -27,99 +75,110 @@ export function DiscountForm({ discount, isEdit, onSubmit, onCancel }: any) {
         touched,
         handleChange,
         handleBlur,
-        handleSubmit,
-        isSubmitting,
-        isValid,
         setFieldValue,
       }) => (
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Type */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-sm font-medium text-gray-700">
-              Discount Type <span className="text-red-500">*</span>
+        <Form className="space-y-4">
+          {/* Discount Type */}
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Discount Type
             </label>
-            <select
-              id="type"
-              name="type"
+            <Select
               value={values.type}
-              onChange={handleChange}
-              disabled={isEdit}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              onValueChange={(v) => setFieldValue('type', v)}
             >
-              <option value="product">Product</option>
-              <option value="store">Store-wide</option>
-              <option value="b1g1">Buy 1 Get 1</option>
-            </select>
-            {isEdit && (
-              <div className="text-xs font-medium text-gray-500">(locked)</div>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="product">Product</SelectItem>
+                <SelectItem value="store">Store</SelectItem>
+                <SelectItem value="b1g1">Buy 1 Get 1</SelectItem>
+              </SelectContent>
+            </Select>
+            {touched.type && typeof errors.type === 'string' && (
+              <p className="mt-1 text-xs text-red-500">{errors.type}</p>
             )}
           </div>
 
           {/* Input Type */}
           {values.type !== 'b1g1' && (
-            <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-gray-700">
-                Input Type <span className="text-red-500">*</span>
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Input Type
               </label>
-              <select
-                id="inputType"
-                name="inputType"
+              <Select
                 value={values.inputType}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                onValueChange={(v) => setFieldValue('inputType', v)}
               >
-                <option value="percentage">Percentage</option>
-                <option value="nominal">Nominal</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select input type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">Percentage</SelectItem>
+                  <SelectItem value="nominal">Nominal</SelectItem>
+                </SelectContent>
+              </Select>
+              {touched.inputType && typeof errors.inputType === 'string' && (
+                <p className="mt-1 text-xs text-red-500">{errors.inputType}</p>
+              )}
             </div>
           )}
 
-          {/* Conditional fields */}
-          {values.type !== 'store' && (
-            <ProductSearchField
-              fieldName="product_name"
-              value={values.product_name}
-              disabled={isEdit}
-              onChange={handleChange}
-              setFieldValue={setFieldValue}
-              error={errors.product_name}
-              touched={touched.product_name}
-              handleBlur={handleBlur}
-            />
-          )}
-
-          {values.type === 'store' && (
-            <FormField
-              id="min_purchase"
-              name="min_purchase"
-              label="Min Purchase (Rp)"
-              type="number"
-              value={values.min_purchase}
-              onChange={handleChange}
-            />
-          )}
-
+          {/* Value */}
           {values.type !== 'b1g1' && (
             <FormField
               id="value"
               name="value"
-              label={
-                values.inputType === 'percentage'
-                  ? 'Discount (%)'
-                  : 'Discount (Rp)'
-              }
+              label="Value"
               type="number"
               value={values.value}
               onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.value}
               touched={touched.value}
-              onBlur={handleBlur}
               required
             />
           )}
 
+          {/* Min / Max */}
+          {values.type !== 'b1g1' && (
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                id="min_purchase"
+                name="min_purchase"
+                label="Min Purchase"
+                type="number"
+                value={values.min_purchase}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.min_purchase}
+                touched={touched.min_purchase}
+              />
+              <FormField
+                id="max_discount"
+                name="max_discount"
+                label="Max Discount"
+                type="number"
+                value={values.max_discount}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.max_discount}
+                touched={touched.max_discount}
+              />
+            </div>
+          )}
+
+          {/* Product Field */}
+          {values.type === 'product' && (
+            <ProductSearchField
+              value={values.product_id}
+              onChange={(v) => setFieldValue('product_id', v)}
+            />
+          )}
+
           {/* Dates */}
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-4">
             <FormField
               id="start_date"
               name="start_date"
@@ -127,9 +186,10 @@ export function DiscountForm({ discount, isEdit, onSubmit, onCancel }: any) {
               type="date"
               value={values.start_date}
               onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.start_date}
               touched={touched.start_date}
-              onBlur={handleBlur}
+              required
             />
             <FormField
               id="end_date"
@@ -138,25 +198,27 @@ export function DiscountForm({ discount, isEdit, onSubmit, onCancel }: any) {
               type="date"
               value={values.end_date}
               onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.end_date}
               touched={touched.end_date}
               required
-              onBlur={handleBlur}
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-3">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
+          {/* Buttons */}
+          <div className="flex justify-end gap-2">
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Saving...' : 'Save'}
             </Button>
             <Button
-              type="submit"
-              className="bg-sky-500 text-white hover:bg-sky-600"
+              variant="outline"
+              type="button"
+              onClick={() => setOpen(false)}
             >
-              Save
+              Cancel
             </Button>
           </div>
-        </form>
+        </Form>
       )}
     </Formik>
   );

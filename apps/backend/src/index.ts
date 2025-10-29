@@ -11,6 +11,10 @@ import userAdminRouter from './routers/userAdmin.router';
 import productAdminRouter from './routers/productAdmin.router';
 import categoryAdminRouter from './routers/categoryAdmin.router';
 import inventoryAdminRouter from './routers/inventoryAdmin.router';
+import discountAdminRouter from './routers/discountAdmin.router';
+import salesAdminRouter from './routers/salesAdmin.router';
+import stockAdminRouter from './routers/stockAdmin.router';
+import productSearchRouter from './routers/productSearch.router';
 
 /**
  * @class Server
@@ -66,6 +70,10 @@ class Server {
     this.app.use('/api/admin/products', productAdminRouter);
     this.app.use('/api/admin/categories', categoryAdminRouter);
     this.app.use('/api/admin/inventories', inventoryAdminRouter);
+    this.app.use('/api/admin/discounts', discountAdminRouter);
+    this.app.use('/api/admin/sales', salesAdminRouter);
+    this.app.use('/api/admin/stocks', stockAdminRouter);
+    this.app.use('/api/productSearch', productSearchRouter);
   }
 
   /**

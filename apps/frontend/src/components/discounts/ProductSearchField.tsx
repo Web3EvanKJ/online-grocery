@@ -1,100 +1,106 @@
 'use client';
-import { FormField } from '@/components/FormField';
-import { useState, useEffect, useCallback } from 'react';
 
-const allProducts = [
-  'Beras 5kg',
-  'Minyak Goreng 1L',
-  'Gula Pasir 1kg',
-  'Telur Ayam 1kg',
-  'Sabun Cuci Piring',
-  'Sampo 250ml',
-];
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/axios';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-type Props = {
-  fieldName?: string; // e.g. 'product_name'
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  disabled?: boolean;
-  setFieldValue: (field: string, value: any) => void;
-  error: any;
-  touched: any;
-  handleBlur: any;
-};
+interface Product {
+  id: number;
+  name: string;
+}
+
+interface ProductSearchFieldProps {
+  value: number | null;
+  onChange: (id: number | null) => void;
+}
 
 export function ProductSearchField({
-  fieldName = 'product_name',
   value,
   onChange,
-  disabled,
-  setFieldValue,
-  error,
-  touched,
-  handleBlur,
-}: Props) {
+}: ProductSearchFieldProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<string[]>([]);
+  const [results, setResults] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const debounceSearch = useCallback((text: string) => {
-    if (!text.trim()) {
+  useEffect(() => {
+    if (!query || query.length < 2) {
       setResults([]);
       return;
     }
-    const timer = setTimeout(() => {
-      const filtered = allProducts.filter((p) =>
-        p.toLowerCase().includes(text.toLowerCase())
-      );
-      setResults(filtered);
-    }, 200);
-    return () => clearTimeout(timer);
-  }, []);
 
-  useEffect(() => {
-    if (!disabled) {
-      // run debounce only when query changes
-      const cleanup = debounceSearch(query);
-      return cleanup;
-    }
-    // if disabled, clear results
+    const delayDebounce = setTimeout(async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/admin/discounts/products`, {
+          params: { search: query },
+        });
+        console.log(res.data);
+        setResults(res.data || []);
+      } catch (err) {
+        console.error('Failed to search products');
+      } finally {
+        setLoading(false);
+      }
+    }, 100);
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
+
+  const handleSelect = (product: Product) => {
+    setSelectedProduct(product);
+    onChange(product.id);
+    setQuery('');
     setResults([]);
-  }, [query, debounceSearch, disabled]);
+  };
+
+  const handleClear = () => {
+    setSelectedProduct(null);
+    onChange(null);
+  };
 
   return (
-    <div className="relative">
-      {/* show a small badge that the field is locked when disabled */}
-      <FormField
-        id={fieldName}
-        name={fieldName}
-        label="Product Name"
-        value={value}
-        onChange={(e) => {
-          onChange(e); // update Formik value
-          setQuery(e.target.value); // update local query for search
-        }}
-        disabled={disabled}
-        required
-        error={error}
-        touched={touched}
-        onBlur={handleBlur}
-      />
+    <div>
+      <label className="mb-1 block text-sm font-medium">
+        Select Product <span className="text-red-500">*</span>
+      </label>
 
-      {/* results dropdown */}
-      {!disabled && results.length > 0 && (
-        <ul className="absolute top-15 z-20 mt-1 w-full rounded-md border border-sky-100 bg-white shadow">
-          {results.map((item, i) => (
-            <li
-              key={i}
-              onClick={() => {
-                setFieldValue(fieldName, item);
-                setResults([]);
-                setQuery(item);
-              }}
-              className="cursor-pointer px-3 py-2 text-sm hover:bg-sky-50"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
+      {selectedProduct ? (
+        <div className="flex items-center justify-between rounded border p-2">
+          <span>{selectedProduct.name}</span>
+          <Button variant="ghost" size="sm" onClick={handleClear}>
+            ✕
+          </Button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Input
+            placeholder="Search product..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+
+          {loading && (
+            <div className="absolute top-2 right-2 text-xs text-gray-400">
+              Loading...
+            </div>
+          )}
+
+          {results.length > 0 && (
+            <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded border bg-white shadow">
+              {results.map((p) => (
+                <li
+                  key={p.id}
+                  onClick={() => handleSelect(p)}
+                  className="cursor-pointer p-2 hover:bg-sky-50"
+                >
+                  {p.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

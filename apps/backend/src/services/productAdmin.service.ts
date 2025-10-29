@@ -7,6 +7,7 @@ import {
 import { uploadToCloudinary } from '../utils/cloudinary';
 import { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
+import slugify from 'slugify';
 
 export class ProductAdminService {
   private prisma: PrismaClient;
@@ -46,9 +47,12 @@ export class ProductAdminService {
 
     const numCategory = Number(category_id);
 
+    const slug = slugify(name, { lower: true, strict: true });
+
     const product = await this.prisma.products.create({
       data: {
         name,
+        slug,
         category_id: numCategory,
         description: data.description ?? '',
         price,
@@ -155,10 +159,17 @@ export class ProductAdminService {
       });
     }
 
+    let baseSlug = existing.slug;
+
+    if (data.name && data.name !== existing.name) {
+      baseSlug = slugify(data.name, { lower: true, strict: true });
+    }
+
     const updated = await this.prisma.products.update({
       where: { id },
       data: {
         name: data.name,
+        slug: baseSlug,
         description: data.description,
         price: data.price,
         images: {

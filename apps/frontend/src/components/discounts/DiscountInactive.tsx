@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../ui/select';
 
 type Discount = {
   id: number;
@@ -27,57 +27,57 @@ type Discount = {
   store_name?: string;
 };
 
-interface DiscountTableProps {
-  onEdit: (discount: Discount) => void;
+interface DiscountInactiveProps {
   setError: (err: string | null) => void;
 }
 
-export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
-  const isSuperAdmin = true;
+export function DiscountInactive({ setError }: DiscountInactiveProps) {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filters
+  // Active filters for fetching
   const [filters, setFilters] = useState({
     type: '',
-    search: '',
-    date: new Date().toISOString().split('T')[0], // auto today
+    date: '',
+    product_name: '',
     sortBy: 'start_date',
     sortOrder: 'asc',
   });
+
+  // Pending filters (controlled inputs)
   const [pendingFilters, setPendingFilters] = useState(filters);
 
-  const fetchDiscounts = async () => {
+  const fetchHistory = async () => {
     try {
       const params = {
         page,
         limit,
         type: filters.type || undefined,
-        product_name: filters.search || undefined,
-        date: filters.date,
+        date: filters.date || undefined,
+        product_name: filters.product_name || undefined,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
       };
-
-      const res = await api.get('/admin/discounts', { params });
-      setDiscounts(res.data.data || []);
-      setTotalPages(res.data.meta?.totalPages || 1);
+      const res = await api.get('/admin/discounts/history', { params });
+      setDiscounts(res.data.data || res.data);
+      setTotalPages(res.data.totalPages || 1);
     } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to fetch discounts');
+      setError(err.response?.data?.msg || 'Failed to fetch discount history');
     }
   };
 
   useEffect(() => {
-    fetchDiscounts();
+    fetchHistory();
   }, [page, filters]);
 
-  const handleSortChange = (sortBy: string) => {
+  const handleSort = (column: string) => {
     setFilters((prev) => ({
       ...prev,
-      sortBy,
-      sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
+      sortBy: column,
+      sortOrder:
+        prev.sortBy === column && prev.sortOrder === 'asc' ? 'desc' : 'asc',
     }));
   };
 
@@ -88,7 +88,7 @@ export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
+      <div className="flex items-center gap-4">
         <Select
           value={pendingFilters.type}
           onValueChange={(val) =>
@@ -108,67 +108,93 @@ export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
             <SelectItem value="b1g1">B1G1</SelectItem>
           </SelectContent>
         </Select>
+
         <Input
-          placeholder="Search product name..."
-          value={pendingFilters.search}
+          placeholder="Search..."
+          value={pendingFilters.product_name}
           onChange={(e) =>
             setPendingFilters((prev) => ({
               ...prev,
-
-              search: e.target.value,
+              product_name: e.target.value,
             }))
           }
           className="w-[200px]"
         />
+
+        <Input
+          type="date"
+          value={pendingFilters.date}
+          onChange={(e) =>
+            setPendingFilters((prev) => ({ ...prev, date: e.target.value }))
+          }
+          className="w-[180px]"
+        />
+
         <Button variant="outline" onClick={applyFilters}>
           Apply
         </Button>
       </div>
+
+      {/* Table */}
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-sky-100 text-left text-sky-800">
-              <th className="w-[40px] border px-4 py-2">#</th>
-              <th className="border px-4 py-2">Type</th>
-              <th className="border px-4 py-2">Input Type</th>
-              <th className="border px-4 py-2">Value</th>
+            <tr className="bg-sky-100 text-left">
+              <th className="border px-4 py-2">#</th>
               <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-200"
-                onClick={() => handleSortChange('start_date')}
+                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
+                onClick={() => handleSort('type')}
               >
-                Start Date
-                {filters.sortBy === 'start_date' &&
-                  (filters.sortOrder === 'asc' ? ' ↑' : ' ↓')}
+                Type{' '}
+                {filters.sortBy === 'type' &&
+                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-200"
-                onClick={() => handleSortChange('end_date')}
+                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
+                onClick={() => handleSort('inputType')}
               >
-                End Date
+                Input Type{' '}
+                {filters.sortBy === 'inputType' &&
+                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
+                onClick={() => handleSort('value')}
+              >
+                Value{' '}
+                {filters.sortBy === 'value' &&
+                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
+                onClick={() => handleSort('start_date')}
+              >
+                Start Date{' '}
+                {filters.sortBy === 'start_date' &&
+                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
+                onClick={() => handleSort('end_date')}
+              >
+                End Date{' '}
                 {filters.sortBy === 'end_date' &&
-                  (filters.sortOrder === 'asc' ? ' ↑' : ' ↓')}
+                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th className="border px-4 py-2">Product</th>
-              {isSuperAdmin && (
-                <th className="border px-4 py-2 text-center">Actions</th>
-              )}
             </tr>
           </thead>
-
           <tbody>
             {discounts.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-4 text-center text-gray-500">
-                  No discounts found.
+                <td colSpan={7} className="py-4 text-center text-gray-500">
+                  No discount history found.
                 </td>
               </tr>
             ) : (
               discounts.map((d, idx) => (
-                <tr
-                  key={d.id}
-                  className="border-t transition-colors hover:bg-sky-50"
-                >
-                  <td className="border px-4 py-2 text-center">
+                <tr key={d.id} className="border-t hover:bg-sky-50">
+                  <td className="border px-4 py-2">
                     {(page - 1) * limit + idx + 1}
                   </td>
                   <td className="border px-4 py-2">{d.type}</td>
@@ -181,17 +207,6 @@ export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
                     {new Date(d.end_date).toISOString().split('T')[0]}
                   </td>
                   <td className="border px-4 py-2">{d.product_name || '-'}</td>
-                  {isSuperAdmin && (
-                    <td className="border px-4 py-2 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(d)}
-                      >
-                        Edit
-                      </Button>
-                    </td>
-                  )}
                 </tr>
               ))
             )}
@@ -199,7 +214,8 @@ export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-center space-x-3 text-sky-700">
+      {/* Pagination */}
+      <div className="mt-3 flex items-center justify-center space-x-3 text-sky-700">
         <Button
           variant="outline"
           size="sm"

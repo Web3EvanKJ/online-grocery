@@ -2,7 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['els.id', 'www.keychron.id', 'row.hyperx.com', 'i.pinimg.com'], // ✅ allow this image host
+    domains: [
+      'els.id',
+      'www.keychron.id',
+      'row.hyperx.com',
+      'i.pinimg.com',
+      'via.placeholder.com',
+    ], // ✅ allow this image host
   },
 };
 

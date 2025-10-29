@@ -12,29 +12,29 @@ import { FormField } from '@/components/FormField';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { StockProduct } from '@/lib/types/stocks/stocks';
 import { inventoryValidationSchema } from '@/lib/validationSchema';
+import { api } from '@/lib/axios';
+import { ErrorModal } from '@/components/ErrorModal';
 
 type EditStockModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (data: {
-    id: number;
-    type: 'increase' | 'decrease';
-    quantity: number;
-    note?: string;
-  }) => void;
   product: StockProduct | null;
   type: 'increase' | 'decrease' | '';
+  storeId: number;
+  onSuccess: () => void;
 };
 
 export function EditStockModal({
   open,
   onClose,
-  onSave,
   product,
   type,
+  storeId,
+  onSuccess,
 }: EditStockModalProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (!product) return null;
 
@@ -43,31 +43,26 @@ export function EditStockModal({
     setConfirmOpen(true);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!pendingValues || !product) return;
-
-    // cumulative logic
-    const newQuantity =
-      type === 'increase'
-        ? (product.inc ?? 0) + Number(pendingValues.quantity)
-        : (product.dec ?? 0) + Number(pendingValues.quantity);
-
-    if (type != 'increase' && type != 'decrease') return;
-
-    onSave({
-      id: product.id,
-      type,
-      quantity: newQuantity,
-      note: pendingValues.note,
-    });
-
-    setConfirmOpen(false);
-    onClose();
+    try {
+      await api.post('/admin/inventories', {
+        product_id: product.id,
+        store_id: storeId,
+        type: type === 'increase' ? 'in' : 'out',
+        quantity: Number(pendingValues.quantity),
+        note: pendingValues.note,
+      });
+      onSuccess();
+      setConfirmOpen(false);
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.msg || 'Failed to update stock');
+    }
   };
 
   return (
     <>
-      {/* Edit Stock Modal */}
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-sm rounded-none border border-sky-200 bg-white">
           <DialogHeader>
@@ -81,9 +76,6 @@ export function EditStockModal({
             initialValues={{
               quantity: '',
               note: '',
-              stock: product.stock,
-              inc: product.inc,
-              dec: product.dec,
               type,
             }}
             validationSchema={inventoryValidationSchema}
@@ -140,7 +132,6 @@ export function EditStockModal({
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
@@ -148,6 +139,12 @@ export function EditStockModal({
         message={`Do you want to ${
           type === 'increase' ? 'increase' : 'decrease'
         } the stock by ${pendingValues?.quantity}?`}
+      />
+
+      <ErrorModal
+        open={!!error}
+        message={error}
+        onClose={() => setError(null)}
       />
     </>
   );

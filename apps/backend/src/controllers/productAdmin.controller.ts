@@ -1,4 +1,4 @@
-import { ProductAdminService } from '../services/productAdmin.services';
+import { ProductAdminService } from '../services/productAdmin.service';
 import type { NextFunction, Request, Response } from 'express';
 
 export class ProductAdminController {

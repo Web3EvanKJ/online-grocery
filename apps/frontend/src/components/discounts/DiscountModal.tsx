@@ -1,56 +1,73 @@
 'use client';
+
+import { useState } from 'react';
+import { api } from '@/lib/axios';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ConfirmationModal } from '../ConfirmationModal';
+import { Button } from '@/components/ui/button';
 import { DiscountForm } from './DiscountForm';
-import { useState } from 'react';
 
-export function DiscountModal({ open, onClose, onSave, type, discount }: any) {
-  const isEdit = type === 'edit';
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingValues, setPendingValues] = useState<any>(null);
+interface DiscountModalProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  discount?: any;
+  onSuccess: () => void;
+  setError: (err: string | null) => void;
+}
 
-  const handleSaveRequest = (values: any) => {
-    setPendingValues(values);
-    setConfirmOpen(true);
-  };
+export function DiscountModal({
+  open,
+  setOpen,
+  discount,
+  onSuccess,
+  setError,
+}: DiscountModalProps) {
+  const [loading, setLoading] = useState(false);
 
-  const handleConfirmSave = () => {
-    if (pendingValues) {
-      onSave(pendingValues);
-      setPendingValues(null);
+  const isEdit = !!discount;
+
+  const handleSubmit = async (values: any) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (isEdit) {
+        await api.put(`/admin/discounts/${discount.id}`, values);
+      } else {
+        await api.post('/admin/discounts', values);
+      }
+
+      onSuccess();
+    } catch (err: any) {
+      const message = err.response?.data?.msg || 'Failed to save discount';
+      setError(message);
+    } finally {
+      setLoading(false);
     }
-    setConfirmOpen(false);
   };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto rounded-xl border border-sky-200 shadow-md">
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-semibold text-sky-700">
+            <DialogTitle>
               {isEdit ? 'Edit Discount' : 'Add Discount'}
             </DialogTitle>
           </DialogHeader>
+
           <DiscountForm
-            onSubmit={handleSaveRequest}
-            onCancel={onClose}
             discount={discount}
-            isEdit={isEdit}
+            onSubmit={handleSubmit}
+            loading={loading}
+            setOpen={setOpen}
           />
         </DialogContent>
       </Dialog>
-
-      <ConfirmationModal
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={handleConfirmSave}
-        message="Are you sure you want to save this discount?"
-      />
     </>
   );
 }

@@ -1,11 +1,6 @@
-import { InventoryAdminService } from '../services/inventoryAdmin.services';
-import type { NextFunction, Request, Response } from 'express';
+import { InventoryAdminService } from '../services/inventoryAdmin.service';
+import type { Request, Response, NextFunction } from 'express';
 
-/**
- * @class InventoryController
- * @description
- * Menangani request HTTP terkait manajemen stok (inventories dan stock journals).
- */
 export class InventoryAdminController {
   private service: InventoryAdminService;
 
@@ -13,49 +8,90 @@ export class InventoryAdminController {
     this.service = new InventoryAdminService();
   }
 
-  public create = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const response = await this.service.create(req.body);
-      res.status(201).json(response);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  public getAll = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { page, limit, storeId, role, search } = req.query;
-      const response = await this.service.getAll({
-        page: Number(page) || 1,
-        limit: Number(limit) || 10,
-        storeId: storeId ? Number(storeId) : undefined,
-        role: role as string,
-        search: search as string,
-      });
-      res.json(response);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  public update = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = Number(req.params.id);
-      const response = await this.service.update(id, req.body);
-      res.json(response);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  public createJournal = async (
+  /** GET /inventories */
+  public getInventories = async (
     req: Request,
     res: Response,
     next: NextFunction
   ) => {
     try {
-      const response = await this.service.createJournal(req.body);
-      res.status(201).json(response);
+      const {
+        page = 1,
+        limit = 10,
+        search = '',
+        store_id,
+        role,
+        user_id,
+        sort = 'alphabet',
+      } = req.query;
+
+      const result = await this.service.getInventories({
+        page: Number(page),
+        limit: Number(limit),
+        search: String(search),
+        store_id: store_id ? Number(store_id) : undefined,
+        role: String(role),
+        user_id: user_id ? Number(user_id) : undefined,
+        sort: String(sort),
+      });
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** POST /inventories */
+  public createOrUpdateInventory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { product_id, store_id, type, quantity, note } = req.body;
+
+      const result = await this.service.createOrUpdateInventory({
+        product_id,
+        store_id,
+        type,
+        quantity,
+        note,
+      });
+
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** GET /inventories/:id/journals */
+  public getStockJournals = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { id } = req.params;
+      const result = await this.service.getStockJournals(Number(id));
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** GET /inventories/stores */
+  public getStores = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { role, user_id } = req.query;
+      const result = await this.service.getStores(
+        String(role),
+        user_id ? Number(user_id) : undefined
+      );
+      res.json(result);
     } catch (error) {
       next(error);
     }

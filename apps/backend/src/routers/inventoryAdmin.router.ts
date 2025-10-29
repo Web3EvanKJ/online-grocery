@@ -1,12 +1,7 @@
 import { Router } from 'express';
 import { InventoryAdminController } from '../controllers/inventoryAdmin.controller';
 
-/**
- * @class InventoryRouter
- * @description
- * Mengatur semua route untuk manajemen stok dan jurnal stok.
- */
-class InventoryRouter {
+class InventoryAdminRouter {
   public router: Router;
   private controller: InventoryAdminController;
 
@@ -17,11 +12,11 @@ class InventoryRouter {
   }
 
   private initializeRoutes() {
-    this.router.get('/', this.controller.getAll);
-    this.router.post('/', this.controller.create);
-    this.router.put('/:id', this.controller.update);
-    this.router.post('/journal', this.controller.createJournal);
+    this.router.get('/', this.controller.getInventories);
+    this.router.post('/', this.controller.createOrUpdateInventory);
+    this.router.get('/:id/journals', this.controller.getStockJournals);
+    this.router.get('/stores/list', this.controller.getStores);
   }
 }
 
-export default new InventoryRouter().router;
+export default new InventoryAdminRouter().router;

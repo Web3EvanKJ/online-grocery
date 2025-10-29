@@ -1,25 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, Search, Grid } from 'lucide-react';
-
-const categories = [
-  'Kebutuhan Dapur',
-  'Kebutuhan Ibu & Anak',
-  'Kebutuhan Rumah',
-  'Makanan',
-  'Minuman',
-  'Produk Segar & Beku',
-  'Personal Care',
-  'Kebutuhan Kesehatan',
-  'Lifestyle',
-  'Pet Foods',
-];
+import { useRouter, useSearchParams } from 'next/navigation';
+import { api } from '@/lib/axios';
+import { ErrorModal } from '../ErrorModal';
 
 export function SearchHeader() {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>(
+    []
+  );
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
+  const params = useSearchParams();
+
+  // === Fetch categories ===
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/admin/sales/categories');
+        setCategories(res.data || []);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Gagal memuat kategori');
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // === Handle Search ===
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newParams = new URLSearchParams(params.toString());
+    if (query.trim()) newParams.set('name', query.trim());
+    else newParams.delete('name');
+
+    router.push(`/find?${newParams.toString()}`);
+  };
+
+  // === Handle Category Selection ===
+  const handleCategoryClick = (catName: string) => {
+    const newParams = new URLSearchParams(params.toString());
+
+    if (catName === 'All') {
+      newParams.delete('category');
+      setSelectedCategory('');
+    } else {
+      newParams.set('category', catName);
+      setSelectedCategory(catName);
+    }
+
+    router.push(`/find?${newParams.toString()}`);
+    setOpen(false);
+  };
 
   return (
     <header className="w-full border-b bg-white shadow-sm">
@@ -27,7 +66,7 @@ export function SearchHeader() {
         {/* Logo */}
         <div className="text-xl font-bold text-blue-600">Logo</div>
 
-        {/* Category Button */}
+        {/* Category Dropdown */}
         <div className="relative">
           <Button
             variant="outline"
@@ -35,7 +74,7 @@ export function SearchHeader() {
             onClick={() => setOpen(!open)}
           >
             <Grid className="h-4 w-4" />
-            Kategori
+            {selectedCategory || 'Kategori'}
             <ChevronDown className="h-4 w-4" />
           </Button>
 
@@ -45,12 +84,26 @@ export function SearchHeader() {
                 Kategori
               </h4>
               <ul className="max-h-96 overflow-y-auto">
+                {/* "All" Category Option */}
+                <li
+                  onClick={() => handleCategoryClick('All')}
+                  className={`cursor-pointer px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 ${
+                    selectedCategory === '' ? 'bg-blue-100' : ''
+                  }`}
+                >
+                  Semua Kategori
+                </li>
+
+                {/* Dynamic Categories */}
                 {categories.map((cat) => (
                   <li
-                    key={cat}
-                    className="flex cursor-pointer items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.name)}
+                    className={`cursor-pointer px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 ${
+                      selectedCategory === cat.name ? 'bg-blue-100' : ''
+                    }`}
                   >
-                    <span className="text-sm">{cat}</span>
+                    {cat.name}
                   </li>
                 ))}
               </ul>
@@ -59,14 +112,24 @@ export function SearchHeader() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative flex-1">
+        <form onSubmit={handleSearch} className="relative flex-1">
           <Input
             placeholder="Temukan produk favoritmu"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full border-blue-300 focus-visible:ring-blue-200"
           />
-          <Search className="absolute top-2.5 right-3 h-5 w-5 text-blue-500" />
-        </div>
+          <button type="submit">
+            <Search className="absolute top-2.5 right-3 h-5 w-5 text-blue-500" />
+          </button>
+        </form>
       </div>
+
+      <ErrorModal
+        open={!!error}
+        message={error}
+        onClose={() => setError(null)}
+      />
     </header>
   );
 }

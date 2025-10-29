@@ -98,8 +98,8 @@ model stores {
 
 model store_admins {
   id          Int       @id @default(autoincrement())
-  user_id     Int
-  store_id    Int
+  user_id     Int       @unique
+  store_id    Int       @unique
   assigned_at DateTime? @default(now())
 
   user  users  @relation(fields: [user_id], references: [id])
@@ -119,6 +119,7 @@ model products {
   id          Int       @id @default(autoincrement())
   category_id Int
   name        String
+  slug        String    @unique
   description String?
   price       Decimal
   created_at  DateTime? @default(now())
@@ -151,6 +152,8 @@ model inventories {
   product  products         @relation(fields: [product_id], references: [id])
   store    stores           @relation(fields: [store_id], references: [id])
   journals stock_journals[]
+
+  @@unique([product_id, store_id])
 }
 
 model stock_journals {

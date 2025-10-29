@@ -135,21 +135,23 @@ export class UserAdminService {
         let district = '';
         let address = '';
         if (u.role === Role.store_admin) {
-          lat = Number(u.store_admins[0]?.store?.latitude);
-          lon = Number(u.store_admins[0]?.store?.longitude);
-          province = u.store_admins[0]?.store?.province;
-          city = u.store_admins[0]?.store?.city;
-          district = u.store_admins[0]?.store?.district;
-          address = u.store_admins[0]?.store?.address;
+          const store = u.store_admins[0].store;
+          lat = Number(store.latitude);
+          lon = Number(store.longitude);
+          province = store.province;
+          city = store.city;
+          district = store.district;
+          address = store.address;
         }
 
-        if (u.role === Role.user) {
-          lat = Number(u.addresses[0]?.latitude);
-          lon = Number(u.addresses[0]?.longitude);
-          province = u.addresses[0]?.province;
-          city = u.addresses[0]?.city;
-          district = u.addresses[0]?.district;
-          address = u.addresses[0]?.address_detail;
+        if (u.role === Role.user && u.addresses.length > 0) {
+          const addresses = u.addresses[0];
+          lat = Number(addresses?.latitude);
+          lon = Number(addresses?.longitude);
+          province = addresses.province;
+          city = addresses.city;
+          district = addresses.district;
+          address = addresses.address_detail;
         }
 
         return {

@@ -1,169 +1,101 @@
 'use client';
+
 import { useState } from 'react';
 import { DiscountTable } from './DiscountTable';
+import { DiscountInactive } from './DiscountInactive';
 import { DiscountModal } from './DiscountModal';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '@/components/ui/select';
-import { DiscountHistory } from './DiscountHistory';
-
-type Discount = {
-  id: number;
-  store_id: number;
-  product_name?: string | null;
-  type: 'product' | 'store' | 'B1G1';
-  inputType: 'percentage' | 'nominal';
-  value: number;
-  min_purchase?: number | null;
-  max_discount?: number | null;
-  start_date: string;
-  end_date: string;
-};
-
-const mockStores = ['Toko A', 'Toko B'];
-const mockDiscounts: Discount[] = [
-  {
-    id: 1,
-    store_id: 101,
-    product_name: 'Beras 1kg',
-    type: 'product',
-    inputType: 'percentage',
-    value: 15, // 15% discount
-    min_purchase: 50000,
-    max_discount: 20000,
-    start_date: '2025-10-01',
-    end_date: '2025-10-31',
-  },
-  {
-    id: 2,
-    store_id: 102,
-    product_name: null, // store-wide discount
-    type: 'store',
-    inputType: 'nominal',
-    value: 10000, // flat 10,000 off
-    min_purchase: 75000,
-    max_discount: null,
-    start_date: '2025-09-15',
-    end_date: '2025-10-15',
-  },
-  {
-    id: 3,
-    store_id: 103,
-    product_name: 'Minyak 5L',
-    type: 'B1G1',
-    inputType: 'nominal',
-    value: 0, // B1G1 doesn’t need a value
-    min_purchase: null,
-    max_discount: null,
-    start_date: '2025-10-05',
-    end_date: '2025-10-20',
-  },
-];
-
-const mockHistory: Discount[] = [
-  {
-    id: 101,
-    store_id: 101,
-    product_name: 'Gula 1kg',
-    type: 'product',
-    inputType: 'percentage',
-    value: 10,
-    start_date: '2025-08-01',
-    end_date: '2025-08-31',
-  },
-  {
-    id: 102,
-    store_id: 102,
-    product_name: null,
-    type: 'store',
-    inputType: 'nominal',
-    value: 5000,
-    min_purchase: 30000,
-    start_date: '2025-07-01',
-    end_date: '2025-07-31',
-  },
-  {
-    id: 103,
-    store_id: 103,
-    product_name: 'Sabun Cuci',
-    type: 'B1G1',
-    inputType: 'nominal',
-    value: 0,
-    start_date: '2025-06-15',
-    end_date: '2025-07-15',
-  },
-];
+import { ErrorModal } from '@/components/ErrorModal';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function PageDiscounts() {
-  const isSuperAdmin = true; // ubah sesuai role
-  const [selectedStore, setSelectedStore] = useState(mockStores[0]);
-  const [data, setData] = useState<Discount[]>(mockDiscounts);
-  const [modal, setModal] = useState<{
-    open: boolean;
-    type: 'add' | 'edit' | '';
-    discount: Discount | null;
-  }>({ open: false, type: '', discount: null });
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editDiscount, setEditDiscount] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const handleSave = (discount: Discount) => {
-    if (modal.type === 'edit') {
-      setData((prev) => prev.map((d) => (d.id === discount.id ? discount : d)));
-    } else {
-      setData((prev) => [...prev, { ...discount, id: prev.length + 1 }]);
-    }
-    setModal({ open: false, type: '', discount: null });
+  const handleAdd = () => {
+    setEditDiscount(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (discount: any) => {
+    console.log(discount);
+
+    setEditDiscount(discount);
+    setModalOpen(true);
+  };
+
+  const handleSuccess = () => {
+    setReloadKey((prev) => prev + 1);
+    setModalOpen(false);
   };
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-sky-700">
-          Discount Management
-        </h1>
+      {/* Title */}
+      <h1 className="text-2xl font-semibold text-sky-700">
+        Discount Management
+      </h1>
 
-        <Button
-          className="bg-sky-500 text-white hover:bg-sky-600"
-          onClick={() => setModal({ open: true, type: 'add', discount: null })}
-        >
-          + Add Discount
-        </Button>
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)}>
+        <div className="flex items-center justify-between">
+          <TabsList className="rounded-lg bg-sky-50 p-1">
+            <TabsTrigger
+              value="active"
+              className="rounded-md px-4 py-2 data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+            >
+              Active Discounts
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="rounded-md px-4 py-2 data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+            >
+              Inactive Discount
+            </TabsTrigger>
+          </TabsList>
 
-      {isSuperAdmin && (
-        <div className="max-w-xs">
-          <Select value={selectedStore} onValueChange={setSelectedStore}>
-            <SelectTrigger className="border-sky-300 focus:ring-sky-300">
-              <SelectValue placeholder="Choose Store" />
-            </SelectTrigger>
-            <SelectContent>
-              {mockStores.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {activeTab === 'active' && (
+            <Button onClick={handleAdd} className="bg-sky-600 hover:bg-sky-700">
+              + Add Discount
+            </Button>
+          )}
         </div>
+
+        {/* Content */}
+        <div className="mt-4">
+          {activeTab === 'active' ? (
+            <DiscountTable
+              key={reloadKey}
+              onEdit={handleEdit}
+              setError={setError}
+            />
+          ) : (
+            <DiscountInactive key={reloadKey} setError={setError} />
+          )}
+        </div>
+      </Tabs>
+
+      {/* Modals */}
+      {modalOpen && (
+        <DiscountModal
+          open={modalOpen}
+          setOpen={setModalOpen}
+          onSuccess={handleSuccess}
+          discount={editDiscount}
+          setError={setError}
+        />
       )}
 
-      <DiscountTable
-        data={data}
-        onEdit={(d) => setModal({ open: true, type: 'edit', discount: d })}
-      />
-
-      <DiscountHistory data={mockHistory} />
-
-      <DiscountModal
-        open={modal.open}
-        type={modal.type}
-        discount={modal.discount}
-        onClose={() => setModal({ open: false, type: '', discount: null })}
-        onSave={handleSave}
-      />
+      {error && (
+        <ErrorModal
+          open={!!error}
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
     </div>
   );
 }
