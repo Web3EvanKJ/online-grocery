@@ -7,8 +7,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ErrorModalProps } from '@/lib/types/global/global';
 
-export function ErrorModal({ open, message, onClose }: any) {
+export function ErrorModal({ open, message, onClose }: ErrorModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="rounded-2xl border border-red-100 bg-white">

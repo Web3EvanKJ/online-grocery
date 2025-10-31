@@ -15,7 +15,7 @@ type Props = {
 
 export function UserFilter({ selectedRole, onRoleChange }: Props) {
   return (
-    <div className="mb-4 flex items-center gap-3">
+    <div className="flex items-center gap-3">
       <Select
         value={selectedRole}
         onValueChange={(value) => onRoleChange(value === 'all' ? '' : value)}

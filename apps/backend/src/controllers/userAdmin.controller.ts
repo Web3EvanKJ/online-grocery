@@ -1,11 +1,14 @@
 import { UserAdminService } from '../services/userAdmin.service';
 import type { Request, Response, NextFunction } from 'express';
+import { UserAdminGetService } from '../services/userAdminGet.service';
 
 export class UserAdminController {
   private service: UserAdminService;
+  private getService: UserAdminGetService;
 
   constructor() {
     this.service = new UserAdminService();
+    this.getService = new UserAdminGetService();
   }
 
   public createStoreAdmin = async (
@@ -23,7 +26,16 @@ export class UserAdminController {
 
   public getUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.service.getUsers(req.query);
+      const { page, limit, role, search, sortOrder } = req.query;
+
+      const result = await this.getService.getUsers({
+        page: Number(page),
+        limit: Number(limit),
+        role: role as 'super_admin' | 'user' | 'store_admin',
+        search: String(search),
+        sortOrder: sortOrder as 'asc' | 'desc',
+      });
+
       res.status(200).json(result);
     } catch (error) {
       next(error);

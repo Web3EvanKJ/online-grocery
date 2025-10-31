@@ -1,15 +1,11 @@
-'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ErrorModal } from '../ErrorModal';
 import { ConfirmationModal } from '../ConfirmationModal';
-
-type Category = {
-  id: number;
-  name: string;
-};
+import { Category } from '@/lib/types/categories/categories';
+import type { AxiosError } from 'axios';
 
 export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -22,12 +18,9 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     action: 'add' | 'edit' | null;
     id?: number;
   }>({ open: false, action: null });
-  const [error, setError] = useState({ open: false, message: '' });
-
-  // pagination
+  const [error, setError] = useState<string | null>('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1 });
-
   const fetchCategories = async () => {
     try {
       const res = await api.get('/admin/categories', {
@@ -35,38 +28,35 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       });
       setCategories(res.data.data);
       setPagination(res.data.pagination);
-    } catch (err: any) {
-      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to get categories.');
     }
   };
-
   useEffect(() => {
     fetchCategories();
   }, [page]);
-
   const addCategory = async () => {
     if (!newCategory.trim()) return;
     try {
       await api.post('/admin/categories', { name: newCategory });
       setNewCategory('');
       fetchCategories();
-    } catch (err: any) {
-      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to create categories.');
     } finally {
       setConfirmSave({ open: false, action: null });
     }
   };
-
   const startEdit = (cat: Category) => {
     setEditingId(cat.id);
     setEditedName(cat.name);
   };
-
   const cancelEdit = () => {
     setEditingId(null);
     setEditedName('');
   };
-
   const saveEdit = async (id: number) => {
     if (!editedName.trim()) return;
     try {
@@ -74,32 +64,30 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       setEditingId(null);
       setEditedName('');
       fetchCategories();
-    } catch (err: any) {
-      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to edit categories.');
     } finally {
       setConfirmSave({ open: false, action: null });
     }
   };
-
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/admin/categories/${deleteTarget.id}`);
       fetchCategories();
-    } catch (err: any) {
-      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to delete categories.');
     } finally {
       setDeleteTarget(null);
     }
   };
-
   return (
     <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
       <h3 className="mb-2 text-lg font-semibold text-sky-700">
         Category Management
       </h3>
-
-      {/* Category List */}
       <ul className="mb-3 space-y-2 text-sm">
         {categories.map((cat) => (
           <li
@@ -139,8 +127,9 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                     </Button>
                     <Button
                       size="sm"
-                      variant="destructive"
+                      variant="outline"
                       onClick={() => setDeleteTarget(cat)}
+                      className="border-red-400 text-red-600"
                     >
                       Delete
                     </Button>
@@ -151,29 +140,19 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           </li>
         ))}
       </ul>
-
-      {/* Pagination */}
       <div className="flex justify-center gap-2 pt-2">
-        <Button
-          variant="outline"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
+        {/* prettier-ignore */}
+        <Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
           Prev
         </Button>
         <span className="px-2 py-1 text-sky-700">
           Page {page} of {pagination.totalPages}
         </span>
-        <Button
-          variant="outline"
-          disabled={page >= pagination.totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
+        {/* prettier-ignore */}
+        <Button variant="outline" disabled={page >= pagination.totalPages} onClick={() => setPage((p) => p + 1)}>
           Next
         </Button>
       </div>
-
-      {/* Add Category */}
       {isSuperAdmin && (
         <div className="mt-3 flex gap-2">
           <Input
@@ -190,7 +169,6 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         </div>
       )}
 
-      {/* Modals */}
       <ConfirmationModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -198,7 +176,6 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         message={`Are you sure you want to delete "${deleteTarget?.name}"?`}
         warning
       />
-
       <ConfirmationModal
         open={confirmSave.open}
         onClose={() => setConfirmSave({ open: false, action: null })}
@@ -213,11 +190,10 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             : `Save changes to "${editedName}"?`
         }
       />
-
       <ErrorModal
-        open={error.open}
-        message={error.message}
-        onClose={() => setError({ open: false, message: '' })}
+        open={!!error}
+        message={error}
+        onClose={() => setError(null)}
       />
     </div>
   );

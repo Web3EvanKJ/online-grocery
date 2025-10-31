@@ -1,18 +1,19 @@
+'use client';
 import { useEffect, useState } from 'react';
 import { Formik, Form } from 'formik';
-import * as Yup from 'yup';
 import { Button } from '@/components/ui/button';
 import { ProductImageUpload } from './ProductImageUpload';
 import { api } from '@/lib/axios';
 import { FormField } from '../FormField';
 import { productValidationSchema } from '@/lib/validationSchema';
-
-interface ProductFormFieldsProps {
-  initialValues: any;
-  onSubmit: (values: any) => void;
-  onCancel: () => void;
-  isSuperAdmin: boolean;
-}
+import { ProductFormFieldsProps } from '@/lib/types/products/products';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 
 export function ProductFormFields({
   initialValues,
@@ -27,7 +28,9 @@ export function ProductFormFields({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('/admin/categories');
+        const res = await api.get('/admin/categories', {
+          params: { page: 1, limit: 15 },
+        });
         setCategories(res.data.data);
       } catch {
         console.error('Failed to load categories');
@@ -41,6 +44,8 @@ export function ProductFormFields({
       initialValues={initialValues}
       validationSchema={productValidationSchema}
       onSubmit={onSubmit}
+      validateOnBlur
+      validateOnChange
       enableReinitialize
     >
       {({
@@ -68,26 +73,30 @@ export function ProductFormFields({
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-sky-700">
-              Category
+            <label className="mb-1 block text-sm font-medium text-sky-700">
+              Category <span className="text-red-500">*</span>
             </label>
-            <select
-              name="category"
-              value={values.category}
-              onChange={handleChange}
-              onBlur={handleBlur}
+
+            <Select
+              value={values.category?.toString() || ''} // ensure string value
+              onValueChange={(value) => setFieldValue('category', value)}
               disabled={!isSuperAdmin}
-              className="w-full rounded-md border border-sky-300 px-2 py-2 text-sm text-sky-700"
             >
-              <option value="">Select Category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full border-sky-300 text-sky-700">
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id.toString()}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {touched.category && typeof errors.category === 'string' && (
-              <p className="mt-1 text-sm text-red-500">{errors.category}</p>
+              <p className="mt-1 text-xs text-red-500">{errors.category}</p>
             )}
           </div>
 
@@ -121,7 +130,6 @@ export function ProductFormFields({
             touched={touched.description}
           />
 
-          {/* ✅ Image Upload with DB previews */}
           <ProductImageUpload
             existingUrls={values.existingUrls}
             onChange={(newFiles, remainingUrls) => {

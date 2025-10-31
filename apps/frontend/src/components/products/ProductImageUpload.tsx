@@ -1,29 +1,49 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
 import { ErrorModal } from '@/components/ErrorModal';
-
-interface ProductImageUploadProps {
-  existingUrls?: string[];
-  onChange: (newFiles: File[], remainingUrls: string[]) => void;
-  disabled?: boolean;
-}
+import { ProductImageUploadProps } from '@/lib/types/products/products';
 
 export function ProductImageUpload({
   existingUrls = [],
   onChange,
   disabled,
 }: ProductImageUploadProps) {
-  const [previewUrls, setPreviewUrls] = useState<string[]>(existingUrls);
+  // backend URLs that exist on the server
+  const [backendUrls, setBackendUrls] = useState<string[]>(existingUrls);
+
+  // new File objects that user picked this session
   const [files, setFiles] = useState<File[]>([]);
+
+  const [blobPreviews, setBlobPreviews] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const createdBlobs = useRef<string[]>([]);
+
+  // sync backendUrls when prop changes (editing different product or refreshed data)
+  useEffect(() => {
+    setBackendUrls(existingUrls || []);
+  }, [existingUrls]);
+
+  // cleanup on unmount - revoke created object URLs
+  useEffect(() => {
+    return () => {
+      createdBlobs.current.forEach((b) => URL.revokeObjectURL(b));
+      createdBlobs.current = [];
+    };
+  }, []);
+
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(e.target.files || []);
+    const incoming = Array.from(e.target.files || []);
+    if (incoming.length === 0) {
+      e.target.value = '';
+      return;
+    }
+
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
     const maxSize = 1 * 1024 * 1024; // 1MB
 
-    const invalid = newFiles.filter(
+    const invalid = incoming.filter(
       (f) => !allowedTypes.includes(f.type) || f.size > maxSize
     );
     if (invalid.length) {
@@ -34,36 +54,74 @@ export function ProductImageUpload({
       return;
     }
 
-    setFiles((prev) => [...prev, ...newFiles]);
-    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-    setPreviewUrls((prev) => [...prev, ...newPreviews]);
-    onChange([...files, ...newFiles], previewUrls);
+    // filter duplicates by name+size against existing files
+    const uniqueNewFiles = incoming.filter(
+      (nf) => !files.some((f) => f.name === nf.name && f.size === nf.size)
+    );
+
+    if (uniqueNewFiles.length === 0) {
+      e.target.value = '';
+      return;
+    }
+
+    // create previews for the new files
+    const newBlobs = uniqueNewFiles.map((f) => {
+      const url = URL.createObjectURL(f);
+      createdBlobs.current.push(url);
+      return url;
+    });
+
+    const updatedFiles = [...files, ...uniqueNewFiles];
+    const updatedBlobPreviews = [...blobPreviews, ...newBlobs];
+
+    setFiles(updatedFiles);
+    setBlobPreviews(updatedBlobPreviews);
+
+    onChange(updatedFiles, backendUrls);
+
     e.target.value = '';
   };
 
   const removeImage = (index: number) => {
-    const isFromDB = index < existingUrls.length;
-    if (isFromDB) {
-      const updatedUrls = previewUrls.filter((_, i) => i !== index);
-      setPreviewUrls(updatedUrls);
-      onChange(files, updatedUrls);
+    if (index < backendUrls.length) {
+      // from db
+      const updatedBackend = backendUrls.filter((_, i) => i !== index);
+      setBackendUrls(updatedBackend);
+      onChange(files, updatedBackend);
     } else {
-      const fileIndex = index - existingUrls.length;
-      const updatedFiles = files.filter((_, i) => i !== fileIndex);
-      const updatedPreviews = previewUrls.filter((_, i) => i !== index);
+      // still blob preview
+      const blobIndex = index - backendUrls.length;
+      const removedBlob = blobPreviews[blobIndex];
+      if (removedBlob) {
+        URL.revokeObjectURL(removedBlob);
+        createdBlobs.current = createdBlobs.current.filter(
+          (b) => b !== removedBlob
+        );
+      }
+
+      const updatedBlobPreviews = blobPreviews.filter(
+        (_, i) => i !== blobIndex
+      );
+      const updatedFiles = files.filter((_, i) => i !== blobIndex);
+
+      setBlobPreviews(updatedBlobPreviews);
       setFiles(updatedFiles);
-      setPreviewUrls(updatedPreviews);
-      onChange(updatedFiles, updatedPreviews.slice(0, existingUrls.length));
+
+      onChange(updatedFiles, backendUrls);
     }
   };
+
+  // combine backend + blob previews for rendering
+  const renderedPreviews = [...backendUrls, ...blobPreviews];
 
   return (
     <div>
       <label className="mb-1 block text-sm font-medium text-sky-700">
         Product Images
       </label>
+
       <div className="flex flex-wrap gap-3">
-        {previewUrls.map((src, i) => (
+        {renderedPreviews.map((src, i) => (
           <div key={i} className="relative">
             <img
               src={src}

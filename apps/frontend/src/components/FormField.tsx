@@ -1,35 +1,22 @@
 'use client';
 
+import { FormFieldProps } from '@/lib/types/global/global';
 import React from 'react';
-import { FormikErrors, FormikTouched } from 'formik';
 
-export interface FormFieldProps {
-  id: string;
-  name: string;
-  label?: string;
-  value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void;
-  onBlur?: (
-    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void;
-  placeholder?: string;
-  required?: boolean;
-  type?: string;
-  error?:
-    | string
-    | string[]
-    | FormikErrors<any>
-    | FormikErrors<any>[]
-    | undefined;
-  touched?: boolean | FormikTouched<any> | FormikTouched<any>[] | undefined;
-  disabled?: boolean;
-}
-
-// prettier-ignore
-export const FormField: React.FC<FormFieldProps> = ({id, name, label, value, onChange, onBlur, placeholder, required, type = 'text', error, touched, disabled}) => {
-
+export const FormField = ({
+  id,
+  name,
+  label,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  required,
+  type = 'text',
+  error,
+  touched,
+  disabled,
+}: FormFieldProps) => {
   const errorMessage =
     typeof error === 'string'
       ? error
@@ -57,7 +44,7 @@ export const FormField: React.FC<FormFieldProps> = ({id, name, label, value, onC
           required={required}
           disabled={disabled}
           rows={4}
-          className={`w-full rounded-lg border p-2 text-sm text-gray-800 transition-all focus:ring-1 focus:outline-none ${showError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:border-sky-400 focus:ring-sky-400'}  resize-none`}
+          className={`w-full rounded-lg border p-2 text-sm text-gray-800 transition-all focus:ring-1 focus:outline-none ${showError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:border-sky-400 focus:ring-sky-400'} resize-none`}
         />
       ) : (
         <input
@@ -72,13 +59,10 @@ export const FormField: React.FC<FormFieldProps> = ({id, name, label, value, onC
           disabled={disabled}
           className={`w-full rounded-lg border p-2 text-sm text-gray-800 transition-all focus:ring-1 focus:outline-none ${showError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:border-sky-400 focus:ring-sky-400'} `}
         />
-
       )}
-        {disabled && (
-          <div className="text-xs font-medium text-gray-500">
-            (locked)
-          </div>
-        )}
+      {disabled && (
+        <div className="text-xs font-medium text-gray-500">(locked)</div>
+      )}
       <div className="mt-1 min-h-[10px]">
         {showError && <p className="text-xs text-red-500">{errorMessage}</p>}
       </div>

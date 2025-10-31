@@ -7,16 +7,13 @@ import {
 import { ProductFormFields } from './ProductFormFields';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { ErrorModal } from '../ErrorModal';
-import { Products } from '@/lib/types/products/products';
+import {
+  ProductFormValues,
+  ProductModalProps,
+} from '@/lib/types/products/products';
 import { api } from '@/lib/axios';
 import { useState } from 'react';
-
-interface ProductModalProps {
-  open: boolean;
-  onClose: () => void;
-  product?: Products | null;
-  isSuperAdmin: boolean;
-}
+import type { AxiosError } from 'axios';
 
 export function ProductModal({
   open,
@@ -25,28 +22,36 @@ export function ProductModal({
   isSuperAdmin,
 }: ProductModalProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingValues, setPendingValues] = useState<any>(null);
-  const [errorModal, setErrorModal] = useState({ open: false, message: '' });
+  const [pendingValues, setPendingValues] = useState<ProductFormValues | null>(
+    null
+  );
+  const [error, setError] = useState<string | null>('');
   const isEdit = !!product;
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: ProductFormValues) => {
     setPendingValues(values);
     setConfirmOpen(true);
+  };
+
+  const productFormInitialValues = {
+    name: product?.name || '',
+    category: product?.category_id || '',
+    description: product?.description || '',
+    price: product?.price || '',
+    existingUrls: product?.images?.map((img) => img.image_url) || [],
+    newFiles: [],
   };
 
   const handleFinalSubmit = async () => {
     try {
       if (!pendingValues) return;
 
-      // 🔹 Separate existing URLs and new files
-      console.log(pendingValues);
-
       const { name, category, description, price, existingUrls, newFiles } =
         pendingValues;
 
       let allUrls = [...(existingUrls || [])];
 
-      // 🔹 Upload only new files to Cloudinary via backend
+      // Upload only new files to Cloudinary via backend
       if (newFiles && newFiles.length > 0) {
         const formData = new FormData();
         newFiles.forEach((file: File) => formData.append('images', file));
@@ -58,7 +63,7 @@ export function ProductModal({
         allUrls = [...allUrls, ...uploadRes.data.data];
       }
 
-      // 🔹 Create or Update product (send only URLs)
+      //  Create or Update product (send only URLs)
       const payload = {
         name,
         category_id: Number(category),
@@ -76,11 +81,9 @@ export function ProductModal({
       setConfirmOpen(false);
       setPendingValues(null);
       onClose();
-    } catch (err: any) {
-      setErrorModal({
-        open: true,
-        message: err.response?.data?.msg || err.message,
-      });
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed interaction with product.');
     }
   };
 
@@ -95,14 +98,7 @@ export function ProductModal({
           </DialogHeader>
 
           <ProductFormFields
-            initialValues={{
-              name: product?.name || '',
-              category: product?.category_id || '',
-              description: product?.description || '',
-              price: product?.price || '',
-              existingUrls: product?.images?.map((img) => img.image_url) || [],
-              newFiles: [],
-            }}
+            initialValues={productFormInitialValues}
             onSubmit={handleSubmit}
             onCancel={onClose}
             isSuperAdmin={isSuperAdmin}
@@ -122,9 +118,9 @@ export function ProductModal({
       />
 
       <ErrorModal
-        open={errorModal.open}
-        message={errorModal.message}
-        onClose={() => setErrorModal({ open: false, message: '' })}
+        open={!!error}
+        message={error}
+        onClose={() => setError(null)}
       />
     </>
   );

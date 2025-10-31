@@ -5,9 +5,7 @@ import {
   NotFoundError,
 } from '../utils/httpError';
 import type { PrismaClient } from '@prisma/client';
-import { validationStoreAdminSchema } from '../utils/validationSchema';
 import { getCoordinates } from '../utils/address';
-import { Role } from '@prisma/client';
 
 type dataInput = {
   name: string;
@@ -25,11 +23,17 @@ export class UserAdminService {
     this.prisma = new Database().getInstance();
   }
 
-  /**
-   * CREATE Store Admin + Store + Store Admin Relation
-   */
+  // CREATE Store Admin + Store + Store Admin Relation
   public createStoreAdmin = async (data: dataInput) => {
-    await validationStoreAdminSchema.validate(data);
+    if (
+      data.name === '' ||
+      data.email === '' ||
+      data.province === '' ||
+      data.city === '' ||
+      data.district === '' ||
+      data.address === ''
+    )
+      throw new BadRequestError('Missing Required Fields');
 
     return await this.prisma.$transaction(async (tx) => {
       const existingUser = await tx.users.findUnique({
@@ -52,6 +56,9 @@ export class UserAdminService {
         city: data.city,
         district: data.district,
       });
+
+      if (latitude === 0 || longitude === 0)
+        throw new BadRequestError('Invalid Address');
 
       const store = await tx.stores.create({
         data: {
@@ -78,148 +85,52 @@ export class UserAdminService {
     });
   };
 
-  /**
-   * READ - Pagination + Filter
-   */
-  public getUsers = async (query: any) => {
-    const { page = 1, limit = 10, role, search, sortOrder = 'desc' } = query;
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const whereClause: any = {};
-    if (role) whereClause.role = role;
-
-    if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        {
-          store_admins: {
-            some: {
-              store: {
-                OR: [
-                  { name: { contains: search, mode: 'insensitive' } },
-                  { address: { contains: search, mode: 'insensitive' } },
-                  { city: { contains: search, mode: 'insensitive' } },
-                ],
-              },
-            },
-          },
-        },
-      ];
-    }
-
-    const [users, total] = await Promise.all([
-      this.prisma.users.findMany({
-        where: whereClause,
-        skip,
-        take: Number(limit),
-        include: {
-          store_admins: {
-            include: {
-              store: true,
-            },
-          },
-          addresses: true,
-        },
-        orderBy: { created_at: sortOrder }, // ✅ dynamic sort
-      }),
-      this.prisma.users.count({ where: whereClause }),
-    ]);
-
-    const mappedUsers = await Promise.all(
-      users.map(async (u) => {
-        let lat = 0;
-        let lon = 0;
-        let province = '';
-        let city = '';
-        let district = '';
-        let address = '';
-        if (u.role === Role.store_admin) {
-          const store = u.store_admins[0].store;
-          lat = Number(store.latitude);
-          lon = Number(store.longitude);
-          province = store.province;
-          city = store.city;
-          district = store.district;
-          address = store.address;
-        }
-
-        if (u.role === Role.user && u.addresses.length > 0) {
-          const addresses = u.addresses[0];
-          lat = Number(addresses?.latitude);
-          lon = Number(addresses?.longitude);
-          province = addresses.province;
-          city = addresses.city;
-          district = addresses.district;
-          address = addresses.address_detail;
-        }
-
-        return {
-          id: u.id,
-          name:
-            u.role === Role.store_admin
-              ? u.store_admins[0]?.store?.name
-              : u.name,
-          email: u.email,
-          role: u.role,
-          latitude: lat,
-          longitude: lon,
-          province,
-          city,
-          district,
-          address,
-        };
-      })
-    );
-
-    return {
-      data: mappedUsers,
-      pagination: {
-        total,
-        page: Number(page),
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-    };
-  };
-
-  /**
-   * UPDATE Store Admin
-   */
+  // UPDATE Store Admin
   public updateStoreAdmin = async (id: number, data: dataInput) => {
-    await validationStoreAdminSchema.validate(data);
+    if (
+      data.name === '' ||
+      data.email === '' ||
+      data.province === '' ||
+      data.city === '' ||
+      data.district === '' ||
+      data.address === ''
+    )
+      throw new BadRequestError('Missing Required Fields');
 
-    const user = await this.prisma.users.findUnique({ where: { id } });
-    if (!user) throw new NotFoundError('User not found');
-    if (user.role !== 'store_admin')
-      throw new BadRequestError('This user is not a store admin');
+    return await this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.findUnique({ where: { id } });
+      if (!user) throw new NotFoundError('User not found');
+      if (user.role !== 'store_admin')
+        throw new BadRequestError('This user is not a store admin');
 
-    const existingEmail = await this.prisma.users.findUnique({
-      where: { email: data.email },
-    });
+      const existingEmail = await tx.users.findUnique({
+        where: { email: data.email },
+      });
 
-    if (existingEmail && existingEmail.id !== id) {
-      throw new ConflictError('Email already registered by another user');
-    }
+      if (existingEmail && existingEmail.id !== id) {
+        throw new ConflictError('Email already registered by another user');
+      }
 
-    // Update user
-    const updatedUser = await this.prisma.users.update({
-      where: { id },
-      data: { name: data.name, email: data.email },
-    });
+      const updatedUser = await tx.users.update({
+        where: { id },
+        data: { name: data.name, email: data.email },
+      });
 
-    // Update store
-    const storeAdmin = await this.prisma.store_admins.findFirst({
-      where: { user_id: id },
-    });
+      const storeAdmin = await tx.store_admins.findFirst({
+        where: { user_id: id },
+      });
+      if (!storeAdmin) throw new NotFoundError('Only store admin allowed.');
 
-    const { latitude, longitude } = await getCoordinates({
-      province: data.province,
-      city: data.city,
-      district: data.district,
-    });
-    let updatedStore = {};
-    if (storeAdmin) {
-      updatedStore = await this.prisma.stores.update({
+      const { latitude, longitude } = await getCoordinates({
+        province: data.province,
+        city: data.city,
+        district: data.district,
+      });
+
+      if (latitude === 0 || longitude === 0)
+        throw new BadRequestError('Invalid Address');
+
+      const updatedStore = await tx.stores.update({
         where: { id: storeAdmin.store_id },
         data: {
           address: data.address,
@@ -230,40 +141,38 @@ export class UserAdminService {
           district: data.district,
         },
       });
-    }
 
-    return {
-      message: 'Store admin updated successfully',
-      updatedUser,
-      updatedStore,
-    };
+      return {
+        message: 'Store admin updated successfully',
+        updatedUser,
+        updatedStore,
+      };
+    });
   };
 
-  /**
-   * DELETE Store Admin
-   */
+  // DELETE Store Admin
   public deleteStoreAdmin = async (id: number) => {
-    const user = await this.prisma.users.findUnique({
-      where: { id },
-      include: { store_admins: true },
+    return await this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.findUnique({
+        where: { id },
+        include: { store_admins: true },
+      });
+
+      if (!user) throw new NotFoundError('User not found');
+      if (user.role !== 'store_admin')
+        throw new BadRequestError('Cannot delete non-store-admin user');
+
+      const storeId = user.store_admins[0]?.store_id;
+
+      await tx.store_admins.deleteMany({ where: { user_id: id } });
+
+      if (storeId) {
+        await tx.stores.delete({ where: { id: storeId } });
+      }
+
+      await tx.users.delete({ where: { id } });
+
+      return { message: 'Store admin deleted successfully' };
     });
-
-    if (!user) throw new NotFoundError('User not found');
-    if (user.role !== 'store_admin')
-      throw new BadRequestError('Cannot delete non-store-admin user');
-
-    await this.prisma.store_admins.deleteMany({
-      where: { user_id: id },
-    });
-
-    // Optional: delete store also if not used by other admin
-    const storeId = user.store_admins[0]?.store_id;
-    if (storeId) {
-      await this.prisma.stores.delete({ where: { id: storeId } });
-    }
-
-    await this.prisma.users.delete({ where: { id } });
-
-    return { message: 'Store admin deleted successfully' };
   };
 }

@@ -1,4 +1,3 @@
-// ConfirmationModal.tsx
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -6,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ConfirmationModalProps } from '@/lib/types/global/global';
 
 export function ConfirmationModal({
   open,
@@ -13,7 +13,7 @@ export function ConfirmationModal({
   onConfirm,
   message = 'Are you sure?',
   warning = false,
-}: any) {
+}: ConfirmationModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="border border-sky-100 bg-white sm:max-w-sm">

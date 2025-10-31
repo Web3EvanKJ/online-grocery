@@ -1,3 +1,4 @@
+'use client';
 import { api } from '@/lib/axios';
 import {
   Dialog,
@@ -9,8 +10,8 @@ import { useState } from 'react';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { ErrorModal } from '../ErrorModal';
 import FormContent from './FormContent';
-import { validationStoreAdminSchema } from '@/lib/validationSchema';
 import { User } from '@/lib/types/users/users';
+import type { AxiosError } from 'axios';
 
 type UserModalProps = {
   open: boolean;
@@ -43,8 +44,9 @@ export function UserModal({
       setPendingValues(null);
       setOpen(false);
       refreshUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Something went wrong');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to delete user');
     }
   };
 
@@ -63,7 +65,6 @@ export function UserModal({
             setPendingValues={setPendingValues}
             setConfirmOpen={setConfirmOpen}
             setOpen={setOpen}
-            validationSchema={validationStoreAdminSchema}
           />
         </DialogContent>
       </Dialog>

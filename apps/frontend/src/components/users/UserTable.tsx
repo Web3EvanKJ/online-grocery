@@ -1,17 +1,12 @@
+'use client';
 import { api } from '@/lib/axios';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { ErrorModal } from '../ErrorModal';
 import { User } from '@/lib/types/users/users';
-
-type UserTableProps = {
-  onEdit: (user: User) => void;
-  selectedRole: string;
-  users: User[];
-  fetchUsers: () => void;
-  loading?: boolean;
-};
+import { UserTableProps } from '@/lib/types/users/users';
+import type { AxiosError } from 'axios';
 
 export function UserTable({
   onEdit,
@@ -34,8 +29,9 @@ export function UserTable({
     try {
       await api.delete(`/admin/users/${userToDelete.id}`);
       fetchUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to delete user');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to delete user');
     } finally {
       setOpenConfirm(false);
       setUserToDelete(null);
@@ -59,6 +55,7 @@ export function UserTable({
                 <th className="p-3 text-left">Email</th>
                 <th className="p-3 text-left">Role</th>
                 <th className="p-3 text-left">City</th>
+                <th className="p-3 text-left">District</th>
                 <th className="p-3 text-left">Address Details</th>
                 <th className="p-3 text-center">Actions</th>
               </tr>
@@ -78,8 +75,13 @@ export function UserTable({
                   >
                     <td className="p-3">{u.name}</td>
                     <td className="p-3">{u.email}</td>
-                    <td className="p-3 capitalize">{u.role}</td>
+                    <td className="p-3 capitalize">
+                      {u.role.split('_').length > 1
+                        ? u.role.split('_').join(' ')
+                        : u.role}
+                    </td>
                     <td className="p-3">{u.city}</td>
+                    <td className="p-3">{u.district}</td>
                     <td className="p-3">{u.address}</td>
                     <td className="space-x-2 p-3 text-center">
                       {u.role === 'store_admin' ? (

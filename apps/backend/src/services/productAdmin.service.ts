@@ -5,8 +5,7 @@ import {
   NotFoundError,
 } from '../utils/httpError';
 import { uploadToCloudinary } from '../utils/cloudinary';
-import { Prisma } from '@prisma/client';
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import slugify from 'slugify';
 
 export class ProductAdminService {
@@ -16,7 +15,6 @@ export class ProductAdminService {
     this.prisma = new Database().getInstance();
   }
 
-  /** 🔹 Optional helper — upload multiple files to Cloudinary */
   public uploadImages = async (files: Express.Multer.File[]) => {
     if (!files?.length) throw new BadRequestError('No files provided');
 
@@ -29,7 +27,7 @@ export class ProductAdminService {
     return { message: 'Images uploaded successfully', data: urls };
   };
 
-  /** 🔹 CREATE PRODUCT (now accepts array of URLs instead of files) */
+  // Create Product
   public create = async (data: {
     name: string;
     category_id: number;
@@ -79,7 +77,7 @@ export class ProductAdminService {
     const limits = Number(limit);
     const skip = (Number(page) - 1) * limits;
 
-    const where: any = {};
+    const where: Prisma.productsWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -118,16 +116,6 @@ export class ProductAdminService {
     };
   };
 
-  /** GET DETAIL */
-  public getById = async (id: number) => {
-    const product = await this.prisma.products.findUnique({
-      where: { id },
-      include: { images: true, category: true },
-    });
-    if (!product) throw new NotFoundError('Product not found');
-    return { message: 'Product detail fetched', data: product };
-  };
-
   /** UPDATE */
   public update = async (
     id: number,
@@ -150,43 +138,36 @@ export class ProductAdminService {
         throw new ConflictError('Another product with same name exists');
     }
 
-    if (data.imageUrls && data.imageUrls.length > 0) {
-      await this.prisma.product_images.deleteMany({
-        where: { product_id: id },
-      });
-      await this.prisma.product_images.createMany({
-        data: data.imageUrls.map((url) => ({ product_id: id, image_url: url })),
-      });
-    }
+    await this.prisma.$transaction(async (tx) => {
+      if (data.imageUrls && data.imageUrls.length > 0) {
+        await tx.product_images.deleteMany({ where: { product_id: id } });
+        await tx.product_images.createMany({
+          data: data.imageUrls.map((url) => ({
+            product_id: id,
+            image_url: url,
+          })),
+        });
+      }
 
-    let baseSlug = existing.slug;
-
-    if (data.name && data.name !== existing.name) {
-      baseSlug = slugify(data.name, { lower: true, strict: true });
-    }
-
-    const updated = await this.prisma.products.update({
-      where: { id },
-      data: {
-        name: data.name,
-        slug: baseSlug,
-        description: data.description,
-        price: data.price,
-        images: {
-          deleteMany: {}, // optional: clear old images
-          create: data.imageUrls?.map((url: string) => ({ image_url: url })),
+      const updated = await tx.products.update({
+        where: { id },
+        data: {
+          name: data.name,
+          slug: slugify(data.name ?? existing.slug, {
+            lower: true,
+            strict: true,
+          }),
+          description: data.description,
+          price: data.price,
+          category: data.category_id
+            ? { connect: { id: data.category_id } }
+            : undefined,
         },
-        category: {
-          connect: { id: data.category_id },
-        },
-      },
-      include: {
-        images: true,
-        category: true,
-      },
+        include: { images: true, category: true },
+      });
+
+      return { data: updated };
     });
-
-    return { message: 'Product updated successfully', data: updated };
   };
 
   /** DELETE */
@@ -194,8 +175,10 @@ export class ProductAdminService {
     const exist = await this.prisma.products.findUnique({ where: { id } });
     if (!exist) throw new NotFoundError('Product not found');
 
-    await this.prisma.product_images.deleteMany({ where: { product_id: id } });
-    await this.prisma.products.delete({ where: { id } });
+    await this.prisma.$transaction([
+      this.prisma.product_images.deleteMany({ where: { product_id: id } }),
+      this.prisma.products.delete({ where: { id } }),
+    ]);
 
     return { message: 'Product deleted successfully' };
   };

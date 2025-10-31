@@ -1,14 +1,15 @@
+'use client';
 import { Formik, Form } from 'formik';
 import { FormField } from '../FormField';
 import { Button } from '@/components/ui/button';
 import { FormContentProps } from '@/lib/types/users/users';
+import { validationStoreAdminSchema } from '@/lib/validationSchema';
 
 const FormContent = ({
   user,
   setPendingValues,
   setConfirmOpen,
   setOpen,
-  validationSchema,
 }: FormContentProps) => {
   const initialValues = {
     name: user?.name || '',
@@ -22,7 +23,7 @@ const FormContent = ({
   return (
     <Formik
       initialValues={initialValues}
-      validationSchema={validationSchema}
+      validationSchema={validationStoreAdminSchema}
       validateOnBlur
       validateOnChange
       onSubmit={(values, { setSubmitting }) => {

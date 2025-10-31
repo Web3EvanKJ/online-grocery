@@ -1,13 +1,6 @@
-import { Products } from '@/lib/types/products/products';
+import { ProductTableProps } from '@/lib/types/products/products';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-
-interface ProductTableProps {
-  products: Products[];
-  onEdit: (product: Products) => void;
-  onDelete: (product: Products) => void;
-  isSuperAdmin: boolean;
-}
 
 export function ProductTable({
   products,
@@ -21,7 +14,7 @@ export function ProductTable({
 
   return (
     <div className="overflow-x-auto rounded-lg border border-sky-200 shadow-sm">
-      <table className="min-w-full divide-y divide-sky-200 text-sm text-sky-700">
+      <table className="min-w-full divide-y divide-sky-200 text-sm text-sky-800">
         <thead className="bg-sky-100">
           <tr>
             <th className="px-4 py-2 text-left font-semibold">Image</th>

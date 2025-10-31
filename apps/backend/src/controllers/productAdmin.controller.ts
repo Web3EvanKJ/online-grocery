@@ -8,7 +8,6 @@ export class ProductAdminController {
     this.service = new ProductAdminService();
   }
 
-  /** 🔹 Upload only — optional route if frontend uploads separately */
   public uploadImages = async (
     req: Request,
     res: Response,
@@ -23,7 +22,7 @@ export class ProductAdminController {
     }
   };
 
-  /** 🔹 Create product (auto-upload to Cloudinary if files provided) */
+  // Create Product
   public create = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req.body;
@@ -44,16 +43,7 @@ export class ProductAdminController {
     }
   };
 
-  public getById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const response = await this.service.getById(Number(req.params.id));
-      res.json(response);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /** 🔹 Update product (replaces images if new ones uploaded) */
+  // Update product (replaces images if new ones uploaded)
   public update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = Number(req.params.id);

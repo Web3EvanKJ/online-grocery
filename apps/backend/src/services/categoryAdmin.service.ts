@@ -27,9 +27,9 @@ export class CategoryAdminService {
     limit?: number;
     sort?: 'asc' | 'desc';
   }) => {
-    const { page = 1, limit = 10, sort = 'asc' } = query;
+    const { page, limit, sort = 'asc' } = query;
     const limits = Number(limit);
-    const skip = (page - 1) * limits;
+    const skip = (Number(page) - 1) * limits;
     const [data, total] = await Promise.all([
       this.prisma.categories.findMany({
         skip,

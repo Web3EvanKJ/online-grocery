@@ -9,6 +9,7 @@ import { Products } from '@/lib/types/products/products';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/axios';
 import { ErrorModal } from '../ErrorModal';
+import type { AxiosError } from 'axios';
 
 export function ProductPage() {
   const userRole = 'super admin';
@@ -19,14 +20,15 @@ export function ProductPage() {
   const [selectedProduct, setSelectedProduct] = useState<Products | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Products | null>(null);
-  const [error, setError] = useState({ open: false, message: '' });
+  const [error, setError] = useState<string | null>('');
 
   const [search, setSearch] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [sort, setSort] = useState<'asc' | 'desc' | 'price_asc' | 'price_desc'>(
     'asc'
   );
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ totalPages: 1 });
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchProducts = async () => {
     try {
@@ -34,21 +36,16 @@ export function ProductPage() {
         params: { search, sort, page, limit: 5 },
       });
       setProducts(res.data.data);
-      setPagination(res.data.pagination);
-    } catch (err: any) {
-      setError({ open: true, message: err.response?.data?.msg || err.message });
+      setTotalPages(res.data.pagination.totalPages);
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to get products.');
     }
   };
 
   useEffect(() => {
     fetchProducts();
-  }, [page, sort]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchProducts();
-  };
+  }, [page, sort, search]);
 
   const handleEdit = (product: Products) => {
     setSelectedProduct(product);
@@ -65,8 +62,9 @@ export function ProductPage() {
     try {
       await api.delete(`/admin/products/${deleteTarget.id}`);
       fetchProducts();
-    } catch (err: any) {
-      setError({ open: true, message: err.response?.data?.msg || err.message });
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to delete product.');
     } finally {
       setConfirmDelete(false);
       setDeleteTarget(null);
@@ -93,24 +91,33 @@ export function ProductPage() {
           )}
         </div>
 
-        <form
-          onSubmit={handleSearch}
-          className="flex flex-wrap items-center justify-between gap-3"
-        >
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-3">
             <Input
               placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               className="w-full md:w-64"
             />
-            <Button type="submit" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-sky-300 text-sky-600"
+              onClick={() => {
+                setPage(1);
+                setSearch(searchText);
+              }}
+            >
               Search
             </Button>
           </div>
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value as any)}
+            onChange={(e) =>
+              setSort(
+                e.target.value as 'asc' | 'desc' | 'price_asc' | 'price_desc'
+              )
+            }
             className="rounded-md border border-sky-300 px-2 py-1 text-sm text-sky-700"
           >
             <option value="asc">Sort: A–Z</option>
@@ -118,7 +125,7 @@ export function ProductPage() {
             <option value="price_asc">Price: Low–High</option>
             <option value="price_desc">Price: High–Low</option>
           </select>
-        </form>
+        </div>
 
         <ProductTable
           products={products}
@@ -137,11 +144,11 @@ export function ProductPage() {
             Prev
           </Button>
           <span className="px-3 py-1 text-sky-700">
-            Page {page} of {pagination.totalPages}
+            Page {page} of {totalPages}
           </span>
           <Button
             variant="outline"
-            disabled={page >= pagination.totalPages}
+            disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
             Next
@@ -170,9 +177,9 @@ export function ProductPage() {
       />
 
       <ErrorModal
-        open={error.open}
-        message={error.message}
-        onClose={() => setError({ open: false, message: '' })}
+        open={!!error}
+        message={error}
+        onClose={() => setError(null)}
       />
     </div>
   );

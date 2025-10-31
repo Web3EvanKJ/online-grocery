@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       'row.hyperx.com',
       'i.pinimg.com',
       'via.placeholder.com',
+      'res.cloudinary.com',
     ], // ✅ allow this image host
   },
 };

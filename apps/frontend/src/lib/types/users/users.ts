@@ -1,5 +1,3 @@
-import * as Yup from 'yup';
-
 export type User = {
   id: number;
   name: string;
@@ -18,5 +16,12 @@ export type FormContentProps = {
   setPendingValues: (values: Partial<User>) => void;
   setConfirmOpen: (open: boolean) => void;
   setOpen: (open: boolean) => void;
-  validationSchema: Yup.ObjectSchema<any>; // or stricter below
+};
+
+export type UserTableProps = {
+  onEdit: (user: User) => void;
+  selectedRole: string;
+  users: User[];
+  fetchUsers: () => void;
+  loading?: boolean;
 };
