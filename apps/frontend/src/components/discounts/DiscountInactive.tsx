@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/axios';
 import { Button } from '@/components/ui/button';
@@ -10,77 +8,56 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
+} from '@/components/ui/select';
+import { Discount, DiscountTableProps } from '@/lib/types/discounts/discounts';
+import type { AxiosError } from 'axios';
+import DiscountShareTable from './DiscountShareTable';
 
-type Discount = {
-  id: number;
-  store_id: number;
-  product_id?: number | null;
-  type: 'product' | 'store' | 'b1g1';
-  inputType: 'percentage' | 'nominal';
-  value: number;
-  min_purchase?: number | null;
-  max_discount?: number | null;
-  start_date: string;
-  end_date: string;
-  product_name?: string;
-  store_name?: string;
-};
-
-interface DiscountInactiveProps {
-  setError: (err: string | null) => void;
-}
-
-export function DiscountInactive({ setError }: DiscountInactiveProps) {
+export function DiscountInactive({
+  onEdit,
+  setError,
+  store_id,
+}: DiscountTableProps) {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const limit = 10;
   const [totalPages, setTotalPages] = useState(1);
-
-  // Active filters for fetching
   const [filters, setFilters] = useState({
     type: '',
-    date: '',
     product_name: '',
     sortBy: 'start_date',
     sortOrder: 'asc',
   });
-
-  // Pending filters (controlled inputs)
   const [pendingFilters, setPendingFilters] = useState(filters);
-
   const fetchHistory = async () => {
     try {
       const params = {
         page,
         limit,
         type: filters.type || undefined,
-        date: filters.date || undefined,
         product_name: filters.product_name || undefined,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
+        store_id: store_id,
       };
       const res = await api.get('/admin/discounts/history', { params });
       setDiscounts(res.data.data || res.data);
       setTotalPages(res.data.totalPages || 1);
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to fetch discount history');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to fetch inactive.');
     }
   };
-
   useEffect(() => {
     fetchHistory();
-  }, [page, filters]);
-
-  const handleSort = (column: string) => {
+  }, [page, filters, store_id]);
+  const handleSortChange = (sortField: string, sortOrder: string) => {
     setFilters((prev) => ({
       ...prev,
-      sortBy: column,
-      sortOrder:
-        prev.sortBy === column && prev.sortOrder === 'asc' ? 'desc' : 'asc',
+      sortBy: sortField,
+      sortOrder,
     }));
   };
-
   const applyFilters = () => {
     setPage(1);
     setFilters(pendingFilters);
@@ -88,148 +65,91 @@ export function DiscountInactive({ setError }: DiscountInactiveProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <Select
-          value={pendingFilters.type}
-          onValueChange={(val) =>
-            setPendingFilters((prev) => ({
-              ...prev,
-              type: val === 'all' ? '' : val,
-            }))
-          }
-        >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="product">Product</SelectItem>
-            <SelectItem value="store">Store</SelectItem>
-            <SelectItem value="b1g1">B1G1</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Input
-          placeholder="Search..."
-          value={pendingFilters.product_name}
-          onChange={(e) =>
-            setPendingFilters((prev) => ({
-              ...prev,
-              product_name: e.target.value,
-            }))
-          }
-          className="w-[200px]"
-        />
-
-        <Input
-          type="date"
-          value={pendingFilters.date}
-          onChange={(e) =>
-            setPendingFilters((prev) => ({ ...prev, date: e.target.value }))
-          }
-          className="w-[180px]"
-        />
-
-        <Button variant="outline" onClick={applyFilters}>
-          Apply
-        </Button>
+      <div className="flex flex-wrap justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Search..."
+            value={pendingFilters.product_name}
+            onChange={(e) =>
+              setPendingFilters((prev) => ({
+                ...prev,
+                product_name: e.target.value,
+              }))
+            }
+            className="w-[200px] rounded-none"
+          />
+          <Button
+            variant="outline"
+            onClick={applyFilters}
+            className="border-sky-300 text-sky-600"
+          >
+            Search
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            value={pendingFilters.type || 'all'}
+            onValueChange={(val) => {
+              const newType = val === 'all' ? '' : val;
+              setPendingFilters((prev) => ({ ...prev, type: newType }));
+              setFilters((prev) => ({ ...prev, type: newType }));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[140px] border-sky-300">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="product">Product</SelectItem>
+              <SelectItem value="store">Store</SelectItem>
+              <SelectItem value="b1g1">b1g1</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={
+              filters.sortBy && filters.sortOrder
+                ? `${filters.sortBy}-${filters.sortOrder}`
+                : ''
+            }
+            onValueChange={(val) => {
+              const [by, order] = val.split('-');
+              handleSortChange(by, order);
+            }}
+          >
+            <SelectTrigger className="w-[180px] border-sky-300">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="start_date-asc">Start Date: Asc</SelectItem>
+              <SelectItem value="start_date-desc">Start Date: Desc</SelectItem>
+              <SelectItem value="end_date-asc">End Date: Asc</SelectItem>
+              <SelectItem value="end_date-desc">End Date: Desc</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-sky-100 text-left">
-              <th className="border px-4 py-2">#</th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
-                onClick={() => handleSort('type')}
-              >
-                Type{' '}
-                {filters.sortBy === 'type' &&
-                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
-                onClick={() => handleSort('inputType')}
-              >
-                Input Type{' '}
-                {filters.sortBy === 'inputType' &&
-                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
-                onClick={() => handleSort('value')}
-              >
-                Value{' '}
-                {filters.sortBy === 'value' &&
-                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
-                onClick={() => handleSort('start_date')}
-              >
-                Start Date{' '}
-                {filters.sortBy === 'start_date' &&
-                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-50"
-                onClick={() => handleSort('end_date')}
-              >
-                End Date{' '}
-                {filters.sortBy === 'end_date' &&
-                  (filters.sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="border px-4 py-2">Product</th>
-            </tr>
-          </thead>
-          <tbody>
-            {discounts.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-4 text-center text-gray-500">
-                  No discount history found.
-                </td>
-              </tr>
-            ) : (
-              discounts.map((d, idx) => (
-                <tr key={d.id} className="border-t hover:bg-sky-50">
-                  <td className="border px-4 py-2">
-                    {(page - 1) * limit + idx + 1}
-                  </td>
-                  <td className="border px-4 py-2">{d.type}</td>
-                  <td className="border px-4 py-2">{d.inputType}</td>
-                  <td className="border px-4 py-2">{d.value}</td>
-                  <td className="border px-4 py-2">
-                    {new Date(d.start_date).toISOString().split('T')[0]}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {new Date(d.end_date).toISOString().split('T')[0]}
-                  </td>
-                  <td className="border px-4 py-2">{d.product_name || '-'}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DiscountShareTable
+        discounts={discounts}
+        onEdit={onEdit}
+        page={page}
+        limit={limit}
+      />
 
-      {/* Pagination */}
-      <div className="mt-3 flex items-center justify-center space-x-3 text-sky-700">
+      <div className="mt-3 flex items-center justify-center space-x-3">
         <Button
           variant="outline"
-          size="sm"
           disabled={page === 1}
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
         >
           Prev
         </Button>
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-sky-700">
           Page {page} of {totalPages}
         </span>
         <Button
           variant="outline"
-          size="sm"
           disabled={page === totalPages}
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
         >

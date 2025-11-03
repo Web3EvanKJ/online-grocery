@@ -1,6 +1,6 @@
 import { Database } from '../config/prisma';
 import { BadRequestError, NotFoundError } from '../utils/httpError';
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 
 export class StockAdminService {
   private prisma: PrismaClient;
@@ -41,7 +41,7 @@ export class StockAdminService {
   public getStockHistory = async (params: {
     role: string;
     storeId?: number | 'all';
-    month: string; // format: YYYY-MM
+    month: string; // format YYYY-MM
     productName?: string;
     page?: number;
     limit?: number;
@@ -54,28 +54,28 @@ export class StockAdminService {
 
     const skip = (page - 1) * limit;
 
-    // Filter awal
-    const where: any = {
-      inventory: {
-        store: {},
-        product: {},
-      },
+    // ✅ Use explicit Prisma type
+    const where: Prisma.stock_journalsWhereInput = {
+      inventory: {},
     };
 
-    // Role-based filtering
+    // ✅ Role-based filtering
     if (role === 'store_admin') {
       if (!storeId || storeId === 'all')
         throw new BadRequestError(
           'Store admin hanya dapat melihat stok tokonya sendiri'
         );
-      where.inventory.store_id = Number(storeId);
-    } else if (role === 'super_admin') {
-      if (storeId && storeId !== 'all') {
-        where.inventory.store_id = Number(storeId);
-      }
+
+      where.inventory = {
+        store_id: Number(storeId),
+      };
+    } else if (role === 'super_admin' && storeId && storeId !== 'all') {
+      where.inventory = {
+        store_id: Number(storeId),
+      };
     }
 
-    // Filter bulan
+    // ✅ Filter by month
     const startDate = new Date(`${month}-01T00:00:00.000Z`);
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 1);
@@ -85,14 +85,18 @@ export class StockAdminService {
       lt: endDate,
     };
 
-    // Filter produk
+    // ✅ Filter by product name
     if (productName) {
-      where.inventory.product = {
-        name: { contains: productName, mode: 'insensitive' },
+      const inventoryFilter: Prisma.inventoriesWhereInput = {
+        ...where.inventory,
+        product: {
+          name: { contains: productName, mode: 'insensitive' },
+        },
       };
+      where.inventory = inventoryFilter;
     }
 
-    // Query utama
+    // ✅ Main query
     const [data, total] = await Promise.all([
       this.prisma.stock_journals.findMany({
         where,
@@ -111,7 +115,7 @@ export class StockAdminService {
       this.prisma.stock_journals.count({ where }),
     ]);
 
-    // Mapping data agar mudah dibaca di FE
+    // ✅ Format data for FE
     const formatted = data.map((j) => ({
       id: j.id,
       date: j.created_at,
@@ -122,7 +126,7 @@ export class StockAdminService {
       note: j.note,
     }));
 
-    // Ringkasan bulanan
+    // ✅ Aggregate summary
     const summaryAgg = await this.prisma.stock_journals.groupBy({
       by: ['type'],
       where,
@@ -134,7 +138,7 @@ export class StockAdminService {
     const totalDeduct =
       summaryAgg.find((x) => x.type === 'out')?._sum.quantity || 0;
 
-    // Ambil stok akhir tiap produk
+    // ✅ Ending stock
     const endStockData = await this.prisma.inventories.findMany({
       where: storeId && storeId !== 'all' ? { store_id: Number(storeId) } : {},
       include: {

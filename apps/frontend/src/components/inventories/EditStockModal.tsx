@@ -10,19 +10,14 @@ import { Formik } from 'formik';
 import { useState } from 'react';
 import { FormField } from '@/components/FormField';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
-import { StockProduct } from '@/lib/types/stocks/stocks';
 import { inventoryValidationSchema } from '@/lib/validationSchema';
 import { api } from '@/lib/axios';
 import { ErrorModal } from '@/components/ErrorModal';
-
-type EditStockModalProps = {
-  open: boolean;
-  onClose: () => void;
-  product: StockProduct | null;
-  type: 'increase' | 'decrease' | '';
-  storeId: number;
-  onSuccess: () => void;
-};
+import type { AxiosError } from 'axios';
+import {
+  EditStockModalProps,
+  PendingValues,
+} from '@/lib/types/inventories/inventories';
 
 export function EditStockModal({
   open,
@@ -33,12 +28,14 @@ export function EditStockModal({
   onSuccess,
 }: EditStockModalProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingValues, setPendingValues] = useState<any>(null);
+  const [pendingValues, setPendingValues] = useState<PendingValues | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   if (!product) return null;
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: PendingValues) => {
     setPendingValues(values);
     setConfirmOpen(true);
   };
@@ -56,15 +53,16 @@ export function EditStockModal({
       onSuccess();
       setConfirmOpen(false);
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to update stock');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to update stocks.');
     }
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-sm rounded-none border border-sky-200 bg-white">
+        <DialogContent className="border border-sky-200 bg-white sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-semibold text-sky-700">
               {type === 'increase' ? 'Add Stock' : 'Remove Stock'} -{' '}
@@ -116,7 +114,12 @@ export function EditStockModal({
                 />
 
                 <div className="flex justify-end gap-2 pt-3">
-                  <Button type="button" variant="outline" onClick={onClose}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    className="border border-sky-300 text-sky-600"
+                  >
                     Cancel
                   </Button>
                   <Button

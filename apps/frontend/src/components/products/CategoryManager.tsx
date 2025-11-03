@@ -160,10 +160,8 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             value={newCategory}
             onChange={(e) => setNewCategory(e.target.value)}
           />
-          <Button
-            className="bg-sky-500 hover:bg-sky-600"
-            onClick={() => setConfirmSave({ open: true, action: 'add' })}
-          >
+          {/* prettier-ignore */}
+          <Button className="bg-sky-500 hover:bg-sky-600" onClick={() => setConfirmSave({ open: true, action: 'add' })}>
             Add
           </Button>
         </div>

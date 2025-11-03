@@ -59,11 +59,38 @@ export const inventoryValidationSchema = Yup.object({
   note: Yup.string().optional(),
 });
 
-export const discountValidationSchema = Yup.object({
-  product_name: Yup.string().required('Product name is required'),
-  value: Yup.number()
-    .min(0, 'Value must be greater than zero')
-    .required('Value is required'),
-  start_date: Yup.date().required('Start date is required'),
-  end_date: Yup.date().required('End date is required'),
+export const discountFormValidationSchema = Yup.object().shape({
+  type: Yup.string()
+    .oneOf(['product', 'store', 'b1g1'])
+    .required('Discount type is required'),
+
+  // Input type only required if NOT b1g1
+  inputType: Yup.string()
+    .oneOf(['percentage', 'nominal'])
+    .when('type', {
+      is: (val: string) => val !== 'b1g1',
+      then: (schema) => schema.required('Input type is required'),
+      otherwise: (schema) => schema.notRequired().nullable(),
+    }),
+
+  // Value only required if NOT b1g1
+  value: Yup.number().when('type', {
+    is: (val: string) => val !== 'b1g1',
+    then: (schema) =>
+      schema.required('Value is required').min(1, 'Must be > 0'),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
+
+  min_purchase: Yup.number().nullable(),
+  max_discount: Yup.number().nullable(),
+
+  start_date: Yup.string().required('Start date is required'),
+  end_date: Yup.string().required('End date is required'),
+
+  // product_id only required if NOT store
+  product_id: Yup.number().when('type', {
+    is: (val: string) => val !== 'store',
+    then: (schema) => schema.required('Valid product name is required'),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
 });

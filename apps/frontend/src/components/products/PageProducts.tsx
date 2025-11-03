@@ -97,7 +97,7 @@ export function ProductPage() {
               placeholder="Search products..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="w-full md:w-64"
+              className="w-full rounded-none md:w-64"
             />
             <Button
               type="button"
@@ -140,6 +140,7 @@ export function ProductPage() {
             variant="outline"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            className="border border-sky-200"
           >
             Prev
           </Button>
@@ -150,6 +151,7 @@ export function ProductPage() {
             variant="outline"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
+            className="border border-sky-200"
           >
             Next
           </Button>

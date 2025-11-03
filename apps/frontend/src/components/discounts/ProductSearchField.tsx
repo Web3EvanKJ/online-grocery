@@ -4,21 +4,12 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/axios';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Product,
+  ProductSearchFieldProps,
+} from '@/lib/types/discounts/discounts';
 
-interface Product {
-  id: number;
-  name: string;
-}
-
-interface ProductSearchFieldProps {
-  value: number | null;
-  onChange: (id: number | null) => void;
-}
-
-export function ProductSearchField({
-  value,
-  onChange,
-}: ProductSearchFieldProps) {
+export function ProductSearchField({ onChange }: ProductSearchFieldProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,7 +27,6 @@ export function ProductSearchField({
         const res = await api.get(`/admin/discounts/products`, {
           params: { search: query },
         });
-        console.log(res.data);
         setResults(res.data || []);
       } catch (err) {
         console.error('Failed to search products');
@@ -67,7 +57,7 @@ export function ProductSearchField({
       </label>
 
       {selectedProduct ? (
-        <div className="flex items-center justify-between rounded border p-2">
+        <div className="flex max-h-9 items-center justify-between rounded border p-2">
           <span>{selectedProduct.name}</span>
           <Button variant="ghost" size="sm" onClick={handleClear}>
             ✕

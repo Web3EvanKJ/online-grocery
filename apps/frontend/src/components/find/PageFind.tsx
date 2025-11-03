@@ -23,7 +23,7 @@ type Product = {
   category: string;
   discount?: number;
   stock?: number;
-  isB1G1?: boolean;
+  isb1g1?: boolean;
 };
 
 export function PageFind() {

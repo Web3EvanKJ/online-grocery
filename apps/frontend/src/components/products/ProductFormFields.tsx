@@ -73,7 +73,7 @@ export function ProductFormFields({
 
           {/* Category */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-sky-700">
+            <label className="mb-1 block text-sm font-medium">
               Category <span className="text-red-500">*</span>
             </label>
 
@@ -82,7 +82,7 @@ export function ProductFormFields({
               onValueChange={(value) => setFieldValue('category', value)}
               disabled={!isSuperAdmin}
             >
-              <SelectTrigger className="w-full border-sky-300 text-sky-700">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
 
@@ -146,7 +146,12 @@ export function ProductFormFields({
           ) : null}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="border-sky-300 text-sky-600"
+            >
               Cancel
             </Button>
             {isSuperAdmin && (

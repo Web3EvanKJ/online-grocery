@@ -59,7 +59,7 @@ export class SalesAdminController {
     try {
       const { role, userId } = req.query;
 
-      const data = await this.service.getStores(role as any, Number(userId));
+      const data = await this.service.getStores(role as string, Number(userId));
       res.json(data);
     } catch (error) {
       next(error);

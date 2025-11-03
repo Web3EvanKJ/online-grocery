@@ -1,6 +1,6 @@
 import { Database } from '../config/prisma';
 import { NotFoundError } from '../utils/httpError';
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 
 export class SalesAdminService {
   private prisma: PrismaClient;
@@ -9,9 +9,6 @@ export class SalesAdminService {
     this.prisma = new Database().getInstance();
   }
 
-  /**
-   * 🔹 Mendapatkan laporan penjualan dengan filter
-   */
   public getSalesReport = async (params: {
     role: string;
     storeId?: number | 'all';
@@ -20,7 +17,7 @@ export class SalesAdminService {
     month?: string; // format 'YYYY-MM'
     page?: number;
     limit?: number;
-    sort?: 'asc' | 'desc'; // 🆕 add sort param
+    sort?: 'asc' | 'desc';
   }) => {
     const {
       role,
@@ -30,13 +27,16 @@ export class SalesAdminService {
       month,
       page = 1,
       limit = 10,
-      sort = 'desc', // 🆕 default sort: highest first
+      sort = 'desc',
     } = params;
 
-    // Filter order status
-    const validStatuses = ['Diproses', 'Pesanan_Dikonfirmasi', 'Dibatalkan'];
+    const validStatuses: (
+      | 'Diproses'
+      | 'Pesanan_Dikonfirmasi'
+      | 'Dibatalkan'
+    )[] = ['Diproses', 'Pesanan_Dikonfirmasi', 'Dibatalkan'];
 
-    // Konversi bulan ke rentang tanggal
+    // Convert month into date range
     let startDate: Date | undefined;
     let endDate: Date | undefined;
     if (month) {
@@ -45,7 +45,7 @@ export class SalesAdminService {
       endDate = new Date(year, m, 1);
     }
 
-    const whereClause: any = {
+    const whereClause: Prisma.ordersWhereInput = {
       status: { in: validStatuses },
       ...(startDate &&
         endDate && {
@@ -59,7 +59,7 @@ export class SalesAdminService {
         !isNaN(Number(storeId)) && { store_id: Number(storeId) }),
     };
 
-    // Ambil data orders beserta item dan produk
+    // Fetch orders
     const [totalCount, orders] = await this.prisma.$transaction([
       this.prisma.orders.count({ where: whereClause }),
       this.prisma.orders.findMany({
@@ -78,9 +78,8 @@ export class SalesAdminService {
       }),
     ]);
 
-    // 🔹 Transformasi data ke bentuk laporan
-    // 🔹 Transformasi data ke bentuk laporan
-    let report = orders
+    // Transform into flat report items
+    const report = orders
       .flatMap((order) =>
         order.order_items.map((item) => ({
           store_id: order.store.id,
@@ -96,21 +95,21 @@ export class SalesAdminService {
       .filter((item) => {
         const matchStore =
           storeId === 'all' || item.store_id === Number(storeId);
-
         const matchCategory =
           categoryId === 'all' || item.category_id === Number(categoryId);
-
         const matchProduct =
           !productName ||
           item.product.toLowerCase().includes(productName.toLowerCase());
-
         return matchStore && matchCategory && matchProduct;
-      });
+      })
+      .sort((a, b) =>
+        sort === 'asc'
+          ? a.totalSales - b.totalSales
+          : b.totalSales - a.totalSales
+      );
 
-    // 🧮 Sort by totalSales
-    report = report.sort((a, b) =>
-      sort === 'asc' ? a.totalSales - b.totalSales : b.totalSales - a.totalSales
-    );
+    const totalRevenue = report.reduce((sum, i) => sum + i.totalSales, 0);
+    const avgSales = report.length ? totalRevenue / report.length : 0;
 
     return {
       pagination: {
@@ -119,13 +118,15 @@ export class SalesAdminService {
         limit,
         totalPages: Math.ceil(totalCount / limit),
       },
+      summary: {
+        totalRevenue,
+        avgSales,
+        totalProducts: report.length,
+      },
       data: report,
     };
   };
 
-  /**
-   * 🔹 Ambil daftar toko untuk filter
-   */
   public getStores = async (role: string, userId: number) => {
     if (role === 'super_admin') {
       return await this.prisma.stores.findMany({
@@ -143,9 +144,6 @@ export class SalesAdminService {
     return [admin.store];
   };
 
-  /**
-   * 🔹 Ambil daftar kategori untuk filter
-   */
   public getCategories = async () => {
     return await this.prisma.categories.findMany({
       select: { id: true, name: true },

@@ -1,51 +1,38 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/axios';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+  Discount,
+  DiscountFilters,
+  DiscountTableProps,
+} from '@/lib/types/discounts/discounts';
+import type { AxiosError } from 'axios';
+import DiscountShareTable from './DiscountShareTable';
+import { Input } from '../ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../ui/select';
 
-type Discount = {
-  id: number;
-  store_id: number;
-  product_id?: number | null;
-  type: 'product' | 'store' | 'b1g1';
-  inputType: 'percentage' | 'nominal';
-  value: number;
-  min_purchase?: number | null;
-  max_discount?: number | null;
-  start_date: string;
-  end_date: string;
-  product_name?: string;
-  store_name?: string;
-};
-
-interface DiscountTableProps {
-  onEdit: (discount: Discount) => void;
-  setError: (err: string | null) => void;
-}
-
-export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
-  const isSuperAdmin = true;
+export function DiscountTable({
+  onEdit,
+  setError,
+  store_id,
+}: DiscountTableProps) {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const limit = 10;
   const [totalPages, setTotalPages] = useState(1);
-
-  // Filters
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<DiscountFilters>({
     type: '',
     search: '',
-    date: new Date().toISOString().split('T')[0], // auto today
-    sortBy: 'start_date',
-    sortOrder: 'asc',
+    date: new Date().toISOString().split('T')[0],
+    sortBy: '',
+    sortOrder: '',
   });
   const [pendingFilters, setPendingFilters] = useState(filters);
 
@@ -57,165 +44,126 @@ export function DiscountTable({ onEdit, setError }: DiscountTableProps) {
         type: filters.type || undefined,
         product_name: filters.search || undefined,
         date: filters.date,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
+        sortBy: filters.sortBy || undefined,
+        sortOrder: filters.sortOrder || undefined,
+        store_id: store_id,
       };
-
       const res = await api.get('/admin/discounts', { params });
       setDiscounts(res.data.data || []);
       setTotalPages(res.data.meta?.totalPages || 1);
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to fetch discounts');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to fetch discounts.');
     }
   };
 
   useEffect(() => {
     fetchDiscounts();
-  }, [page, filters]);
-
-  const handleSortChange = (sortBy: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy,
-      sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
-    }));
-  };
+  }, [page, filters, store_id]);
 
   const applyFilters = () => {
     setPage(1);
     setFilters(pendingFilters);
   };
 
+  const handleSortChange = (val: string) => {
+    const [by, order] = val.split('-');
+    setFilters((prev) => ({ ...prev, sortBy: by, sortOrder: order }));
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
-        <Select
-          value={pendingFilters.type}
-          onValueChange={(val) =>
-            setPendingFilters((prev) => ({
-              ...prev,
-              type: val === 'all' ? '' : val,
-            }))
-          }
-        >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="product">Product</SelectItem>
-            <SelectItem value="store">Store</SelectItem>
-            <SelectItem value="b1g1">B1G1</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder="Search product name..."
-          value={pendingFilters.search}
-          onChange={(e) =>
-            setPendingFilters((prev) => ({
-              ...prev,
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* LEFT: Search + Apply */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Search product name..."
+            value={pendingFilters.search}
+            onChange={(e) =>
+              setPendingFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
+            className="w-[200px] rounded-none"
+          />
+          <Button
+            variant="outline"
+            onClick={applyFilters}
+            className="border-sky-300 text-sky-600"
+          >
+            Search
+          </Button>
+        </div>
 
-              search: e.target.value,
-            }))
-          }
-          className="w-[200px]"
-        />
-        <Button variant="outline" onClick={applyFilters}>
-          Apply
-        </Button>
-      </div>
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-sky-100 text-left text-sky-800">
-              <th className="w-[40px] border px-4 py-2">#</th>
-              <th className="border px-4 py-2">Type</th>
-              <th className="border px-4 py-2">Input Type</th>
-              <th className="border px-4 py-2">Value</th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-200"
-                onClick={() => handleSortChange('start_date')}
-              >
-                Start Date
-                {filters.sortBy === 'start_date' &&
-                  (filters.sortOrder === 'asc' ? ' ↑' : ' ↓')}
-              </th>
-              <th
-                className="cursor-pointer border px-4 py-2 hover:bg-sky-200"
-                onClick={() => handleSortChange('end_date')}
-              >
-                End Date
-                {filters.sortBy === 'end_date' &&
-                  (filters.sortOrder === 'asc' ? ' ↑' : ' ↓')}
-              </th>
-              <th className="border px-4 py-2">Product</th>
-              {isSuperAdmin && (
-                <th className="border px-4 py-2 text-center">Actions</th>
-              )}
-            </tr>
-          </thead>
+        {/* RIGHT: Type + Sort */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            value={pendingFilters.type || 'all'}
+            onValueChange={(val) => {
+              const newType = val === 'all' ? '' : val;
+              // so when user search the type remains the same
+              setPendingFilters((prev) => ({ ...prev, type: newType }));
+              setFilters((prev) => ({ ...prev, type: newType }));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[140px] border-sky-300">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="product">Product</SelectItem>
+              <SelectItem value="store">Store</SelectItem>
+              <SelectItem value="b1g1">b1g1</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <tbody>
-            {discounts.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-4 text-center text-gray-500">
-                  No discounts found.
-                </td>
-              </tr>
-            ) : (
-              discounts.map((d, idx) => (
-                <tr
-                  key={d.id}
-                  className="border-t transition-colors hover:bg-sky-50"
-                >
-                  <td className="border px-4 py-2 text-center">
-                    {(page - 1) * limit + idx + 1}
-                  </td>
-                  <td className="border px-4 py-2">{d.type}</td>
-                  <td className="border px-4 py-2">{d.inputType}</td>
-                  <td className="border px-4 py-2">{d.value}</td>
-                  <td className="border px-4 py-2">
-                    {new Date(d.start_date).toISOString().split('T')[0]}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {new Date(d.end_date).toISOString().split('T')[0]}
-                  </td>
-                  <td className="border px-4 py-2">{d.product_name || '-'}</td>
-                  {isSuperAdmin && (
-                    <td className="border px-4 py-2 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(d)}
-                      >
-                        Edit
-                      </Button>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+          {/* Sort Select */}
+          <Select
+            value={
+              filters.sortBy && filters.sortOrder
+                ? `${filters.sortBy}-${filters.sortOrder}`
+                : ''
+            }
+            onValueChange={handleSortChange}
+          >
+            <SelectTrigger className="w-[180px] border-sky-300">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="start_date-asc">Start Date: Asc</SelectItem>
+              <SelectItem value="start_date-desc">Start Date: Desc</SelectItem>
+              <SelectItem value="end_date-asc">End Date: Asc</SelectItem>
+              <SelectItem value="end_date-desc">End Date: Desc</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-center space-x-3 text-sky-700">
+      {/* Table */}
+      <DiscountShareTable
+        discounts={discounts}
+        onEdit={onEdit}
+        page={page}
+        limit={limit}
+      />
+
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-center space-x-3">
         <Button
           variant="outline"
-          size="sm"
           disabled={page === 1}
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          className="border border-sky-200"
         >
           Prev
         </Button>
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-sky-700">
           Page {page} of {totalPages}
         </span>
         <Button
           variant="outline"
-          size="sm"
           disabled={page === totalPages}
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+          className="border border-sky-200"
         >
           Next
         </Button>

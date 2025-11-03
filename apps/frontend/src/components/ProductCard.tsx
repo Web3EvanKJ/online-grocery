@@ -14,7 +14,7 @@ type Product = {
   category: string;
   discount?: number;
   stock?: boolean | number;
-  isB1G1?: boolean;
+  isb1g1?: boolean;
 };
 
 export function ProductCard({
@@ -25,7 +25,7 @@ export function ProductCard({
   image,
   category,
   discount,
-  isB1G1,
+  isb1g1,
   stock,
 }: Product) {
   const hasDiscount = originalPrice && originalPrice > price;
@@ -57,11 +57,11 @@ export function ProductCard({
               </div>
             )}
 
-            {/* B1G1 Badge */}
-            {isB1G1 && (
+            {/* b1g1 Badge */}
+            {isb1g1 && (
               <div className="absolute right-1 bottom-1 flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
                 <Gift size={12} className="text-white" />
-                B1G1
+                b1g1
               </div>
             )}
 

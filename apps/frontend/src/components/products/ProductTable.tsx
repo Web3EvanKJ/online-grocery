@@ -13,7 +13,7 @@ export function ProductTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-sky-200 shadow-sm">
+    <div className="overflow-x-auto border border-sky-200">
       <table className="min-w-full divide-y divide-sky-200 text-sm text-sky-800">
         <thead className="bg-sky-100">
           <tr>

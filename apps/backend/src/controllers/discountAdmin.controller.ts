@@ -1,12 +1,15 @@
 import { DiscountAdminService } from '../services/discountAdmin.service';
 import type { NextFunction, Request, Response } from 'express';
 import { DiscountType } from '@prisma/client';
+import { DiscountAdminGetService } from '../services/discountAdminGet.service';
 
 export class DiscountAdminController {
   private service: DiscountAdminService;
+  private getService: DiscountAdminGetService;
 
   constructor() {
     this.service = new DiscountAdminService();
+    this.getService = new DiscountAdminGetService();
   }
 
   public createDiscount = async (
@@ -24,7 +27,6 @@ export class DiscountAdminController {
       });
       res.status(201).json(discount);
     } catch (error) {
-      console.error('ERROR_CREATE_DISCOUNT:', error);
       next(error);
     }
   };
@@ -46,7 +48,7 @@ export class DiscountAdminController {
         store_id,
       } = req.query;
 
-      const result = await this.service.getAll({
+      const result = await this.getService.getAll({
         page: Number(page),
         limit: Number(limit),
         type: type as DiscountType,
@@ -59,7 +61,6 @@ export class DiscountAdminController {
 
       res.json(result);
     } catch (error) {
-      console.error('ERROR_GET_DISCOUNTS:', error);
       next(error);
     }
   };
@@ -81,20 +82,18 @@ export class DiscountAdminController {
         store_id,
       } = req.query;
 
-      const result = await this.service.getHistory({
+      const result = await this.getService.getHistory({
         page: Number(page),
         limit: Number(limit),
         type: type as DiscountType,
         product_name: product_name as string,
         sortBy: sortBy as string,
         sortOrder: sortOrder as 'asc' | 'desc',
-        date: date ? new Date(date as string) : undefined,
         store_id: store_id ? Number(store_id) : undefined,
       });
 
       res.json(result);
     } catch (error) {
-      console.error('ERROR_GET_HISTORY:', error);
       next(error);
     }
   };
@@ -110,7 +109,6 @@ export class DiscountAdminController {
       const updated = await this.service.update(Number(id), data);
       res.json(updated);
     } catch (error) {
-      console.error('ERROR_UPDATE_DISCOUNT:', error);
       next(error);
     }
   };
@@ -125,7 +123,6 @@ export class DiscountAdminController {
       const result = await this.service.getProducts(search as string);
       res.json(result);
     } catch (error) {
-      console.error('ERROR_GET_PRODUCTS:', error);
       next(error);
     }
   };

@@ -20,7 +20,7 @@ export function UserFilter({ selectedRole, onRoleChange }: Props) {
         value={selectedRole}
         onValueChange={(value) => onRoleChange(value === 'all' ? '' : value)}
       >
-        <SelectTrigger className="w-[180px] border-sky-300 text-sky-700 transition-all hover:border-sky-400 focus:border-sky-400 focus:ring-sky-400">
+        <SelectTrigger className="w-[180px] border-sky-300 text-sky-600 transition-all hover:border-sky-400 focus:border-sky-400 focus:ring-sky-400">
           <SelectValue placeholder="All" />
         </SelectTrigger>
         <SelectContent className="rounded-lg border-sky-100 bg-white text-sky-700 shadow-md">

@@ -10,22 +10,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { StockProduct } from '@/lib/types/stocks/stocks';
+import { StockProduct } from '@/lib/types/inventories/inventories';
 import { api } from '@/lib/axios';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import type { AxiosError } from 'axios';
 
 export default function PageInventories() {
+  const role = 'super_admin';
+  const isSuperAdmin = role === 'super_admin';
+
   const [data, setData] = useState<StockProduct[]>([]);
   const [stores, setStores] = useState<{ id: number; name: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortField, setSortField] = useState<'alphabet' | 'stock_desc'>(
-    'alphabet'
-  );
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // still usable for UI
+  const [sortField, setSortField] = useState<'alphabet' | 'stock'>('alphabet');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedStore, setSelectedStore] = useState<number | null>(null);
   const [modal, setModal] = useState<{
     open: boolean;
@@ -33,7 +35,7 @@ export default function PageInventories() {
     product: StockProduct | null;
   }>({ open: false, type: '', product: null });
 
-  /** Fetch stores for super admin */
+  // Fetch stores for super admin
   const fetchStores = async () => {
     try {
       const res = await api.get('/admin/inventories/stores/list', {
@@ -43,14 +45,14 @@ export default function PageInventories() {
       if (res.data.length > 0 && selectedStore === null) {
         setSelectedStore(res.data[0].id);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to fetch stores');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to fetch stores.');
     }
   };
 
-  /** Fetch products (inventories) */
+  // Fetch inventories of products
   const fetchData = async () => {
-    if (!selectedStore) return;
     try {
       const res = await api.get('/admin/inventories', {
         params: {
@@ -60,27 +62,25 @@ export default function PageInventories() {
           store_id: selectedStore,
           role: 'super_admin',
           sort: sortField,
+          order: sortOrder,
         },
       });
 
       setData(res.data.data);
       setTotalPages(res.data.totalPages);
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to fetch inventories');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to fetch inventories.');
     }
   };
 
-  const handleSortChange = (field: string) => {
-    setSortField(field as any);
-  };
-
   useEffect(() => {
-    fetchStores();
+    isSuperAdmin && fetchStores();
   }, []);
 
   useEffect(() => {
     if (selectedStore) fetchData();
-  }, [page, search, sortField, selectedStore]);
+  }, [page, sortField, sortOrder, selectedStore]);
 
   return (
     <div className="space-y-4 p-6">
@@ -88,45 +88,68 @@ export default function PageInventories() {
         Inventory Management
       </h1>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="max-w-xs">
-          <Select
-            value={selectedStore ? String(selectedStore) : ''}
-            onValueChange={(v) => setSelectedStore(Number(v))}
+      <div className="flex flex-col justify-items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Search Input */}
+        <div className="flex min-w-[30vw] gap-2">
+          <Input
+            placeholder="Search product..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-none border border-sky-200"
+          />
+          <Button
+            onClick={() => fetchData()}
+            className="border border-sky-400 bg-white text-sky-600 hover:bg-sky-100"
           >
-            <SelectTrigger className="rounded-none border border-blue-200">
-              <SelectValue placeholder="Choose Store" />
-            </SelectTrigger>
-            <SelectContent className="rounded-none">
-              {stores.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            Search
+          </Button>
         </div>
 
-        <Input
-          placeholder="Search product..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs border border-sky-200"
-        />
-
-        <Button
-          onClick={() => fetchData()}
-          className="bg-sky-500 text-white hover:bg-sky-600"
-        >
-          Search
-        </Button>
+        {/* Sort Select */}
+        <div className="flex gap-4">
+          <Select
+            value={`${sortField}_${sortOrder}`}
+            onValueChange={(v) => {
+              const [field, order] = v.split('_');
+              setSortField(field as 'alphabet' | 'stock');
+              setSortOrder(order as 'asc' | 'desc');
+            }}
+          >
+            <SelectTrigger className="w-[180px] border border-blue-200 text-sky-600">
+              <SelectValue placeholder="Sort By" />
+            </SelectTrigger>
+            <SelectContent className="text-sky-600">
+              <SelectItem value="alphabet_asc">Sort: A-Z</SelectItem>
+              <SelectItem value="alphabet_desc">Sort: Z-A</SelectItem>
+              <SelectItem value="stock_asc">Stock: Low-High</SelectItem>
+              <SelectItem value="stock_desc">Stock: High-Low</SelectItem>
+            </SelectContent>
+          </Select>
+          {/* Store Select */}
+          {isSuperAdmin && (
+            <div className="max-w-xs">
+              <Select
+                value={selectedStore ? String(selectedStore) : ''}
+                onValueChange={(v) => setSelectedStore(Number(v))}
+              >
+                <SelectTrigger className="border border-blue-200 text-sky-600">
+                  <SelectValue placeholder="Choose Store" />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  {stores.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </div>
 
       <InventoryTable
         data={data}
-        sortField={sortField}
-        sortOrder={sortOrder}
-        onSortChange={handleSortChange}
         onEditClick={(product, type) => setModal({ open: true, type, product })}
       />
 
@@ -136,16 +159,18 @@ export default function PageInventories() {
           variant="outline"
           disabled={page <= 1}
           onClick={() => setPage((p) => p - 1)}
+          className="border-sky-300"
         >
           Prev
         </Button>
-        <span className="self-center text-gray-700">
+        <span className="self-center text-sky-700">
           Page {page} of {totalPages}
         </span>
         <Button
           variant="outline"
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
+          className="border-sky-300"
         >
           Next
         </Button>

@@ -81,7 +81,7 @@ export default function PageUsers() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Search name, email, or address..."
-              className="w-full rounded-md border border-sky-300 px-3 py-2 text-sm text-sky-700 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 focus:outline-none sm:w-64"
+              className="w-full border border-sky-300 px-3 py-2 text-sm focus:border-sky-400 focus:ring-1 focus:ring-sky-400 focus:outline-none sm:w-64"
             />
             <Button
               variant="outline"

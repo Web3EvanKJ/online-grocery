@@ -2,42 +2,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/axios';
 import { ErrorModal } from '../ErrorModal';
-import { Button } from '../ui/button';
+import { FilterBar } from './FilterBar';
+import { Pagination } from './Pagination';
+import { SummaryCard } from './SummaryCard';
+import { AxiosError } from 'axios';
+import { SalesReportItem } from '@/lib/types/reports/reports';
 
 export default function PageSales() {
-  const isSuperAdmin = true;
+  const role = 'super_admin';
+  const isSuperAdmin = role === 'super_admin';
   const [selectedStore, setSelectedStore] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState('2025-10');
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toISOString().slice(0, 7)
+  );
   const [productQuery, setProductQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  const [salesData, setSalesData] = useState<any[]>([]);
+  const [salesData, setSalesData] = useState<SalesReportItem[]>([]);
+  const [summary, setSummary] = useState({
+    totalRevenue: 0,
+    avgSales: 0,
+    totalProducts: 0,
+  });
   const [stores, setStores] = useState<{ id: number | 'all'; name: string }[]>(
     []
   );
   const [categories, setCategories] = useState<
     { id: number | 'all'; name: string }[]
   >([]);
-
   const [page, setPage] = useState(1);
   const limit = 10;
   const [totalPages, setTotalPages] = useState(1);
-
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Fetch stores & categories
   useEffect(() => {
     const fetchFilters = async () => {
       try {
         const [storeRes, catRes] = await Promise.all([
           api.get('/admin/sales/stores', {
-            params: { role: 'super_admin', userId: 1 },
+            params: { role, userId: 1 },
           }),
           api.get('/admin/sales/categories'),
         ]);
-
         const storeOptions = [
           { id: 'all', name: 'All Stores' },
           ...storeRes.data,
@@ -46,26 +51,21 @@ export default function PageSales() {
           { id: 'all', name: 'All Categories' },
           ...catRes.data,
         ];
-
         setStores(storeOptions);
         setCategories(catOptions);
-      } catch (err: any) {
-        setError(err.response?.data?.msg || 'Failed to fetch filters');
+      } catch (err) {
+        const error = err as AxiosError<{ msg?: string }>;
+        setError(error.response?.data?.msg || 'Failed to fetch filters.');
       }
     };
     fetchFilters();
   }, []);
 
-  // Fetch sales data
   const fetchSales = async () => {
-    setLoading(true);
     try {
       const res = await api.get('/admin/sales/report', {
-        params: {
-          role: 'super_admin',
-          userId: 1,
-          storeId: selectedStore,
-          categoryId: selectedCategory,
+        // prettier-ignore
+        params: { role, userId: 1, storeId: selectedStore, categoryId: selectedCategory,
           productName: productQuery,
           month: selectedMonth,
           page,
@@ -73,31 +73,22 @@ export default function PageSales() {
           sort: sortOrder,
         },
       });
-
       setSalesData(res.data.data);
+      setSummary(res.data.summary);
       setTotalPages(res.data.pagination.totalPages || 1);
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to fetch sales data');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to fetch sales data.');
     }
   };
-
   useEffect(() => {
     fetchSales();
   }, [selectedStore, selectedCategory, selectedMonth, sortOrder, page]);
 
-  const monthlySummary = useMemo(() => {
-    if (!salesData.length) return { totalRevenue: 0, avgSales: 0 };
-    const totalRevenue = salesData.reduce((sum, i) => sum + i.totalSales, 0);
-    const avgSales = totalRevenue / salesData.length;
-    return { totalRevenue, avgSales };
-  }, [salesData]);
-
   const toggleSort = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
 
   return (
-    <div className="text-sky-800">
+    <>
       {error && (
         <ErrorModal
           open={!!error}
@@ -105,100 +96,42 @@ export default function PageSales() {
           onClose={() => setError(null)}
         />
       )}
-
       <main className="mx-auto max-w-6xl space-y-6 p-6">
         <h1 className="text-2xl font-bold text-sky-700">Sales Report</h1>
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {isSuperAdmin && (
-              <select
-                className="rounded-lg border border-sky-200 p-2 text-sky-700 focus:ring-2 focus:ring-sky-300"
-                value={selectedStore}
-                onChange={(e) => setSelectedStore(e.target.value)}
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <select
-              className="rounded-lg border border-sky-200 p-2 text-sky-700 focus:ring-2 focus:ring-sky-300"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="month"
-              className="rounded-lg border border-sky-200 p-2 text-sky-700 focus:ring-2 focus:ring-sky-300"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            />
-          </div>
-
-          {/* Search bar + button */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search product..."
-              className="rounded-lg border border-sky-200 p-2 text-sky-700 focus:ring-2 focus:ring-sky-300"
-              value={productQuery}
-              onChange={(e) => setProductQuery(e.target.value)}
-            />
-            <Button
-              className="bg-sky-600"
-              onClick={() => {
-                setPage(1);
-                fetchSales();
-              }}
-            >
-              Search
-            </Button>
-          </div>
-        </div>
-
-        {/* 💰 Monthly Summary */}
-        <div className="rounded-xl border border-sky-100 bg-white p-6">
+        <FilterBar
+          stores={stores}
+          categories={categories}
+          selectedStore={selectedStore}
+          selectedCategory={selectedCategory}
+          selectedMonth={selectedMonth}
+          productQuery={productQuery}
+          onStoreChange={setSelectedStore}
+          onCategoryChange={setSelectedCategory}
+          onMonthChange={setSelectedMonth}
+          onProductQueryChange={setProductQuery}
+          onSearch={() => {
+            setPage(1);
+            fetchSales();
+          }}
+          isSuperAdmin={isSuperAdmin}
+        />
+        <div className="border border-sky-100 bg-white p-6">
           <h2 className="mb-4 text-xl font-semibold text-sky-700">
             Monthly Sales Summary — {selectedMonth}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-lg bg-sky-50 p-4 text-center">
-              <p className="text-sm text-sky-600">Total Revenue</p>
-              <p className="text-xl font-bold text-sky-700">
-                Rp {monthlySummary.totalRevenue.toLocaleString('id-ID')}
-              </p>
-            </div>
-            <div className="rounded-lg bg-green-50 p-4 text-center">
-              <p className="text-sm text-green-600">Average per Product</p>
-              <p className="text-xl font-bold text-green-700">
-                Rp {monthlySummary.avgSales.toLocaleString('id-ID')}
-              </p>
-            </div>
-            <div className="rounded-lg bg-sky-100 p-4 text-center">
-              <p className="text-sm text-sky-600">Products Sold</p>
-              <p className="text-xl font-bold text-sky-700">
-                {salesData.length}
-              </p>
-            </div>
+            {/* prettier-ignore */}
+            <SummaryCard title="Total Revenue" value={`Rp ${summary.totalRevenue.toLocaleString()}`} />
+            {/* prettier-ignore */}
+            <SummaryCard title="Average per Product" value={`Rp ${summary.avgSales.toLocaleString()}`} color="bg-green-50" />
+            {/* prettier-ignore */}
+            <SummaryCard title="Products Sold" value={summary.totalProducts} color="bg-sky-100" />
           </div>
         </div>
-
-        {/* 📦 Table */}
         <h2 className="mb-4 text-xl font-semibold text-sky-700">
-          Stock Journal
+          Sales Journal
         </h2>
-        <div className="overflow-hidden rounded-xl border border-sky-100 bg-white">
+        <div className="overflow-x-auto rounded-xl border border-sky-100 bg-white">
           <table className="w-full border-collapse">
             <thead className="bg-sky-100">
               <tr className="text-left text-sky-800">
@@ -215,16 +148,7 @@ export default function PageSales() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="p-6 text-center text-sky-500 italic"
-                  >
-                    Loading data...
-                  </td>
-                </tr>
-              ) : salesData.length > 0 ? (
+              {salesData.length > 0 ? (
                 salesData.map((item, idx) => (
                   <tr
                     key={idx}
@@ -241,10 +165,8 @@ export default function PageSales() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="p-6 text-center text-sky-500 italic"
-                  >
+                  {/* prettier-ignore */}
+                  <td colSpan={5} className="p-4 text-center text-sky-500">
                     No sales data available.
                   </td>
                 </tr>
@@ -252,29 +174,12 @@ export default function PageSales() {
             </tbody>
           </table>
         </div>
-
-        <div className="flex justify-center gap-3 pt-4">
-          <Button
-            variant="outline"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Prev
-          </Button>
-
-          <span className="self-center text-gray-700">
-            Page {page} of {totalPages}
-          </span>
-
-          <Button
-            variant="outline"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </main>
-    </div>
+    </>
   );
 }

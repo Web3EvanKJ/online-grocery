@@ -97,7 +97,7 @@ export class ProductSearchService {
         const hasDiscount = p.discounts.length > 0;
         const discountData = hasDiscount ? p.discounts[0] : null;
 
-        const isB1G1 =
+        const isb1g1 =
           discountData?.type === 'b1g1' &&
           discountData?.start_date <= new Date() &&
           discountData?.end_date >= new Date();
@@ -128,7 +128,7 @@ export class ProductSearchService {
           image: p.images[0]?.image_url || null,
           category: p.category.name,
           discount: discountValue || undefined,
-          isB1G1: isB1G1 || false,
+          isb1g1: isb1g1 || false,
           stock,
         };
       }),
@@ -161,7 +161,7 @@ export class ProductSearchService {
 
     // ====== Compute discount and final price ======
     const discountData = product.discounts[0];
-    const isB1G1 =
+    const isb1g1 =
       discountData?.type === 'b1g1' &&
       discountData?.start_date <= new Date() &&
       discountData?.end_date >= new Date();
@@ -194,7 +194,7 @@ export class ProductSearchService {
       category: product.category.name,
       discount: discountValue || undefined,
       stock,
-      isB1G1,
+      isb1g1,
     };
   };
 }

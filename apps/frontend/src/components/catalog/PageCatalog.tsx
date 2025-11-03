@@ -16,7 +16,7 @@ type Product = {
   discount?: number;
   stock?: number;
   distance?: number;
-  isB1G1?: boolean;
+  isb1g1?: boolean;
 };
 
 export default function PageCatalog() {

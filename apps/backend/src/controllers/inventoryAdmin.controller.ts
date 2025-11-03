@@ -23,16 +23,18 @@ export class InventoryAdminController {
         role,
         user_id,
         sort = 'alphabet',
+        order,
       } = req.query;
 
       const result = await this.service.getInventories({
         page: Number(page),
         limit: Number(limit),
         search: String(search),
-        store_id: store_id ? Number(store_id) : undefined,
+        store_id: Number(store_id),
         role: String(role),
-        user_id: user_id ? Number(user_id) : undefined,
+        user_id: Number(user_id),
         sort: String(sort),
+        order: String(order),
       });
 
       res.json(result);
@@ -64,21 +66,6 @@ export class InventoryAdminController {
     }
   };
 
-  /** GET /inventories/:id/journals */
-  public getStockJournals = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const { id } = req.params;
-      const result = await this.service.getStockJournals(Number(id));
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
-  };
-
   /** GET /inventories/stores */
   public getStores = async (
     req: Request,
@@ -89,7 +76,7 @@ export class InventoryAdminController {
       const { role, user_id } = req.query;
       const result = await this.service.getStores(
         String(role),
-        user_id ? Number(user_id) : undefined
+        Number(user_id)
       );
       res.json(result);
     } catch (error) {

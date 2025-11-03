@@ -116,9 +116,7 @@ export function ProductImageUpload({
 
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-sky-700">
-        Product Images
-      </label>
+      <label className="mb-1 block text-sm font-medium">Product Images</label>
 
       <div className="flex flex-wrap gap-3">
         {renderedPreviews.map((src, i) => (

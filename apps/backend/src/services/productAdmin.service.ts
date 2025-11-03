@@ -33,7 +33,7 @@ export class ProductAdminService {
     category_id: number;
     description?: string;
     price: number;
-    imageUrls: string[]; // ✅ changed to array of URLs
+    imageUrls: string[];
   }) => {
     const { name, price, category_id, imageUrls } = data;
 
