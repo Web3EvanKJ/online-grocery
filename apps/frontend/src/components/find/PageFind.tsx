@@ -12,23 +12,15 @@ import {
   SelectValue,
   SelectContent,
 } from '@/components/ui/select';
-
-type Product = {
-  id: number;
-  name: string;
-  slug: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  discount?: number;
-  stock?: number;
-  isb1g1?: boolean;
-};
+import { Product } from '@/lib/types/catalog/catalog';
+import { AxiosError } from 'axios';
+import { useNearestStore } from '@/hooks/useNearestStore';
 
 export function PageFind() {
   const params = useSearchParams();
   const router = useRouter();
+
+  const { store, loading: storeLoading, error: storeError } = useNearestStore();
 
   const queryName = params.get('name') || '';
   const queryCategory = params.get('category') || '';
@@ -42,6 +34,7 @@ export function PageFind() {
   const [loading, setLoading] = useState(false);
 
   const fetchProducts = async () => {
+    if (!store) return; // wait until nearest store is ready
     try {
       setLoading(true);
       const res = await api.get('/productSearch', {
@@ -52,38 +45,64 @@ export function PageFind() {
           category: queryCategory,
           discounted: queryDiscounted,
           sort: querySort,
-          store_id: 1,
+          store_id: store.store_id,
         },
       });
       setProducts(res.data.data);
       setTotalPages(res.data.totalPages);
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Gagal memuat produk');
+    } catch (err) {
+      const error = err as AxiosError<{ msg?: string }>;
+      setError(error.response?.data?.msg || 'Failed to load products.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, [queryName, queryCategory, queryDiscounted, querySort, queryPage]);
+    if (store && !storeLoading) {
+      fetchProducts();
+    }
+  }, [
+    store,
+    storeLoading,
+    queryName,
+    queryCategory,
+    queryDiscounted,
+    querySort,
+    queryPage,
+  ]);
 
   const updateUrlParam = (key: string, value: string | number) => {
     const newParams = new URLSearchParams(params.toString());
-    if (value && value !== 'delete') newParams.set(key, String(value));
+    if (value && value !== 'delete' && value !== 'asc')
+      newParams.set(key, String(value));
     else newParams.delete(key);
     router.push(`/find?${newParams.toString()}`);
   };
 
+  if (storeLoading) {
+    return (
+      <p className="mt-20 text-center text-gray-500">
+        Detecting nearest store...
+      </p>
+    );
+  }
+
+  if (storeError) {
+    return <p className="mt-20 text-center text-red-500">{storeError}</p>;
+  }
+
   return (
-    <main className="min-h-screen bg-blue-50 px-5 py-10 md:px-15">
+    <main className="min-h-screen bg-sky-50 px-5 py-10 md:px-15">
       <div className="mx-auto max-w-7xl px-4">
         <h2 className="mb-1 text-xl font-semibold text-gray-700">
-          Hasil Pencarian untuk{' '}
-          <span className="text-blue-700">"{queryName}"</span>
+          Search result for <span className="text-sky-700">"{queryName}"</span>
         </h2>
+        <p className="mb-2 text-gray-500">
+          Showing products from nearest store: <b>{store?.store_name}</b>
+        </p>
         <p className="mb-6 text-gray-500">
-          Menampilkan {products.length} produk
+          Distance: {store?.distance_km.toFixed(2)} km
         </p>
 
         {/* === Filter & Sort Controls === */}
@@ -92,12 +111,12 @@ export function PageFind() {
             onValueChange={(v) => updateUrlParam('discounted', v)}
             defaultValue={queryDiscounted || 'delete'}
           >
-            <SelectTrigger className="w-40 border-blue-300">
-              <SelectValue placeholder="Diskon?" />
+            <SelectTrigger className="w-40 border-sky-300">
+              <SelectValue placeholder="Discount" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="delete">Semua</SelectItem>
-              <SelectItem value="true">Diskon</SelectItem>
+              <SelectItem value="delete">All Product</SelectItem>
+              <SelectItem value="true">Discounted</SelectItem>
             </SelectContent>
           </Select>
 
@@ -105,18 +124,18 @@ export function PageFind() {
             onValueChange={(v) => updateUrlParam('sort', v)}
             defaultValue={querySort}
           >
-            <SelectTrigger className="w-44 border-blue-300">
-              <SelectValue placeholder="Urutkan harga" />
+            <SelectTrigger className="w-44 border-sky-300">
+              <SelectValue placeholder="Sort Price" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="asc">Harga Terendah</SelectItem>
-              <SelectItem value="desc">Harga Tertinggi</SelectItem>
+              <SelectItem value="asc">Lowest Price</SelectItem>
+              <SelectItem value="desc">Highest Price</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {loading ? (
-          <p className="text-center text-gray-500">Memuat produk...</p>
+          <p className="text-center text-gray-500">Loading products...</p>
         ) : (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-5">
             {products.map((p) => (

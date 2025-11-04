@@ -35,3 +35,13 @@ export interface SummaryCardProps {
   value: string | number;
   color?: string;
 }
+
+export interface StockHistoryItem {
+  id: number;
+  date: Date;
+  store: string;
+  product: string;
+  type: 'in' | 'out';
+  quantity: number;
+  note?: string;
+}

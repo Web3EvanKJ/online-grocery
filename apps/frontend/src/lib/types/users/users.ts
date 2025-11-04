@@ -16,6 +16,7 @@ export type FormContentProps = {
   setPendingValues: (values: Partial<User>) => void;
   setConfirmOpen: (open: boolean) => void;
   setOpen: (open: boolean) => void;
+  setError: (error: string) => void;
 };
 
 export type UserTableProps = {

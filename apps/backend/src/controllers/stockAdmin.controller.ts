@@ -8,10 +8,6 @@ export class StockAdminController {
     this.service = new StockAdminService();
   }
 
-  /**
-   * GET /stocks
-   * @description Ambil data history stok per bulan
-   */
   public getStockHistory = async (
     req: Request,
     res: Response,
@@ -36,21 +32,17 @@ export class StockAdminController {
     }
   };
 
-  /**
-   * GET /stores
-   * @description Ambil daftar toko untuk filter
-   */
   public getStores = async (
     req: Request,
     res: Response,
     next: NextFunction
   ) => {
     try {
-      const { role, storeId } = req.query;
+      const { role, user_id } = req.query;
 
       const response = await this.service.getStores(
         String(role),
-        storeId === 'all' ? 'all' : storeId ? Number(storeId) : undefined
+        Number(user_id)
       );
 
       res.json(response);

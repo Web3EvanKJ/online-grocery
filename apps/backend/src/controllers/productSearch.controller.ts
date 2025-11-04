@@ -64,6 +64,7 @@ export class ProductSearchController {
     try {
       const { slug } = req.params;
       const { store_id } = req.query;
+      console.log(store_id);
 
       const product = await this.service.getProductBySlug(
         slug,

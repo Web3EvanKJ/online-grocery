@@ -26,7 +26,7 @@ export default function PageDiscounts() {
   const fetchStores = async () => {
     try {
       const res = await api.get('/admin/inventories/stores/list', {
-        params: { role: 'super_admin' },
+        params: { role: 'super_admin', user_id },
       });
       setStores(res.data);
       if (res.data.length > 0 && selectedStore === null) {
@@ -54,7 +54,7 @@ export default function PageDiscounts() {
   };
 
   useEffect(() => {
-    isSuperAdmin && fetchStores();
+    fetchStores();
   }, []);
 
   return (
@@ -142,7 +142,7 @@ export default function PageDiscounts() {
         discount={editDiscount as Discount}
         setError={setError}
         role={role}
-        user_id={user_id}
+        store_id={Number(selectedStore)}
       />
 
       <ErrorModal

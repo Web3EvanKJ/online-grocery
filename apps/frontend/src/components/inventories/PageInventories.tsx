@@ -75,7 +75,7 @@ export default function PageInventories() {
   };
 
   useEffect(() => {
-    isSuperAdmin && fetchStores();
+    fetchStores();
   }, []);
 
   useEffect(() => {

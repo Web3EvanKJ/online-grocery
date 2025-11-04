@@ -17,7 +17,7 @@ export class DiscountAdminService {
     this.prisma = new Database().getInstance();
   }
 
-  public async create({ role, user_id, data }: DiscountCreateInput) {
+  public async create({ role, store_id, data }: DiscountCreateInput) {
     return await this.prisma.$transaction(async (tx) => {
       const start = new Date(data.start_date);
       const end = new Date(data.end_date);
@@ -31,63 +31,59 @@ export class DiscountAdminService {
           where: { id: data.product_id },
         });
         if (!product) {
-          throw new BadRequestError(`Invalid product mame.`);
+          throw new BadRequestError(`Invalid product name.`);
         }
       }
 
-      // Automatically get store_id based on user_id (if store_admin)
-      let targetStores: { id: number }[] = [];
+      // Verify the store exists
+      const store = await tx.stores.findUnique({ where: { id: store_id } });
+      if (!store) {
+        throw new BadRequestError(`Store not found.`);
+      }
 
+      // For store_admin, ensure they can only create for their own store
       if (role === 'store_admin') {
         const storeAdmin = await tx.store_admins.findUnique({
-          where: { user_id: user_id },
-          select: { store_id: true },
+          where: { store_id },
         });
 
         if (!storeAdmin) {
-          throw new UnauthorizedError('You are not assigned to any store.');
-        }
-
-        const store_id = storeAdmin.store_id;
-
-        //  Check overlapping discount for the same store
-        const overlapping = await tx.discounts.findFirst({
-          where: {
-            store_id,
-            OR: [{ start_date: { lte: end }, end_date: { gte: start } }],
-          },
-        });
-
-        if (overlapping) {
-          throw new ConflictError(
-            `There is already an active discount overlapping this date range.`
+          throw new UnauthorizedError(
+            'You are not authorized to create discounts for this store.'
           );
         }
-
-        targetStores = [{ id: store_id }];
-      } else if (role === 'super_admin') {
-        targetStores = await tx.stores.findMany({ select: { id: true } });
-      } else {
+      } else if (role !== 'super_admin') {
         throw new UnauthorizedError('Invalid role for creating discounts.');
       }
 
-      const created = await Promise.all(
-        targetStores.map((s) =>
-          tx.discounts.create({
-            data: {
-              store_id: s.id,
-              product_id: data.product_id ?? null,
-              type: data.type,
-              inputType: data.inputType ?? 'nominal',
-              value: data.value ?? new Prisma.Decimal(0),
-              min_purchase: data.min_purchase ?? null,
-              max_discount: data.max_discount ?? null,
-              start_date: start,
-              end_date: end,
-            },
-          })
-        )
-      );
+      // Check overlapping discounts
+      const overlapping = await tx.discounts.findFirst({
+        where: {
+          store_id,
+          product_id: data.product_id,
+          OR: [{ start_date: { lte: end }, end_date: { gte: start } }],
+        },
+      });
+
+      if (overlapping) {
+        throw new ConflictError(
+          'There is already an active discount overlapping this date range.'
+        );
+      }
+
+      const created = await tx.discounts.create({
+        data: {
+          store_id: Number(store_id),
+          product_id: data.product_id ?? null,
+          type: data.type,
+          inputType: data.inputType ?? 'nominal',
+          value: data.value ?? new Prisma.Decimal(0),
+          min_purchase: data.min_purchase ?? null,
+          max_discount: data.max_discount ?? null,
+          start_date: start,
+          end_date: end,
+        },
+      });
 
       return created;
     });
@@ -96,7 +92,6 @@ export class DiscountAdminService {
   public async update(id: number, data: DiscountUpdateInput) {
     const existing = await this.prisma.discounts.findUnique({ where: { id } });
     if (!existing) throw new BadRequestError('Discount not found.');
-    console.log(data);
 
     const start = new Date(data.start_date as Date);
     const end = new Date(data.end_date as Date);
@@ -105,17 +100,9 @@ export class DiscountAdminService {
       throw new BadRequestError('End date must be greater than start date.');
     }
 
+    // Validate store ownership for store_admin
     if (data.role === 'store_admin') {
-      const storeAdmin = await this.prisma.store_admins.findUnique({
-        where: { user_id: data.user_id },
-        select: { store_id: true },
-      });
-
-      if (!storeAdmin) {
-        throw new UnauthorizedError('You are not assigned to any store.');
-      }
-
-      if (existing.store_id !== storeAdmin.store_id) {
+      if (existing.store_id !== data.store_id) {
         throw new UnauthorizedError(
           'You are not authorized to update discounts for another store.'
         );
@@ -124,9 +111,11 @@ export class DiscountAdminService {
       throw new UnauthorizedError('Invalid role for updating discounts.');
     }
 
+    // Check overlap
     const overlap = await this.prisma.discounts.findFirst({
       where: {
-        store_id: existing.store_id,
+        store_id: data.store_id,
+        product_id: data.product_id,
         id: { not: id },
         OR: [{ start_date: { lte: end }, end_date: { gte: start } }],
       },

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '@/lib/axios';
 import { ErrorModal } from '../ErrorModal';
 import { FilterBar } from './FilterBar';
@@ -9,10 +9,13 @@ import { AxiosError } from 'axios';
 import { SalesReportItem } from '@/lib/types/reports/reports';
 
 export default function PageSales() {
-  const role = 'super_admin';
+  const role = 'super_admin'; // or 'super_admin'
+  const userId = 1;
   const isSuperAdmin = role === 'super_admin';
-  const [selectedStore, setSelectedStore] = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedStore, setSelectedStore] = useState<number | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | number>(
+    'all'
+  );
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7)
   );
@@ -34,47 +37,55 @@ export default function PageSales() {
   const limit = 10;
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchFilters = async () => {
       try {
         const [storeRes, catRes] = await Promise.all([
-          api.get('/admin/sales/stores', {
-            params: { role, userId: 1 },
-          }),
+          api.get('/admin/sales/stores', { params: { role, userId } }),
           api.get('/admin/sales/categories'),
         ]);
-        const storeOptions = [
-          { id: 'all', name: 'All Stores' },
-          ...storeRes.data,
-        ];
         const catOptions = [
           { id: 'all', name: 'All Categories' },
           ...catRes.data,
         ];
-        setStores(storeOptions);
         setCategories(catOptions);
+        if (role === 'super_admin') {
+          const storeOptions = [
+            { id: 'all', name: 'All Stores' },
+            ...storeRes.data,
+          ];
+          setStores(storeOptions);
+          setSelectedStore('all');
+        } else {
+          setStores(storeRes.data);
+          if (storeRes.data.length > 0) {
+            setSelectedStore(storeRes.data[0].id);
+          }
+        }
       } catch (err) {
         const error = err as AxiosError<{ msg?: string }>;
         setError(error.response?.data?.msg || 'Failed to fetch filters.');
       }
     };
     fetchFilters();
-  }, []);
+  }, [role]);
 
   const fetchSales = async () => {
     try {
       const res = await api.get('/admin/sales/report', {
         // prettier-ignore
-        params: { role, userId: 1, storeId: selectedStore, categoryId: selectedCategory,
-          productName: productQuery,
+        params: { role, storeId: selectedStore, categoryId: selectedCategory, productName: productQuery,
           month: selectedMonth,
           page,
           limit,
           sort: sortOrder,
         },
       });
-      setSalesData(res.data.data);
-      setSummary(res.data.summary);
+      setSalesData(res.data.data || []);
+      setSummary(
+        res.data.summary || { totalRevenue: 0, avgSales: 0, totalProducts: 0 }
+      );
       setTotalPages(res.data.pagination.totalPages || 1);
     } catch (err) {
       const error = err as AxiosError<{ msg?: string }>;
@@ -84,18 +95,10 @@ export default function PageSales() {
   useEffect(() => {
     fetchSales();
   }, [selectedStore, selectedCategory, selectedMonth, sortOrder, page]);
-
   const toggleSort = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
 
   return (
     <>
-      {error && (
-        <ErrorModal
-          open={!!error}
-          message={error}
-          onClose={() => setError(null)}
-        />
-      )}
       <main className="mx-auto max-w-6xl space-y-6 p-6">
         <h1 className="text-2xl font-bold text-sky-700">Sales Report</h1>
         <FilterBar
@@ -105,9 +108,18 @@ export default function PageSales() {
           selectedCategory={selectedCategory}
           selectedMonth={selectedMonth}
           productQuery={productQuery}
-          onStoreChange={setSelectedStore}
-          onCategoryChange={setSelectedCategory}
-          onMonthChange={setSelectedMonth}
+          onStoreChange={(val) => {
+            setSelectedStore(val !== 'all' ? Number(val) : val);
+            setPage(1);
+          }}
+          onCategoryChange={(val) => {
+            setSelectedCategory(val !== 'all' ? Number(val) : val);
+            setPage(1);
+          }}
+          onMonthChange={(val) => {
+            setSelectedMonth(val);
+            setPage(1);
+          }}
           onProductQueryChange={setProductQuery}
           onSearch={() => {
             setPage(1);
@@ -123,7 +135,7 @@ export default function PageSales() {
             {/* prettier-ignore */}
             <SummaryCard title="Total Revenue" value={`Rp ${summary.totalRevenue.toLocaleString()}`} />
             {/* prettier-ignore */}
-            <SummaryCard title="Average per Product" value={`Rp ${summary.avgSales.toLocaleString()}`} color="bg-green-50" />
+            <SummaryCard title="Average per Product" value={`Rp ${summary.avgSales.toLocaleString()}`} color="bg-green-50"/>
             {/* prettier-ignore */}
             <SummaryCard title="Products Sold" value={summary.totalProducts} color="bg-sky-100" />
           </div>
@@ -165,7 +177,6 @@ export default function PageSales() {
                 ))
               ) : (
                 <tr>
-                  {/* prettier-ignore */}
                   <td colSpan={5} className="p-4 text-center text-sky-500">
                     No sales data available.
                   </td>
@@ -174,10 +185,10 @@ export default function PageSales() {
             </tbody>
           </table>
         </div>
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
+        {/* prettier-ignore */}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {/* prettier-ignore */}
+        <ErrorModal open={!!error} message={error} onClose={() => setError(null)}
         />
       </main>
     </>

@@ -2,12 +2,6 @@ import { Database } from '../config/prisma';
 import { NotFoundError } from '../utils/httpError';
 import type { PrismaClient } from '@prisma/client';
 
-/**
- * @class ProductSearchService
- * @description
- * Business logic for product search with pagination, filter, sorting,
- * and warehouse-aware stock + discount info.
- */
 export class ProductSearchService {
   private prisma: PrismaClient;
 
@@ -15,10 +9,7 @@ export class ProductSearchService {
     this.prisma = new Database().getInstance();
   }
 
-  /**
-   * @method getProducts
-   * @description Fetch products with pagination, filters, sorting, and store context.
-   */
+  // Fetch products with pagination, filters, sorting, and store context.
   public getProducts = async (params: {
     page?: number;
     limit?: number;
@@ -35,23 +26,17 @@ export class ProductSearchService {
       category,
       discounted,
       sort = 'asc',
-      store_id = 1, // ✅ default to store_id 1
+      store_id = 1,
     } = params;
 
     const skip = (page - 1) * limit;
-
-    // === Build filter ===
     const where: any = {};
-
     if (name) {
       where.name = { contains: name, mode: 'insensitive' };
     }
-
     if (category) {
       where.category = { name: { equals: category, mode: 'insensitive' } };
     }
-
-    // Filter only discounted products
     if (discounted === 'true') {
       const now = new Date();
       where.discounts = {
@@ -62,7 +47,6 @@ export class ProductSearchService {
       };
     }
 
-    // === Fetch products ===
     const [products, total] = await Promise.all([
       this.prisma.products.findMany({
         where,
@@ -87,7 +71,7 @@ export class ProductSearchService {
       this.prisma.products.count({ where }),
     ]);
 
-    // === Transform result to match Product type ===
+    // Transform result to match Product type
     return {
       page,
       limit,
@@ -96,16 +80,13 @@ export class ProductSearchService {
       data: products.map((p) => {
         const hasDiscount = p.discounts.length > 0;
         const discountData = hasDiscount ? p.discounts[0] : null;
-
         const isb1g1 =
           discountData?.type === 'b1g1' &&
           discountData?.start_date <= new Date() &&
           discountData?.end_date >= new Date();
-
         const originalPrice = Number(p.price);
         let finalPrice = originalPrice;
         let discountValue: number | null = null;
-
         if (discountData && discountData.type !== 'b1g1') {
           if (discountData.inputType === 'percentage') {
             discountValue = Number(discountData.value);
@@ -115,7 +96,6 @@ export class ProductSearchService {
             finalPrice = originalPrice - discountValue;
           }
         }
-
         const inventory = p.inventories[0];
         const stock = inventory ? inventory.stock : 0;
 
@@ -128,6 +108,7 @@ export class ProductSearchService {
           image: p.images[0]?.image_url || null,
           category: p.category.name,
           discount: discountValue || undefined,
+          discountInputType: discountData?.inputType,
           isb1g1: isb1g1 || false,
           stock,
         };
@@ -135,7 +116,6 @@ export class ProductSearchService {
     };
   };
 
-  // productSearch.service.ts
   public getProductBySlug = async (slug: string, store_id = 1) => {
     const product = await this.prisma.products.findUnique({
       where: { slug },
@@ -156,10 +136,9 @@ export class ProductSearchService {
     });
 
     if (!product) {
-      throw new NotFoundError(`Produk dengan slug "${slug}" tidak ditemukan`);
+      throw new NotFoundError(`Product with slug "${slug}" not found.`);
     }
 
-    // ====== Compute discount and final price ======
     const discountData = product.discounts[0];
     const isb1g1 =
       discountData?.type === 'b1g1' &&
@@ -182,17 +161,18 @@ export class ProductSearchService {
 
     const stock = product.inventories[0]?.stock ?? 0;
 
-    // ====== Return matching Product type ======
     return {
       id: product.id,
       name: product.name,
       slug: product.slug,
       price: Math.max(finalPrice, 0),
-      originalPrice: discountData ? originalPrice : undefined,
+      originalPrice:
+        discountData?.type === 'product' ? originalPrice : undefined,
       description: product.description || '',
       images: product.images.map((img) => img.image_url),
       category: product.category.name,
       discount: discountValue || undefined,
+      discountInputType: discountData?.inputType,
       stock,
       isb1g1,
     };

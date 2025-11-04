@@ -1,80 +1,45 @@
-// utils/address.ts
 export const getCoordinates = async ({
   province,
   city,
   district,
+  subdistrict,
 }: {
   province: string;
   city: string;
   district: string;
+  subdistrict: string;
 }) => {
   try {
-    const fullAddress = `${district}, ${city}, ${province}, Indonesia`;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
+    const apiKey = process.env.NEXT_PUBLIC_OPENCAGE_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing OpenCage API key.');
+    }
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'backend-server', // required by Nominatim
-      },
-    });
+    const fullAddress = `${subdistrict}, ${district}, ${city}, ${province}, Indonesia`;
+    const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(
+      fullAddress
+    )}&key=${apiKey}&limit=1&language=en`;
+
+    const response = await fetch(url);
 
     if (!response.ok) {
-      console.error(
-        '❌ Nominatim request failed:',
-        response.status,
-        response.statusText
-      );
-      return { latitude: 0, longitude: 0 };
+      throw new Error('OpenCage request failed:');
     }
 
     const data = await response.json();
 
-    if (!data || data.length === 0) {
-      console.warn('⚠️ No coordinates found for address:', fullAddress);
-      return { latitude: 0, longitude: 0 };
+    if (
+      !data ||
+      !data.results ||
+      data.results.length === 0 ||
+      !data.results[0].geometry
+    ) {
+      throw new Error('No coordinates found for address');
     }
 
-    const { lat, lon } = data[0];
-    return { latitude: parseFloat(lat), longitude: parseFloat(lon) };
+    const { lat, lng } = data.results[0].geometry;
+    return { latitude: lat, longitude: lng };
   } catch (error) {
-    console.error('❌ Failed to fetch coordinates:', error);
-    return { latitude: 0, longitude: 0 };
-  }
-};
-
-export const getCityFromCoordinates = async (
-  latitude: number,
-  longitude: number
-): Promise<string> => {
-  if (!latitude || !longitude) return '';
-
-  try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
-
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'backend-server', // Nominatim requires this header
-      },
-    });
-
-    if (!response.ok) {
-      console.error('❌ Reverse geocoding failed:', response.statusText);
-      return '';
-    }
-
-    const data = await response.json();
-
-    // Nominatim returns a variety of possible keys for city
-    const city =
-      data.address?.city ||
-      data.address?.town ||
-      data.address?.village ||
-      data.address?.suburb ||
-      '';
-
-    return city;
-  } catch (error) {
-    console.error('❌ Error fetching city from coordinates:', error);
-    return '';
+    throw new Error('Failed to fetch coordinates:');
   }
 };

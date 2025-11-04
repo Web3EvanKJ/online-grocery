@@ -37,3 +37,16 @@ export interface ErrorModalProps {
   message?: string | null;
   onClose: () => void;
 }
+
+export type ProductCardProps = {
+  slug: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  category: string;
+  discount?: number;
+  discountInputType?: string;
+  stock?: boolean | number;
+  isb1g1?: boolean;
+};

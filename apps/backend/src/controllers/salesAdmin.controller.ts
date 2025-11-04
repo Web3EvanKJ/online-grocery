@@ -11,7 +11,7 @@ export class SalesAdminController {
   /**
    * GET /api/sales/report
    * Example:
-   * /api/sales/report?role=super_admin&userId=1&storeId=2&categoryId=all&productName=water&month=2025-10&page=1&limit=10
+   * /api/sales/report?role=super_admin&storeId=2&categoryId=all&productName=water&month=2025-10&page=1&limit=10
    */
   public getSalesReport = async (
     req: Request,

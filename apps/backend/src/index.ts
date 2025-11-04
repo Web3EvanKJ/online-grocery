@@ -15,6 +15,7 @@ import discountAdminRouter from './routers/discountAdmin.router';
 import salesAdminRouter from './routers/salesAdmin.router';
 import stockAdminRouter from './routers/stockAdmin.router';
 import productSearchRouter from './routers/productSearch.router';
+import storeLocationRouter from './routers/storeLocation.router';
 
 /**
  * @class Server
@@ -74,6 +75,7 @@ class Server {
     this.app.use('/api/admin/sales', salesAdminRouter);
     this.app.use('/api/admin/stocks', stockAdminRouter);
     this.app.use('/api/productSearch', productSearchRouter);
+    this.app.use('/api/store-location/', storeLocationRouter);
   }
 
   /**

@@ -14,7 +14,7 @@ export class SalesAdminService {
     storeId?: number | 'all';
     categoryId?: number | 'all';
     productName?: string;
-    month?: string; // format 'YYYY-MM'
+    month?: string; // 'YYYY-MM'
     page?: number;
     limit?: number;
     sort?: 'asc' | 'desc';
@@ -23,7 +23,7 @@ export class SalesAdminService {
       role,
       storeId = 'all',
       categoryId = 'all',
-      productName = '',
+      productName,
       month,
       page = 1,
       limit = 10,
@@ -36,7 +36,7 @@ export class SalesAdminService {
       | 'Dibatalkan'
     )[] = ['Diproses', 'Pesanan_Dikonfirmasi', 'Dibatalkan'];
 
-    // Convert month into date range
+    // Handle month filter
     let startDate: Date | undefined;
     let endDate: Date | undefined;
     if (month) {
@@ -45,71 +45,80 @@ export class SalesAdminService {
       endDate = new Date(year, m, 1);
     }
 
-    const whereClause: Prisma.ordersWhereInput = {
-      status: { in: validStatuses },
-      ...(startDate &&
-        endDate && {
-          created_at: { gte: startDate, lt: endDate },
+    // Build where clause for order_items
+    const whereClause: Prisma.order_itemsWhereInput = {
+      order: {
+        status: { in: validStatuses },
+        ...(startDate &&
+          endDate && {
+            created_at: { gte: startDate, lt: endDate },
+          }),
+        ...(role === 'store_admin' &&
+          storeId !== 'all' && {
+            store_id: Number(storeId),
+          }),
+        ...(role === 'super_admin' &&
+          storeId !== 'all' && {
+            store_id: Number(storeId),
+          }),
+      },
+      product: {
+        ...(categoryId !== 'all' && { category_id: Number(categoryId) }),
+        ...(productName && {
+          name: { contains: productName, mode: 'insensitive' },
         }),
-      ...(role === 'store_admin' &&
-        storeId &&
-        !isNaN(Number(storeId)) && { store_id: Number(storeId) }),
-      ...(role === 'super_admin' &&
-        storeId !== 'all' &&
-        !isNaN(Number(storeId)) && { store_id: Number(storeId) }),
+      },
     };
 
-    // Fetch orders
-    const [totalCount, orders] = await this.prisma.$transaction([
-      this.prisma.orders.count({ where: whereClause }),
-      this.prisma.orders.findMany({
+    // Query directly from order_items
+    const [totalCount, items] = await this.prisma.$transaction([
+      this.prisma.order_items.count({ where: whereClause }),
+      this.prisma.order_items.findMany({
         where: whereClause,
         include: {
-          store: true,
-          order_items: {
+          order: {
             include: {
-              product: { include: { category: true } },
+              store: true,
+            },
+          },
+          product: {
+            include: {
+              category: true,
             },
           },
         },
+        orderBy: { price: sort },
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { created_at: 'desc' },
       }),
     ]);
 
-    // Transform into flat report items
-    const report = orders
-      .flatMap((order) =>
-        order.order_items.map((item) => ({
-          store_id: order.store.id,
-          store: order.store.name,
-          category_id: item.product.category.id,
-          category: item.product.category.name,
-          product: item.product.name,
-          totalSales: Number(item.price) * item.quantity,
-          period: month || order.created_at?.toISOString().slice(0, 7),
-          status: order.status,
-        }))
-      )
-      .filter((item) => {
-        const matchStore =
-          storeId === 'all' || item.store_id === Number(storeId);
-        const matchCategory =
-          categoryId === 'all' || item.category_id === Number(categoryId);
-        const matchProduct =
-          !productName ||
-          item.product.toLowerCase().includes(productName.toLowerCase());
-        return matchStore && matchCategory && matchProduct;
-      })
-      .sort((a, b) =>
-        sort === 'asc'
-          ? a.totalSales - b.totalSales
-          : b.totalSales - a.totalSales
-      );
+    // Transform results
+    const report = items.map((item) => ({
+      store_id: item.order.store.id,
+      store: item.order.store.name,
+      category_id: item.product.category.id,
+      category: item.product.category.name,
+      product: item.product.name,
+      price: Number(item.price),
+      quantity: item.quantity,
+      totalSales: Number(item.price) * item.quantity,
+      period: month || item.order.created_at?.toISOString().slice(0, 7),
+      status: item.order.status,
+    }));
 
-    const totalRevenue = report.reduce((sum, i) => sum + i.totalSales, 0);
-    const avgSales = report.length ? totalRevenue / report.length : 0;
+    // Summaries
+    const allItems = await this.prisma.order_items.findMany({
+      where: whereClause,
+      select: { price: true, quantity: true },
+    });
+
+    const totalRevenue = allItems.reduce(
+      (sum, i) => sum + Number(i.price) * i.quantity,
+      0
+    );
+    const totalProducts = allItems.length;
+    const avgSales = totalProducts ? totalRevenue / totalProducts : 0;
 
     return {
       pagination: {
@@ -140,7 +149,7 @@ export class SalesAdminService {
       include: { store: { select: { id: true, name: true } } },
     });
 
-    if (!admin) throw new NotFoundError('Store admin tidak ditemukan');
+    if (!admin) throw new NotFoundError('Store admin not found.');
     return [admin.store];
   };
 

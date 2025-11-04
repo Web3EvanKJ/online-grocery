@@ -3,19 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import { Gift, MapPin } from 'lucide-react';
-
-type Product = {
-  slug: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  discount?: number;
-  stock?: boolean | number;
-  isb1g1?: boolean;
-};
+import { Gift } from 'lucide-react';
+import { ProductCardProps } from '@/lib/types/global/global';
 
 export function ProductCard({
   slug,
@@ -25,9 +14,10 @@ export function ProductCard({
   image,
   category,
   discount,
+  discountInputType,
   isb1g1,
   stock,
-}: Product) {
+}: ProductCardProps) {
   const hasDiscount = originalPrice && originalPrice > price;
   const isSoldOut = stock === 0;
 
@@ -39,7 +29,7 @@ export function ProductCard({
         }`}
       >
         <CardContent className="flex flex-col p-4">
-          {/* === Product Image === */}
+          {/* Product Image */}
           <div className="relative mx-auto mb-3 h-24 w-24">
             <Image
               src={image}
@@ -51,9 +41,14 @@ export function ProductCard({
             />
 
             {/* Discount Badge */}
-            {discount && (
-              <div className="absolute top-1 right-1 rounded bg-blue-500 px-1 py-0.5 text-xs font-semibold text-white">
+            {discount && discountInputType === 'percentage' && (
+              <div className="absolute top-1 right-1 rounded bg-sky-500 px-1 py-0.5 text-xs font-semibold text-white opacity-70">
                 -{discount}%
+              </div>
+            )}
+            {discount && discountInputType === 'nominal' && (
+              <div className="absolute top-1 right-1 rounded bg-sky-500 px-1 py-0.5 text-xs font-semibold text-white opacity-70">
+                -Rp {discount}
               </div>
             )}
 
@@ -61,7 +56,7 @@ export function ProductCard({
             {isb1g1 && (
               <div className="absolute right-1 bottom-1 flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
                 <Gift size={12} className="text-white" />
-                b1g1
+                B1G1
               </div>
             )}
 
@@ -75,7 +70,7 @@ export function ProductCard({
             )}
           </div>
 
-          {/* === Product Info === */}
+          {/* Product Info */}
           <div className="flex flex-1 flex-col justify-between text-center">
             {/* Name + Category */}
             <div className="mb-3 min-h-[2rem]">
@@ -85,13 +80,13 @@ export function ProductCard({
               <p className="mt-1 text-xs text-gray-500">{category}</p>
             </div>
 
-            {/* === Price Section === */}
+            {/* Price Section */}
             <div className="flex min-h-[3.5rem] flex-col items-center justify-end">
               <p
                 className={`text-lg ${
                   hasDiscount
                     ? 'text-sm text-gray-400 line-through'
-                    : 'font-semibold text-blue-600'
+                    : 'font-semibold text-sky-600'
                 }`}
               >
                 Rp{' '}
@@ -100,7 +95,7 @@ export function ProductCard({
               </p>
 
               {hasDiscount && (
-                <p className="mt-1 text-lg font-semibold text-blue-600">
+                <p className="mt-1 text-lg font-semibold text-sky-600">
                   Rp {price.toLocaleString('id-ID')}
                 </p>
               )}

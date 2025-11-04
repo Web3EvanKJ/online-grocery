@@ -55,6 +55,7 @@ export class UserAdminService {
         province: data.province,
         city: data.city,
         district: data.district,
+        subdistrict: data.address,
       });
 
       if (latitude === 0 || longitude === 0)
@@ -125,6 +126,7 @@ export class UserAdminService {
         province: data.province,
         city: data.city,
         district: data.district,
+        subdistrict: data.address,
       });
 
       if (latitude === 0 || longitude === 0)

@@ -45,8 +45,12 @@ export default function DiscountShareTable({
                 </td>
                 <td className="px-4 py-2">{d.type}</td>
                 <td className="px-4 py-2">{d.product_name || '-'}</td>
-                <td className="px-4 py-2">{d.inputType}</td>
-                <td className="px-4 py-2">{d.value}</td>
+                <td className="px-4 py-2">
+                  {d.type === 'b1g1' ? '-' : d.inputType}
+                </td>
+                <td className="px-4 py-2">
+                  {d.type === 'b1g1' ? '-' : d.value}
+                </td>
                 <td className="px-4 py-2">
                   {new Date(d.start_date).toISOString().split('T')[0]}
                 </td>

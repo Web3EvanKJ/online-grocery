@@ -4,8 +4,8 @@ export type DiscountRole = 'super_admin' | 'store_admin';
 
 export interface DiscountCreateInput {
   role: DiscountRole;
-  user_id: number;
-  store_id?: number;
+  user_id?: number;
+  store_id: number;
   data: {
     store_id?: number | null;
     product_id?: number | null;
@@ -21,7 +21,8 @@ export interface DiscountCreateInput {
 
 export interface DiscountUpdateInput extends Prisma.discountsUpdateInput {
   role: DiscountRole;
-  user_id: number;
+  store_id: number;
+  product_id: number;
 }
 
 export interface DiscountQueryOptions {

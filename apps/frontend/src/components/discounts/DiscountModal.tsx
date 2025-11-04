@@ -22,7 +22,7 @@ export function DiscountModal({
   onSuccess,
   setError,
   role,
-  user_id,
+  store_id,
 }: DiscountModalProps) {
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -33,7 +33,7 @@ export function DiscountModal({
 
   const handleSubmit = (values: onSubmitDiscountProps) => {
     // Open confirmation modal first
-    setPendingValues({ ...values, role, user_id });
+    setPendingValues({ ...values, role, store_id });
     setConfirmOpen(true);
   };
 

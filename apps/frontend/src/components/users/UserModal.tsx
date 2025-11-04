@@ -65,6 +65,7 @@ export function UserModal({
             setPendingValues={setPendingValues}
             setConfirmOpen={setConfirmOpen}
             setOpen={setOpen}
+            setError={setError}
           />
         </DialogContent>
       </Dialog>

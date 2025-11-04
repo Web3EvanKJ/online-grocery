@@ -18,10 +18,9 @@ export class DiscountAdminController {
     next: NextFunction
   ) => {
     try {
-      const { role, user_id, store_id, ...data } = req.body;
+      const { role, store_id, ...data } = req.body;
       const discount = await this.service.create({
         role,
-        user_id,
         store_id,
         data,
       });
@@ -78,7 +77,6 @@ export class DiscountAdminController {
         product_name,
         sortBy = 'start_date',
         sortOrder = 'desc',
-        date,
         store_id,
       } = req.query;
 

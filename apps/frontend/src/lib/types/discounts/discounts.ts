@@ -25,7 +25,7 @@ export interface onSubmitDiscountProps {
   end_date: string;
   product_id?: number | null;
   role?: string;
-  user_id?: number;
+  store_id?: number;
 }
 
 export interface DiscountFormProps {
@@ -66,7 +66,7 @@ export interface DiscountModalProps {
   onSuccess: () => void;
   setError: (err: string | null) => void;
   role: string;
-  user_id: number;
+  store_id: number;
 }
 
 export interface Product {

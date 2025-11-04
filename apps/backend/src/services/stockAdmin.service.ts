@@ -9,35 +9,32 @@ export class StockAdminService {
     this.prisma = new Database().getInstance();
   }
 
-  /**
-   * @method getStores
-   * @description Mengambil daftar toko (untuk filter dropdown)
-   */
-  public getStores = async (role: string, storeId?: number | 'all') => {
+  public getStores = async (role: string, user_id?: number) => {
     if (role === 'store_admin') {
-      if (!storeId || storeId === 'all')
-        throw new BadRequestError(
-          'Store admin hanya dapat melihat toko sendiri'
-        );
-      const store = await this.prisma.stores.findUnique({
-        where: { id: Number(storeId) },
+      if (!user_id)
+        throw new BadRequestError('User ID is required for store_admin.');
+
+      const admin = await this.prisma.store_admins.findUnique({
+        where: { user_id: Number(user_id) },
+        include: { store: { select: { id: true, name: true } } },
       });
-      if (!store) throw new NotFoundError('Toko tidak ditemukan');
-      return [store];
+
+      if (!admin) throw new NotFoundError('No store found for this admin.');
+
+      // Return as an array to keep consistent return type
+      return [admin.store];
     }
 
-    // Super admin / admin: semua toko
-    const stores = await this.prisma.stores.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    });
-    return stores;
+    // Super admin
+    if (role === 'super_admin') {
+      const stores = await this.prisma.stores.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      });
+      return stores;
+    }
   };
 
-  /**
-   * @method getStockHistory
-   * @description Mendapatkan data history stok dengan filter dan pagination
-   */
   public getStockHistory = async (params: {
     role: string;
     storeId?: number | 'all';
@@ -48,23 +45,19 @@ export class StockAdminService {
   }) => {
     const { role, storeId, month, productName, page = 1, limit = 10 } = params;
 
-    if (!role) throw new BadRequestError('Role wajib diisi');
-    if (!month)
-      throw new BadRequestError('Parameter bulan (month) wajib diisi');
+    if (!role) throw new BadRequestError('Role is required.');
+    if (!month) throw new BadRequestError('Month is Required.');
 
     const skip = (page - 1) * limit;
 
-    // ✅ Use explicit Prisma type
     const where: Prisma.stock_journalsWhereInput = {
       inventory: {},
     };
 
-    // ✅ Role-based filtering
+    // Role-based filtering
     if (role === 'store_admin') {
       if (!storeId || storeId === 'all')
-        throw new BadRequestError(
-          'Store admin hanya dapat melihat stok tokonya sendiri'
-        );
+        throw new BadRequestError('Invalid Store.');
 
       where.inventory = {
         store_id: Number(storeId),
@@ -75,17 +68,14 @@ export class StockAdminService {
       };
     }
 
-    // ✅ Filter by month
-    const startDate = new Date(`${month}-01T00:00:00.000Z`);
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 1);
-
+    const [year, m] = month.split('-').map(Number);
+    const startDate = new Date(year, m - 1, 1);
+    const endDate = new Date(year, m, 1);
     where.created_at = {
       gte: startDate,
       lt: endDate,
     };
 
-    // ✅ Filter by product name
     if (productName) {
       const inventoryFilter: Prisma.inventoriesWhereInput = {
         ...where.inventory,
@@ -96,7 +86,6 @@ export class StockAdminService {
       where.inventory = inventoryFilter;
     }
 
-    // ✅ Main query
     const [data, total] = await Promise.all([
       this.prisma.stock_journals.findMany({
         where,
@@ -115,7 +104,6 @@ export class StockAdminService {
       this.prisma.stock_journals.count({ where }),
     ]);
 
-    // ✅ Format data for FE
     const formatted = data.map((j) => ({
       id: j.id,
       date: j.created_at,
@@ -126,7 +114,6 @@ export class StockAdminService {
       note: j.note,
     }));
 
-    // ✅ Aggregate summary
     const summaryAgg = await this.prisma.stock_journals.groupBy({
       by: ['type'],
       where,
@@ -138,15 +125,7 @@ export class StockAdminService {
     const totalDeduct =
       summaryAgg.find((x) => x.type === 'out')?._sum.quantity || 0;
 
-    // ✅ Ending stock
-    const endStockData = await this.prisma.inventories.findMany({
-      where: storeId && storeId !== 'all' ? { store_id: Number(storeId) } : {},
-      include: {
-        product: { select: { id: true, name: true } },
-      },
-    });
-
-    const totalEnd = endStockData.reduce((acc, item) => acc + item.stock, 0);
+    const totalEnd = totalAdd - totalDeduct;
 
     return {
       pagination: {
