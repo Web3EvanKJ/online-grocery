@@ -1,7 +1,16 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    domains: [
+      'els.id',
+      'www.keychron.id',
+      'row.hyperx.com',
+      'i.pinimg.com',
+      'via.placeholder.com',
+      'res.cloudinary.com',
+    ], // ✅ allow this image host
+  },
 };
 
 export default nextConfig;

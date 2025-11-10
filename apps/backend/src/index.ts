@@ -2,11 +2,20 @@ import cors from 'cors';
 import express from 'express';
 
 import { config } from './config/dotenv';
-import exampleRouter from './routers/example.router';
+// import exampleRouter from './routers/example.router';
 import { HttpError } from './utils/httpError';
 
 import type { Application, NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
+import userAdminRouter from './routers/userAdmin.router';
+import productAdminRouter from './routers/productAdmin.router';
+import categoryAdminRouter from './routers/categoryAdmin.router';
+import inventoryAdminRouter from './routers/inventoryAdmin.router';
+import discountAdminRouter from './routers/discountAdmin.router';
+import salesAdminRouter from './routers/salesAdmin.router';
+import stockAdminRouter from './routers/stockAdmin.router';
+import productSearchRouter from './routers/productSearch.router';
+import storeLocationRouter from './routers/storeLocation.router';
 
 /**
  * @class Server
@@ -37,11 +46,11 @@ class Server {
     this.app.use(cors()); // Mengizinkan request dari origin yang berbeda (Cross-Origin Resource Sharing)
     this.app.use(express.json()); // Mem-parsing body request yang berformat JSON
 
-    const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
-    });
-    this.app.use(limiter);
+    // const limiter = rateLimit({
+    //   windowMs: 15 * 60 * 1000, // 15 minutes
+    //   max: 100, // limit each IP to 100 requests per windowMs
+    // });
+    // this.app.use(limiter);
   }
 
   /**
@@ -56,10 +65,17 @@ class Server {
     });
 
     // Semua request yang diawali dengan '/api/auth' akan diarahkan ke exampleRouter
-    this.app.use('/api/auth', exampleRouter);
+    // this.app.use('/api/auth', exampleRouter);
 
-    // TODO: Daftarkan router lain di sini jika ada, contoh:
-    // this.app.use('/api/products', productRouter);
+    this.app.use('/api/admin/users', userAdminRouter);
+    this.app.use('/api/admin/products', productAdminRouter);
+    this.app.use('/api/admin/categories', categoryAdminRouter);
+    this.app.use('/api/admin/inventories', inventoryAdminRouter);
+    this.app.use('/api/admin/discounts', discountAdminRouter);
+    this.app.use('/api/admin/sales', salesAdminRouter);
+    this.app.use('/api/admin/stocks', stockAdminRouter);
+    this.app.use('/api/productSearch', productSearchRouter);
+    this.app.use('/api/store-location/', storeLocationRouter);
   }
 
   /**
