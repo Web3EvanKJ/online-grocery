@@ -50,7 +50,6 @@ export class ProductSearchController {
         ...response,
       });
     } catch (error) {
-      console.error('ERROR_GET_PRODUCTS:', error);
       next(error);
     }
   };
@@ -64,7 +63,6 @@ export class ProductSearchController {
     try {
       const { slug } = req.params;
       const { store_id } = req.query;
-      console.log(store_id);
 
       const product = await this.service.getProductBySlug(
         slug,
@@ -75,7 +73,6 @@ export class ProductSearchController {
         data: product,
       });
     } catch (error) {
-      console.error('ERROR_GET_PRODUCT_BY_SLUG:', error);
       next(error);
     }
   };

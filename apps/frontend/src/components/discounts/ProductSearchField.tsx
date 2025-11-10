@@ -8,8 +8,12 @@ import {
   Product,
   ProductSearchFieldProps,
 } from '@/lib/types/discounts/discounts';
+import type { AxiosError } from 'axios';
 
-export function ProductSearchField({ onChange }: ProductSearchFieldProps) {
+export function ProductSearchField({
+  onChange,
+  setError,
+}: ProductSearchFieldProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +33,8 @@ export function ProductSearchField({ onChange }: ProductSearchFieldProps) {
         });
         setResults(res.data || []);
       } catch (err) {
-        console.error('Failed to search products');
+        const error = err as AxiosError<{ msg?: string }>;
+        setError(error.response?.data?.msg || 'Failed to search products.');
       } finally {
         setLoading(false);
       }

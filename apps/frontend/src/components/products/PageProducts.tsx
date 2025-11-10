@@ -132,6 +132,7 @@ export function ProductPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           isSuperAdmin={isSuperAdmin}
+          page={page}
         />
 
         {/* Pagination */}

@@ -17,9 +17,12 @@ export interface FormFieldProps {
   error?:
     | string
     | string[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | FormikErrors<any>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | FormikErrors<any>[]
     | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   touched?: boolean | FormikTouched<any> | FormikTouched<any>[] | undefined;
   disabled?: boolean;
 }
@@ -30,6 +33,7 @@ export interface ConfirmationModalProps {
   onConfirm: () => void;
   message?: string;
   warning?: boolean;
+  loading?: boolean;
 }
 
 export interface ErrorModalProps {

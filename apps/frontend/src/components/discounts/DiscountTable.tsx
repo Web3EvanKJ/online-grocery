@@ -38,6 +38,8 @@ export function DiscountTable({
 
   const fetchDiscounts = async () => {
     try {
+      if (!store_id) return;
+
       const params = {
         page,
         limit,

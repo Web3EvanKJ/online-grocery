@@ -13,6 +13,7 @@ export function ConfirmationModal({
   onConfirm,
   message = 'Are you sure?',
   warning = false,
+  loading = false,
 }: ConfirmationModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -29,18 +30,20 @@ export function ConfirmationModal({
             variant="outline"
             className="border-sky-300 text-sky-600 hover:bg-sky-50"
             onClick={onClose}
+            disabled={loading}
           >
             Cancel
           </Button>
           <Button
             onClick={onConfirm}
+            disabled={loading}
             className={
               warning
                 ? 'bg-red-500 text-white hover:bg-red-600'
                 : 'bg-sky-500 text-white hover:bg-sky-600'
             }
           >
-            Yes, Confirm
+            {loading ? 'Processing..' : 'Yes, confirm'}
           </Button>
         </div>
       </DialogContent>

@@ -29,6 +29,7 @@ export function DiscountInactive({
     sortOrder: 'asc',
   });
   const [pendingFilters, setPendingFilters] = useState(filters);
+
   const fetchHistory = async () => {
     try {
       const params = {
@@ -48,9 +49,11 @@ export function DiscountInactive({
       setError(error.response?.data?.msg || 'Failed to fetch inactive.');
     }
   };
+
   useEffect(() => {
     fetchHistory();
   }, [page, filters, store_id]);
+
   const handleSortChange = (sortField: string, sortOrder: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -58,6 +61,7 @@ export function DiscountInactive({
       sortOrder,
     }));
   };
+
   const applyFilters = () => {
     setPage(1);
     setFilters(pendingFilters);

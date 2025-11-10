@@ -27,10 +27,18 @@ export interface PaginationMeta {
 }
 
 export interface ProductFormFieldsProps {
-  initialValues: any;
-  onSubmit: (values: any) => void;
+  initialValues: {
+    name: string;
+    category: number;
+    description: string;
+    price: string;
+    existingUrls: string[];
+    newFiles: File[] | never[];
+  };
+  onSubmit: (values: ProductFormValues) => void;
   onCancel: () => void;
   isSuperAdmin: boolean;
+  setError: (err: string | null) => void;
 }
 
 export interface ProductImageUploadProps {
@@ -51,6 +59,7 @@ export interface ProductTableProps {
   onEdit: (product: Products) => void;
   onDelete: (product: Products) => void;
   isSuperAdmin: boolean;
+  page: number;
 }
 
 export type ProductFormValues = {

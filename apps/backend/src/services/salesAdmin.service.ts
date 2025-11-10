@@ -117,8 +117,7 @@ export class SalesAdminService {
       (sum, i) => sum + Number(i.price) * i.quantity,
       0
     );
-    const totalProducts = allItems.length;
-    const avgSales = totalProducts ? totalRevenue / totalProducts : 0;
+    const totalProducts = allItems.reduce((sum, i) => sum + i.quantity, 0);
 
     return {
       pagination: {
@@ -129,8 +128,7 @@ export class SalesAdminService {
       },
       summary: {
         totalRevenue,
-        avgSales,
-        totalProducts: report.length,
+        totalProducts,
       },
       data: report,
     };

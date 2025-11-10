@@ -131,10 +131,11 @@ export default function PageStocks() {
         <h2 className="mb-4 text-xl font-semibold text-sky-700">
           Stock Journal
         </h2>
-        <div className="overflow-x-auto rounded-xl border border-sky-100 bg-white">
+        <div className="overflow-x-auto border border-sky-100 bg-white">
           <table className="w-full border-collapse">
             <thead className="bg-sky-100">
               <tr className="text-left text-sky-800">
+                <th className="p-4">#</th>
                 <th className="p-4">Date</th>
                 <th className="p-4">Store</th>
                 <th className="p-4">Product</th>
@@ -145,11 +146,12 @@ export default function PageStocks() {
             </thead>
             <tbody>
               {stockHistory.length > 0 ? (
-                stockHistory.map((item) => (
+                stockHistory.map((item, idx) => (
                   <tr
                     key={item.id}
                     className="border-t border-sky-100 transition hover:bg-sky-50"
                   >
+                    <td className="px-4 py-2">{(page - 1) * 10 + idx + 1}</td>
                     <td className="p-4">
                       {new Date(item.date).toLocaleDateString()}
                     </td>

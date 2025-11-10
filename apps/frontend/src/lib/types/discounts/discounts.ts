@@ -34,6 +34,7 @@ export interface DiscountFormProps {
   loading?: boolean;
   setOpen: (values: boolean) => void;
   isEdit: boolean;
+  setError: (err: string | null) => void;
 }
 
 export interface DiscountTableProps {
@@ -76,4 +77,5 @@ export interface Product {
 
 export interface ProductSearchFieldProps {
   onChange: (id: number | null) => void;
+  setError: (err: string | null) => void;
 }

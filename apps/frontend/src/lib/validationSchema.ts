@@ -1,11 +1,5 @@
 import * as Yup from 'yup';
 
-// Define a type for uploaded files
-type FileWithType = {
-  type: string;
-  size: number;
-};
-
 export const validationStoreAdminSchema = Yup.object({
   name: Yup.string().required('Full name is required'),
   email: Yup.string()

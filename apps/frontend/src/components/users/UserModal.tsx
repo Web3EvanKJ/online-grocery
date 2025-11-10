@@ -26,6 +26,7 @@ export function UserModal({
   user,
   refreshUsers,
 }: UserModalProps) {
+  const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<Partial<User> | null>(
     null
@@ -35,6 +36,7 @@ export function UserModal({
   const handleFinalSubmit = async () => {
     if (!pendingValues) return;
     try {
+      setLoading(true);
       if (user) {
         await api.put(`/admin/users/${user.id}`, pendingValues);
       } else {
@@ -47,6 +49,8 @@ export function UserModal({
     } catch (err) {
       const error = err as AxiosError<{ msg?: string }>;
       setError(error.response?.data?.msg || 'Failed to delete user');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,6 +79,7 @@ export function UserModal({
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleFinalSubmit}
         message={'Are you sure you want to save this data?'}
+        loading={loading}
       />
 
       <ErrorModal

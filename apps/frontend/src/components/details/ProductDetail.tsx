@@ -9,6 +9,7 @@ import { Product } from '@/lib/types/productDetails/productDetails';
 import { AxiosError } from 'axios';
 import { Gift } from 'lucide-react';
 import { useNearestStore } from '@/hooks/useNearestStore';
+import Image from 'next/image';
 
 export function ProductDetail() {
   const { slug } = useParams();
@@ -56,7 +57,7 @@ export function ProductDetail() {
     );
   }
 
-  // Store failed but fallback didn't work (rare)
+  // Extra validation
   if (storeError && !store) {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -89,10 +90,12 @@ export function ProductDetail() {
           {/* Left section */}
           <div className="flex flex-col items-center p-6">
             <div className="relative h-64 w-64 rounded-md border-2 border-sky-600">
-              <img
+              <Image
                 src={selectedImage ?? ''}
                 alt={product.name}
-                className="h-full w-full rounded-md object-contain transition-all duration-300"
+                fill
+                className="rounded-md object-contain transition-all duration-300"
+                sizes="256px"
               />
             </div>
             <div className="mt-6 flex gap-3">
@@ -106,10 +109,12 @@ export function ProductDetail() {
                       : 'border-gray-200 hover:border-sky-200'
                   }`}
                 >
-                  <img
+                  <Image
                     src={img}
                     alt={`thumb-${index}`}
-                    className="h-12 w-12 object-contain"
+                    width={48}
+                    height={48}
+                    className="rounded object-contain"
                   />
                 </button>
               ))}

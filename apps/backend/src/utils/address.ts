@@ -15,7 +15,7 @@ export const getCoordinates = async ({
       throw new Error('Missing OpenCage API key.');
     }
 
-    const fullAddress = `${subdistrict}, ${district}, ${city}, ${province}, Indonesia`;
+    const fullAddress = `${subdistrict}, ${district}, ${city}, ${province}`;
     const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(
       fullAddress
     )}&key=${apiKey}&limit=1&language=en`;
@@ -38,7 +38,11 @@ export const getCoordinates = async ({
     }
 
     const { lat, lng } = data.results[0].geometry;
-    return { latitude: lat, longitude: lng };
+    return {
+      latitude: lat,
+      longitude: lng,
+      confidence: data.results[0].confidence,
+    };
   } catch (error) {
     throw new Error('Failed to fetch coordinates:');
   }

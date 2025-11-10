@@ -1,8 +1,33 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
+import type { LatLng } from 'leaflet';
+import type * as Leaflet from 'leaflet';
+
+// Dynamically import only components
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+
+import { useMapEvents } from 'react-leaflet';
+
+// Lazy-load leaflet itself
+let L: typeof Leaflet | null = null;
+if (typeof window !== 'undefined') {
+  import('leaflet').then((leaflet) => {
+    L = leaflet;
+  });
+}
 
 type MapPickerProps = {
   onSelectLocation: (lat: number, lng: number) => void;
@@ -10,18 +35,12 @@ type MapPickerProps = {
   defaultLng?: number;
 };
 
-// Custom pin icon
-const markerIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-  iconSize: [30, 30],
-});
-
 function LocationMarker({
   onSelectLocation,
 }: {
   onSelectLocation: (lat: number, lng: number) => void;
 }) {
-  const [position, setPosition] = useState<L.LatLng | null>(null);
+  const [position, setPosition] = useState<LatLng | null>(null);
 
   useMapEvents({
     click(e) {
@@ -29,8 +48,13 @@ function LocationMarker({
       onSelectLocation(e.latlng.lat, e.latlng.lng);
     },
   });
+  if (!L || !position) return null;
+  const markerIcon = new L.Icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+    iconSize: [30, 30],
+  });
 
-  return position ? <Marker position={position} icon={markerIcon} /> : null;
+  return <Marker position={position} icon={markerIcon} />;
 }
 
 export const MapPicker = ({
@@ -48,6 +72,8 @@ export const MapPicker = ({
       setCenter([defaultLat, defaultLng]);
     }
   }, [defaultLat, defaultLng]);
+
+  if (typeof window === 'undefined') return null;
 
   return (
     <div className="h-72 w-full overflow-hidden rounded-lg border border-sky-200">

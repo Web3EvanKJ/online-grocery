@@ -4,17 +4,9 @@ import {
   ConflictError,
   NotFoundError,
 } from '../utils/httpError';
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { getCoordinates } from '../utils/address';
-
-type dataInput = {
-  name: string;
-  email: string;
-  province: string;
-  city: string;
-  district: string;
-  address: string;
-};
+import { dataInput } from '../utils/type/user';
 
 export class UserAdminService {
   private prisma: PrismaClient;
@@ -51,19 +43,39 @@ export class UserAdminService {
         },
       });
 
-      const { latitude, longitude } = await getCoordinates({
+      const { latitude, longitude, confidence } = await getCoordinates({
         province: data.province,
         city: data.city,
         district: data.district,
         subdistrict: data.address,
       });
 
-      if (latitude === 0 || longitude === 0)
+      if (latitude === 0 || longitude === 0 || confidence < 5)
         throw new BadRequestError('Invalid Address');
+
+      let storeName: string | null = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const randomSuffix = Math.floor(Math.random() * 9999) + 1;
+        const formattedCode = String(randomSuffix).padStart(4, '0');
+        const candidateName = `Store ${formattedCode}`;
+
+        const existingStore = await tx.stores.findFirst({
+          where: { name: candidateName },
+        });
+
+        if (!existingStore) {
+          storeName = candidateName;
+          break;
+        }
+      }
+      if (!storeName)
+        throw new ConflictError(
+          'Failed to generate unique store name. Try again.'
+        );
 
       const store = await tx.stores.create({
         data: {
-          name: 'temporary',
+          name: storeName,
           address: data.address,
           latitude,
           longitude,
@@ -71,11 +83,6 @@ export class UserAdminService {
           city: data.city,
           district: data.district,
         },
-      });
-
-      await tx.stores.update({
-        where: { id: store.id },
-        data: { name: `Store ${store.id}` },
       });
 
       await tx.store_admins.create({
@@ -122,14 +129,14 @@ export class UserAdminService {
       });
       if (!storeAdmin) throw new NotFoundError('Only store admin allowed.');
 
-      const { latitude, longitude } = await getCoordinates({
+      const { latitude, longitude, confidence } = await getCoordinates({
         province: data.province,
         city: data.city,
         district: data.district,
         subdistrict: data.address,
       });
 
-      if (latitude === 0 || longitude === 0)
+      if (latitude === 0 || longitude === 0 || confidence < 5)
         throw new BadRequestError('Invalid Address');
 
       const updatedStore = await tx.stores.update({
@@ -154,27 +161,35 @@ export class UserAdminService {
 
   // DELETE Store Admin
   public deleteStoreAdmin = async (id: number) => {
-    return await this.prisma.$transaction(async (tx) => {
-      const user = await tx.users.findUnique({
-        where: { id },
-        include: { store_admins: true },
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.users.findUnique({
+          where: { id },
+          include: { store_admins: true },
+        });
+
+        if (!user) throw new NotFoundError('User not found');
+        if (user.role !== 'store_admin')
+          throw new BadRequestError('Cannot delete non-store-admin user');
+
+        const storeId = user.store_admins[0]?.store_id;
+        await tx.store_admins.deleteMany({ where: { user_id: id } });
+        if (storeId) {
+          await tx.stores.delete({ where: { id: storeId } });
+        }
+        await tx.users.delete({ where: { id } });
+
+        return { message: 'Store admin deleted successfully' };
       });
-
-      if (!user) throw new NotFoundError('User not found');
-      if (user.role !== 'store_admin')
-        throw new BadRequestError('Cannot delete non-store-admin user');
-
-      const storeId = user.store_admins[0]?.store_id;
-
-      await tx.store_admins.deleteMany({ where: { user_id: id } });
-
-      if (storeId) {
-        await tx.stores.delete({ where: { id: storeId } });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === 'P2003') {
+          throw new BadRequestError(
+            'Cannot delete this product because it is referenced by other data.'
+          );
+        }
       }
-
-      await tx.users.delete({ where: { id } });
-
-      return { message: 'Store admin deleted successfully' };
-    });
+      throw err;
+    }
   };
 }

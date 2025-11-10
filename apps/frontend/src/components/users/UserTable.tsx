@@ -10,10 +10,10 @@ import type { AxiosError } from 'axios';
 
 export function UserTable({
   onEdit,
-  selectedRole,
   users,
   fetchUsers,
   loading,
+  page,
 }: UserTableProps) {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -38,10 +38,6 @@ export function UserTable({
     }
   };
 
-  const filteredUsers = selectedRole
-    ? users.filter((u) => u.role === selectedRole)
-    : users;
-
   return (
     <>
       <div className="overflow-x-auto">
@@ -51,6 +47,7 @@ export function UserTable({
           <table className="min-w-full rounded-lg border border-sky-200 text-sm">
             <thead className="bg-sky-100 text-sky-800">
               <tr>
+                <th className="p-3 text-left">#</th>
                 <th className="p-3 text-left">Name</th>
                 <th className="p-3 text-left">Email</th>
                 <th className="p-3 text-left">Role</th>
@@ -61,18 +58,19 @@ export function UserTable({
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.length === 0 ? (
+              {users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-4 text-center text-sky-600">
                     No users found.
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
+                users.map((u, idx) => (
                   <tr
                     key={u.id}
                     className="border-t border-sky-100 transition hover:bg-sky-50"
                   >
+                    <td className="px-4 py-2">{(page - 1) * 10 + idx + 1}</td>
                     <td className="p-3">{u.name}</td>
                     <td className="p-3">{u.email}</td>
                     <td className="p-3 capitalize">

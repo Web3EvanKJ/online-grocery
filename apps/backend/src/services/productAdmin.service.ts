@@ -5,7 +5,7 @@ import {
   NotFoundError,
 } from '../utils/httpError';
 import { uploadToCloudinary } from '../utils/cloudinary';
-import type { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import slugify from 'slugify';
 
 export class ProductAdminService {
@@ -17,13 +17,11 @@ export class ProductAdminService {
 
   public uploadImages = async (files: Express.Multer.File[]) => {
     if (!files?.length) throw new BadRequestError('No files provided');
-
     const urls: string[] = [];
     for (const file of files) {
       const { url } = await uploadToCloudinary(file);
       urls.push(url);
     }
-
     return { message: 'Images uploaded successfully', data: urls };
   };
 
@@ -36,7 +34,6 @@ export class ProductAdminService {
     imageUrls: string[];
   }) => {
     const { name, price, category_id, imageUrls } = data;
-
     if (!name || !price || !category_id || imageUrls.length === 0)
       throw new BadRequestError('Missing required fields');
 
@@ -44,9 +41,7 @@ export class ProductAdminService {
     if (exist) throw new ConflictError('Product with this name already exists');
 
     const numCategory = Number(category_id);
-
     const slug = slugify(name, { lower: true, strict: true });
-
     const product = await this.prisma.products.create({
       data: {
         name,
@@ -76,7 +71,6 @@ export class ProductAdminService {
     const { page = 1, limit = 10, search, sort } = query;
     const limits = Number(limit);
     const skip = (Number(page) - 1) * limits;
-
     const where: Prisma.productsWhereInput = {};
 
     if (search) {
@@ -175,11 +169,29 @@ export class ProductAdminService {
     const exist = await this.prisma.products.findUnique({ where: { id } });
     if (!exist) throw new NotFoundError('Product not found');
 
-    await this.prisma.$transaction([
-      this.prisma.product_images.deleteMany({ where: { product_id: id } }),
-      this.prisma.products.delete({ where: { id } }),
-    ]);
+    try {
+      await this.prisma.$transaction([
+        this.prisma.product_images.deleteMany({ where: { product_id: id } }),
+        this.prisma.discounts.deleteMany({ where: { product_id: id } }),
+        this.prisma.products.delete({ where: { id } }),
+      ]);
 
-    return { message: 'Product deleted successfully' };
+      return { message: 'Product deleted successfully' };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2003') {
+          if (error.message.includes('inventories_product_id_fkey')) {
+            throw new BadRequestError(
+              'Cannot delete because inventory has initialized.'
+            );
+          } else {
+            throw new BadRequestError(
+              'Cannot delete this product because it is referenced by other data.'
+            );
+          }
+        }
+      }
+      throw error;
+    }
   };
 }

@@ -10,6 +10,7 @@ export type StockProduct = {
 export type InventoryTableProps = {
   data: StockProduct[];
   onEditClick: (product: StockProduct, type: 'increase' | 'decrease') => void;
+  page: number;
 };
 
 export type EditStockModalProps = {

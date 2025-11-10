@@ -141,7 +141,7 @@ export class InventoryAdminService {
         newStock += quantity;
       } else if (type === 'out') {
         newStock -= quantity;
-        if (newStock < 0) throw new BadRequestError('Stock cannot be below 0.');
+        if (newStock < 0) throw new BadRequestError('Stock cannot below 0.');
       }
 
       await tx.inventories.update({

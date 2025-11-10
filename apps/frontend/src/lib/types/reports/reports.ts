@@ -4,6 +4,7 @@ export interface SalesReportItem {
   category_id: number;
   category: string;
   product: string;
+  quantity: number;
   totalSales: number;
   period: string;
   status: string;

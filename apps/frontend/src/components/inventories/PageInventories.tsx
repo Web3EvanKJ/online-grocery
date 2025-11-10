@@ -88,7 +88,7 @@ export default function PageInventories() {
         Inventory Management
       </h1>
 
-      <div className="flex flex-col justify-items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-10 flex flex-col justify-items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Search Input */}
         <div className="flex min-w-[30vw] gap-2">
           <Input
@@ -151,6 +151,7 @@ export default function PageInventories() {
       <InventoryTable
         data={data}
         onEditClick={(product, type) => setModal({ open: true, type, product })}
+        page={page}
       />
 
       {/* Pagination */}

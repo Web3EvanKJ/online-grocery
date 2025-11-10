@@ -41,8 +41,8 @@ export class DiscountAdminController {
         limit = '10',
         type,
         product_name,
-        sortBy = 'start_date',
-        sortOrder = 'asc',
+        sortBy,
+        sortOrder,
         date,
         store_id,
       } = req.query;

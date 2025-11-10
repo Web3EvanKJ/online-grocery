@@ -14,12 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
+import type { AxiosError } from 'axios';
 
 export function ProductFormFields({
   initialValues,
   onSubmit,
   onCancel,
   isSuperAdmin,
+  setError,
 }: ProductFormFieldsProps) {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
     []
@@ -32,8 +34,9 @@ export function ProductFormFields({
           params: { page: 1, limit: 15 },
         });
         setCategories(res.data.data);
-      } catch {
-        console.error('Failed to load categories');
+      } catch (err) {
+        const error = err as AxiosError<{ msg?: string }>;
+        setError(error.response?.data?.msg || 'Failed to load categories.');
       }
     };
     fetchCategories();

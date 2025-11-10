@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/axios';
 import { ErrorModal } from '../ErrorModal';
 import { FilterBar } from './FilterBar';
@@ -24,7 +24,6 @@ export default function PageSales() {
   const [salesData, setSalesData] = useState<SalesReportItem[]>([]);
   const [summary, setSummary] = useState({
     totalRevenue: 0,
-    avgSales: 0,
     totalProducts: 0,
   });
   const [stores, setStores] = useState<{ id: number | 'all'; name: string }[]>(
@@ -45,16 +44,12 @@ export default function PageSales() {
           api.get('/admin/sales/stores', { params: { role, userId } }),
           api.get('/admin/sales/categories'),
         ]);
-        const catOptions = [
-          { id: 'all', name: 'All Categories' },
-          ...catRes.data,
-        ];
+        // prettier-ignore
+        const catOptions = [{ id: 'all', name: 'All Categories' }, ...catRes.data,];
         setCategories(catOptions);
         if (role === 'super_admin') {
-          const storeOptions = [
-            { id: 'all', name: 'All Stores' },
-            ...storeRes.data,
-          ];
+          // prettier-ignore
+          const storeOptions = [{ id: 'all', name: 'All Stores' }, ...storeRes.data,];
           setStores(storeOptions);
           setSelectedStore('all');
         } else {
@@ -83,9 +78,7 @@ export default function PageSales() {
         },
       });
       setSalesData(res.data.data || []);
-      setSummary(
-        res.data.summary || { totalRevenue: 0, avgSales: 0, totalProducts: 0 }
-      );
+      setSummary(res.data.summary || { totalRevenue: 0, totalProducts: 0 });
       setTotalPages(res.data.pagination.totalPages || 1);
     } catch (err) {
       const error = err as AxiosError<{ msg?: string }>;
@@ -100,7 +93,7 @@ export default function PageSales() {
   return (
     <>
       <main className="mx-auto max-w-6xl space-y-6 p-6">
-        <h1 className="text-2xl font-bold text-sky-700">Sales Report</h1>
+        <h1 className="text-2xl font-semibold text-sky-700">Sales Report</h1>
         <FilterBar
           stores={stores}
           categories={categories}
@@ -131,11 +124,9 @@ export default function PageSales() {
           <h2 className="mb-4 text-xl font-semibold text-sky-700">
             Monthly Sales Summary — {selectedMonth}
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
             {/* prettier-ignore */}
             <SummaryCard title="Total Revenue" value={`Rp ${summary.totalRevenue.toLocaleString()}`} />
-            {/* prettier-ignore */}
-            <SummaryCard title="Average per Product" value={`Rp ${summary.avgSales.toLocaleString()}`} color="bg-green-50"/>
             {/* prettier-ignore */}
             <SummaryCard title="Products Sold" value={summary.totalProducts} color="bg-sky-100" />
           </div>
@@ -143,13 +134,15 @@ export default function PageSales() {
         <h2 className="mb-4 text-xl font-semibold text-sky-700">
           Sales Journal
         </h2>
-        <div className="overflow-x-auto rounded-xl border border-sky-100 bg-white">
+        <div className="overflow-x-auto border border-sky-100 bg-white">
           <table className="w-full border-collapse">
             <thead className="bg-sky-100">
               <tr className="text-left text-sky-800">
+                <th className="p-4">#</th>
                 <th className="p-4">Store</th>
                 <th className="p-4">Category</th>
                 <th className="p-4">Product</th>
+                <th className="p-4">Quantity</th>
                 <th className="cursor-pointer p-4" onClick={toggleSort}>
                   Total Sales (Rp){' '}
                   <span className="text-sm">
@@ -166,9 +159,11 @@ export default function PageSales() {
                     key={idx}
                     className="border-t border-sky-100 transition hover:bg-sky-50"
                   >
-                    <td className="p-4 font-medium">{item.store}</td>
+                    <td className="px-4 py-2">{(page - 1) * 10 + idx + 1}</td>
+                    <td className="p-4">{item.store}</td>
                     <td className="p-4">{item.category}</td>
                     <td className="p-4">{item.product}</td>
+                    <td className="p-4">{item.quantity}</td>
                     <td className="p-4 font-semibold text-sky-700">
                       Rp {item.totalSales.toLocaleString('id-ID')}
                     </td>

@@ -26,7 +26,6 @@ export class StoreLocationController {
       const response = await this.service.findNearestStore(lat, lon);
       res.json(response);
     } catch (error) {
-      console.error('ERROR_GET_NEAREST_STORE:', error);
       next(error);
     }
   };

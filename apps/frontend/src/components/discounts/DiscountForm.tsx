@@ -13,6 +13,7 @@ export function DiscountForm({
   loading,
   setOpen,
   isEdit,
+  setError,
 }: DiscountFormProps) {
   const initialValues = {
     type: discount?.type || 'product',
@@ -86,6 +87,7 @@ export function DiscountForm({
                     0
                   );
                 }}
+                setError={setError}
               />
               {touched.product_id && typeof errors.product_id === 'string' && (
                 <p className="text-xs text-red-500">{errors.product_id}</p>

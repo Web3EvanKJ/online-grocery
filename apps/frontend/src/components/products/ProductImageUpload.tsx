@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
 import { ErrorModal } from '@/components/ErrorModal';
 import { ProductImageUploadProps } from '@/lib/types/products/products';
+import Image from 'next/image';
 
 export function ProductImageUpload({
   existingUrls = [],
@@ -33,13 +34,7 @@ export function ProductImageUpload({
     };
   }, []);
 
-  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const incoming = Array.from(e.target.files || []);
-    if (incoming.length === 0) {
-      e.target.value = '';
-      return;
-    }
-
+  const validateFiles = (incoming: File[]): File[] | null => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
     const maxSize = 1 * 1024 * 1024; // 1MB
 
@@ -50,8 +45,7 @@ export function ProductImageUpload({
       setError(
         `${invalid.map((f) => f.name).join(', ')} is invalid. Only JPG/PNG/GIF < 1MB allowed.`
       );
-      e.target.value = '';
-      return;
+      return null;
     }
 
     // filter duplicates by name+size against existing files
@@ -60,23 +54,37 @@ export function ProductImageUpload({
     );
 
     if (uniqueNewFiles.length === 0) {
+      return null;
+    }
+
+    return uniqueNewFiles;
+  };
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(e.target.files || []);
+    if (incoming.length === 0) {
+      e.target.value = '';
+      return;
+    }
+
+    const validFiles = validateFiles(incoming);
+    if (!validFiles) {
       e.target.value = '';
       return;
     }
 
     // create previews for the new files
-    const newBlobs = uniqueNewFiles.map((f) => {
+    const newBlobs = validFiles.map((f) => {
       const url = URL.createObjectURL(f);
       createdBlobs.current.push(url);
       return url;
     });
 
-    const updatedFiles = [...files, ...uniqueNewFiles];
+    const updatedFiles = [...files, ...validFiles];
     const updatedBlobPreviews = [...blobPreviews, ...newBlobs];
 
     setFiles(updatedFiles);
     setBlobPreviews(updatedBlobPreviews);
-
     onChange(updatedFiles, backendUrls);
 
     e.target.value = '';
@@ -121,10 +129,12 @@ export function ProductImageUpload({
       <div className="flex flex-wrap gap-3">
         {renderedPreviews.map((src, i) => (
           <div key={i} className="relative">
-            <img
+            <Image
               src={src}
               alt={`preview-${i}`}
-              className="h-20 w-20 rounded border object-cover"
+              className="rounded border object-cover"
+              width={80}
+              height={80}
             />
             {!disabled && (
               <button

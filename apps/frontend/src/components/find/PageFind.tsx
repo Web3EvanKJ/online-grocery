@@ -96,13 +96,14 @@ export function PageFind() {
     <main className="min-h-screen bg-sky-50 px-5 py-10 md:px-15">
       <div className="mx-auto max-w-7xl px-4">
         <h2 className="mb-1 text-xl font-semibold text-gray-700">
-          Search result for <span className="text-sky-700">"{queryName}"</span>
+          Search result for{' '}
+          <span className="text-sky-700">&quot;{queryName}&quot;</span>
         </h2>
         <p className="mb-2 text-gray-500">
-          Showing products from nearest store: <b>{store?.store_name}</b>
-        </p>
-        <p className="mb-6 text-gray-500">
-          Distance: {store?.distance_km.toFixed(2)} km
+          Showing products from nearest store:{' '}
+          <b>
+            {store?.store_name} ({store?.distance_km.toFixed(2)} km)
+          </b>
         </p>
 
         {/* === Filter & Sort Controls === */}

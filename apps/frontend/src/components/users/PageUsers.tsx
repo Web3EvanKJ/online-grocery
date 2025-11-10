@@ -62,7 +62,7 @@ export default function PageUsers() {
       <div className="p-6">
         {/* Header Section */}
         <div className="mb-6 flex flex-row justify-between gap-4 sm:items-center">
-          <h1 className="text-xl font-semibold text-sky-800 sm:text-2xl">
+          <h1 className="text-xl font-semibold text-sky-700 sm:text-2xl">
             Manage Store Admins
           </h1>
           <Button
@@ -113,10 +113,10 @@ export default function PageUsers() {
         {/* Table Section */}
         <UserTable
           onEdit={handleEdit}
-          selectedRole={selectedRole}
           users={users}
           fetchUsers={fetchUsers}
           loading={loading}
+          page={page}
         />
 
         {/* Pagination */}

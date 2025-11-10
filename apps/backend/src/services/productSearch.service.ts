@@ -1,6 +1,6 @@
 import { Database } from '../config/prisma';
 import { NotFoundError } from '../utils/httpError';
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 
 export class ProductSearchService {
   private prisma: PrismaClient;
@@ -30,7 +30,7 @@ export class ProductSearchService {
     } = params;
 
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: Prisma.productsWhereInput = {};
     if (name) {
       where.name = { contains: name, mode: 'insensitive' };
     }

@@ -21,8 +21,8 @@ export type FormContentProps = {
 
 export type UserTableProps = {
   onEdit: (user: User) => void;
-  selectedRole: string;
   users: User[];
   fetchUsers: () => void;
   loading?: boolean;
+  page: number;
 };

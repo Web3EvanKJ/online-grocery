@@ -44,13 +44,11 @@ export function DiscountModal({
       setLoading(true);
       setError(null);
       setConfirmOpen(false);
-
       if (isEdit) {
         await api.put(`/admin/discounts/${discount?.id}`, pendingValues);
       } else {
         await api.post('/admin/discounts', pendingValues);
       }
-
       onSuccess();
     } catch (err) {
       const error = err as AxiosError<{ msg?: string }>;
@@ -76,6 +74,7 @@ export function DiscountModal({
             loading={loading}
             setOpen={setOpen}
             isEdit={isEdit}
+            setError={setError}
           />
         </DialogContent>
       </Dialog>

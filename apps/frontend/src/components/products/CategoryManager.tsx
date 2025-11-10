@@ -78,7 +78,7 @@ export function CategoryManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       fetchCategories();
     } catch (err) {
       const error = err as AxiosError<{ msg?: string }>;
-      setError(error.response?.data?.msg || 'Failed to delete categories.');
+      setError(error.response?.data?.msg || 'Failed to delete category.');
     } finally {
       setDeleteTarget(null);
     }

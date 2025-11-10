@@ -21,6 +21,7 @@ export function ProductModal({
   product,
   isSuperAdmin,
 }: ProductModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<ProductFormValues | null>(
     null
@@ -35,33 +36,35 @@ export function ProductModal({
 
   const productFormInitialValues = {
     name: product?.name || '',
-    category: product?.category_id || '',
+    category: product?.category_id || 0,
     description: product?.description || '',
     price: product?.price || '',
     existingUrls: product?.images?.map((img) => img.image_url) || [],
     newFiles: [],
   };
 
+  const uploadImages = async (newFiles: File[]): Promise<string[]> => {
+    if (!newFiles || newFiles.length === 0) return [];
+    const formData = new FormData();
+    newFiles.forEach((file) => formData.append('images', file));
+
+    const uploadRes = await api.post('/admin/products/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return uploadRes.data.data; // assuming backend returns an array of URLs
+  };
+
   const handleFinalSubmit = async () => {
     try {
       if (!pendingValues) return;
-
+      setIsSubmitting(true);
       const { name, category, description, price, existingUrls, newFiles } =
         pendingValues;
 
       let allUrls = [...(existingUrls || [])];
-
       // Upload only new files to Cloudinary via backend
-      if (newFiles && newFiles.length > 0) {
-        const formData = new FormData();
-        newFiles.forEach((file: File) => formData.append('images', file));
-
-        const uploadRes = await api.post('/admin/products/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-
-        allUrls = [...allUrls, ...uploadRes.data.data];
-      }
+      const uploadedUrls = await uploadImages(newFiles);
+      allUrls = [...allUrls, ...uploadedUrls];
 
       //  Create or Update product (send only URLs)
       const payload = {
@@ -84,6 +87,8 @@ export function ProductModal({
     } catch (err) {
       const error = err as AxiosError<{ msg?: string }>;
       setError(error.response?.data?.msg || 'Failed interaction with product.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -102,6 +107,7 @@ export function ProductModal({
             onSubmit={handleSubmit}
             onCancel={onClose}
             isSuperAdmin={isSuperAdmin}
+            setError={setError}
           />
         </DialogContent>
       </Dialog>
@@ -115,6 +121,7 @@ export function ProductModal({
             ? 'Are you sure you want to update this product?'
             : 'Are you sure you want to create this product?'
         }
+        loading={isSubmitting}
       />
 
       <ErrorModal
