@@ -220,6 +220,7 @@ model addresses {
   province       String
   city           String
   district       String
+  subdistrict    String
   latitude       Decimal
   longitude      Decimal
   is_main        Boolean   @default(false)
@@ -280,6 +281,7 @@ model payments {
   order_id    Int
   method      PaymentMethod
   proof_image String?
+  transaction_id String?
   is_verified Boolean       @default(false)
   verified_by Int?
   created_at  DateTime?     @default(now())

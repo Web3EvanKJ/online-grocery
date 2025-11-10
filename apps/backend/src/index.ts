@@ -4,6 +4,8 @@ import express from 'express';
 import { config } from './config/dotenv';
 // import exampleRouter from './routers/example.router';
 import { HttpError } from './utils/httpError';
+import cartRouter from "./routes/cart.routes";
+
 
 import type { Application, NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -76,6 +78,8 @@ class Server {
     this.app.use('/api/admin/stocks', stockAdminRouter);
     this.app.use('/api/productSearch', productSearchRouter);
     this.app.use('/api/store-location/', storeLocationRouter);
+    this.app.use("/cart", cartRouter);
+
   }
 
   /**
