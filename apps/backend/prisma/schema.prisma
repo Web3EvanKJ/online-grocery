@@ -84,7 +84,6 @@ model stores {
   province   String
   city       String
   district   String
-  subdistrict String
   latitude   Decimal
   longitude  Decimal
   created_at DateTime? @default(now())
