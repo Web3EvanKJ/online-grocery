@@ -20,7 +20,6 @@ export interface StoreBase {
   province: string;
   city: string;
   district: string;
-  subdistrict: string;
   latitude: number;
   longitude: number;
 }

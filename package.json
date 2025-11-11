@@ -21,11 +21,24 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/lodash.includes": "^4.3.9",
+    "@types/lodash.isboolean": "^3.0.9",
     "concurrently": "^9.1.2",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.3",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "lodash.includes": "^4.3.0",
+    "lodash.isboolean": "^3.0.3",
+    "mkdirp": "^3.0.1",
+    "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
+    "opencage-api-client": "^2.1.0",
+    "readable-stream": "^4.7.0"
   }
 }

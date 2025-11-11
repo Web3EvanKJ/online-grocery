@@ -1,6 +1,5 @@
 import { ProductTableProps } from '@/lib/types/products/products';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
 export function ProductTable({
