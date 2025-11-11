@@ -27,7 +27,7 @@ export class GeolocationService {
       }
 
       const result = response.results[0];
-      const components = result.components;
+      const components = result.components as any;
 
       // Focus on district and subdistrict level for 10km range
       const district =
@@ -39,15 +39,15 @@ export class GeolocationService {
 
       const subdistrict =
         components.city_district ||
-        components.residential ||
-        components.quarter ||
+        components?.residential ||
+        components?.quarter ||
         '';
 
       return {
         address: result.formatted,
-        province: components.state || components.province || '',
+        province: components.state || components?.province || '',
         city:
-          components.city || components.town || components.municipality || '',
+          components.city || components.town || components?.municipality || '',
         district: district,
         subdistrict: subdistrict,
         latitude: lat,
