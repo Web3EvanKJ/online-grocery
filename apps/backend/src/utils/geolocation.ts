@@ -199,7 +199,6 @@ export class GeolocationService {
           province: store.province,
           city: store.city,
           district: store.district,
-          subdistrict: store.subdistrict,
           latitude: Number(store.latitude),
           longitude: Number(store.longitude),
           distance: Number(distance.toFixed(2)),
