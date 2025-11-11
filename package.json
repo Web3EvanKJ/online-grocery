@@ -35,6 +35,10 @@
     "jsonwebtoken": "^9.0.2",
     "lodash.includes": "^4.3.0",
     "lodash.isboolean": "^3.0.3",
-    "opencage-api-client": "^2.1.0"
+    "mkdirp": "^3.0.1",
+    "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
+    "opencage-api-client": "^2.1.0",
+    "readable-stream": "^4.7.0"
   }
 }

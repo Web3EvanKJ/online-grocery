@@ -10,7 +10,7 @@ interface PaymentMethodProps {
 }
 
 export const PaymentMethodComponent: React.FC<PaymentMethodProps> = ({
-  methods,
+//   methods,
   selectedMethod,
   onMethodChange,
 }) => {

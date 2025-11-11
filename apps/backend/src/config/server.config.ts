@@ -47,7 +47,7 @@ export class ServerConfig {
   }
 
   static getPort(): number {
-    return parseInt(process.env.PORT || '3000');
+    return parseInt(process.env.PORT || '5000');
   }
 
   static isProduction(): boolean {

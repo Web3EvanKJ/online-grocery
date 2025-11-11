@@ -3,7 +3,7 @@ import { AddToCartRequest, CartResponse } from '@/lib/types/cart/cart';
 import { Order, CreateOrderRequest, OrdersResponse } from '@/lib/types/order/order';
 import { PaymentMethod, MidtransTransaction, UploadPaymentRequest } from '@/lib/types/payment/payment';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
   private async fetchWithAuth(url: string, options: RequestInit = {}) {
