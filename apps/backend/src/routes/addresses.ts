@@ -1,5 +1,4 @@
-// src/routes/addresses.ts
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import {
   getUserAddresses,
   getAddressById,
@@ -7,19 +6,16 @@ import {
   updateAddress,
   deleteAddress,
   setMainAddress,
-} from '../controllers/addressController.js';
-import { validate } from '../middleware/validation.js';
-import { auth, requireVerified } from '../middleware/auth.js';
+} from '../controllers/addressController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-router.use(auth, requireVerified);
-
-router.get('/', getUserAddresses);
-router.get('/:id', getAddressById);
-router.post('/', validate('address'), createAddress);
-router.put('/:id', validate('updateAddress'), updateAddress);
-router.delete('/:id', deleteAddress);
-router.patch('/:id/set-main', setMainAddress);
+router.get('/', authenticateToken, getUserAddresses);
+router.get('/:id', authenticateToken, getAddressById);
+router.post('/', authenticateToken, createAddress);
+router.put('/:id', authenticateToken, updateAddress);
+router.delete('/:id', authenticateToken, deleteAddress);
+router.patch('/:id/set-main', authenticateToken, setMainAddress);
 
 export default router;

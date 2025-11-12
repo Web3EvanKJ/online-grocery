@@ -1,24 +1,16 @@
-// src/routes/profile.ts
 import { Router } from 'express';
 import {
   getProfile,
   updateProfile,
-  changePassword,
-  updateProfileImage,
-  deleteProfileImage,
-} from '../controllers/profileController.js';
-import { validate } from '../middleware/validation.js';
-import { auth, requireVerified } from '../middleware/auth.js';
-import { upload, handleUploadError } from '../middleware/upload.js';
+  resendVerification,
+} from '../controllers/profileController';
+import { authenticateToken } from '../middleware/auth';
+import upload from '../middleware/upload';
 
 const router = Router();
 
-router.use(auth);
-
-router.get('/', getProfile);
-router.put('/', validate('updateProfile'), updateProfile);
-router.patch('/password', validate('changePassword'), changePassword);
-router.patch('/image', upload.single('image'), handleUploadError, updateProfileImage);
-router.delete('/image', deleteProfileImage);
+router.get('/profile', authenticateToken, getProfile);
+router.put('/profile', authenticateToken, updateProfile);
+router.post('/resend-verification', authenticateToken, resendVerification);
 
 export default router;

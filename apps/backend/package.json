@@ -23,11 +23,12 @@
   "description": "",
   "devDependencies": {
     "@prisma/client": "^6.18.0",
+    "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
+    "@types/express": "^4.17.25",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/midtrans-client": "^1.4.0",
     "@types/morgan": "^1.9.10",
@@ -49,6 +50,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "bcrypt": "^6.0.0",
     "@smithy/config-resolver": "^4.4.3",
     "@smithy/middleware-endpoint": "^4.3.7",
     "@smithy/middleware-retry": "^4.4.7",

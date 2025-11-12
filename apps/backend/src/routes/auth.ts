@@ -1,28 +1,18 @@
-// src/routes/auth.ts
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import {
   register,
   verifyEmail,
   login,
-  logout,
   forgotPassword,
   resetPassword,
-  resendVerification,
-  refreshToken,
-} from '../controllers/authController.js';
-import { validate } from '../middleware/validation.js';
-import { auth } from '../middleware/auth.js';
-import { authLimiter, verificationLimiter } from '../middleware/rateLimit.js';
+} from '../controllers/authController';
 
 const router = Router();
 
-router.post('/register', authLimiter, validate('register'), register);
-router.post('/verify', authLimiter, validate('verifyEmail'), verifyEmail);
-router.post('/login', authLimiter, validate('login'), login);
-router.post('/logout', auth, logout);
-router.post('/forgot-password', authLimiter, validate('forgotPassword'), forgotPassword);
-router.post('/reset-password', authLimiter, validate('resetPassword'), resetPassword);
-router.post('/resend-verification', verificationLimiter, validate('resendVerification'), resendVerification);
-router.post('/refresh-token', refreshToken);
+router.post('/register', register as RequestHandler);
+router.post('/verify-email', verifyEmail as RequestHandler);
+router.post('/login', login as RequestHandler);
+router.post('/forgot-password', forgotPassword as RequestHandler);
+router.post('/reset-password', resetPassword as RequestHandler);
 
 export default router;
