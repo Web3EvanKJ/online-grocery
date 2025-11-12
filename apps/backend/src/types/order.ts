@@ -1,3 +1,5 @@
+import { ProductImage, Store } from "./cart";
+
 export interface CreateOrderRequest {
   addressId: number;
   shippingMethodId: number;
@@ -43,7 +45,7 @@ export interface OrderItemResponse {
 export interface Product {
   id: number;
   name: string;
-  images: ProductImage[];
+  images: ProductImage [];
 }
 
 export interface Address {
