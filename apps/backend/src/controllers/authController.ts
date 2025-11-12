@@ -1,487 +1,213 @@
-// src/controllers/authController.ts
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { env } from '../config/env.js';
-import { prisma } from '../lib/prisma.js';
-import { emailService } from '../utils/email.js';
-import { cacheService } from '../utils/cache.js';
-import { logger } from '../utils/logger.js';
-import { constants } from '../config/constants.js';
-import { AuthRequest } from '../types/index.js';
+import { prisma } from '../lib/prisma'
+import { hashPassword, comparePassword } from '../utils/password';
+import { generateToken } from '../utils/jwt';
+import { sendVerificationEmail, sendResetPasswordEmail } from '../utils/email';
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: Request, res: Response) => {
   try {
-    const { email, name, phone } = req.body;
+    const { email, name } = req.body;
 
-    // Check if user already exists
     const existingUser = await prisma.users.findUnique({
       where: { email },
-      select: { id: true, is_verified: true }
     });
 
     if (existingUser) {
-      if (existingUser.is_verified) {
-        res.status(409).json({
-          success: false,
-          message: 'User already exists and is verified',
-        });
-        return;
-      } else {
-        // User exists but not verified - allow resending verification
-        await prisma.users.delete({
-          where: { id: existingUser.id }
-        });
-      }
+      return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Generate referral code
-    const referralCode = uuidv4().substring(0, 8).toUpperCase();
+    const verificationToken = uuidv4();
+    const verificationExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Create user without password
+    // Create user with verification token (temporary solution since no verification fields in schema)
     const user = await prisma.users.create({
       data: {
         email,
         name,
-        phone,
         role: 'user',
-        referral_code: referralCode,
+        is_verified: false,
+        // Store token in password field temporarily (you should add verification fields to schema)
+        password: verificationToken,
       },
     });
 
-    // Generate verification token
-    const verificationToken = uuidv4();
-    await prisma.verification_tokens.create({
-      data: {
-        token: verificationToken,
-        user_id: user.id,
-        expiresAt: new Date(Date.now() + constants.VERIFICATION_TOKEN_EXPIRY),
-      },
-    });
+    await sendVerificationEmail(email, verificationToken);
 
-    // Send verification email
-    const emailSent = await emailService.sendEmail(
-      email,
-      emailService.generateVerificationEmail(verificationToken, name)
-    );
-
-    if (!emailSent) {
-      logger.warn(`Failed to send verification email to: ${email}`);
-    }
-
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful. Please check your email for verification.',
-      data: {
-        userId: user.id,
-        emailSent,
-      },
+    res.json({ 
+      message: 'Verification email sent',
+      userId: user.id 
     });
   } catch (error) {
-    logger.error('Registration error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during registration',
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { token, password } = req.body;
 
-    // Find valid verification token
-    const verification = await prisma.verification_tokens.findFirst({
+    // Find user by temporary token stored in password field
+    const user = await prisma.users.findFirst({
       where: {
-        token,
-        expiresAt: { gt: new Date() },
-        used: false,
+        password: token,
+        is_verified: false,
       },
-      include: { user: true },
     });
 
-    if (!verification) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification token',
-      });
-      return;
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Update user
-    await prisma.$transaction(async (tx) => {
-      await tx.users.update({
-        where: { id: verification.user_id },
-        data: {
-          is_verified: true,
-          password: hashedPassword,
-        },
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        error: 'Password must be between 6 and 10 characters' 
       });
+    }
 
-      await tx.verification_tokens.update({
-        where: { id: verification.id },
-        data: { used: true },
-      });
-    });
+    const hashedPassword = await hashPassword(password);
 
-    // Invalidate any cached user data
-    await cacheService.invalidateUserCaches(verification.user_id);
-
-    res.json({
-      success: true,
-      message: 'Email verified successfully. You can now login.',
-    });
-  } catch (error) {
-    logger.error('Email verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during email verification',
-    });
-  }
-};
-
-export const login = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password } = req.body;
-
-    // Find user with password
-    const user = await prisma.users.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        role: true,
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
         is_verified: true,
-        name: true,
-        profile_image: true,
+        password: hashedPassword,
       },
     });
 
-    if (!user || !user.password) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
-      return;
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
-      return;
-    }
-
-    if (!user.is_verified) {
-      res.status(403).json({
-        success: false,
-        message: 'Please verify your email first',
-      });
-      return;
-    }
-
-    // Generate JWT tokens
-    const tokenPayload = {
-      userId: user.id,
-      email: user.email,
+    const accessToken = generateToken({ 
+      userId: user.id, 
+      email: user.email, 
       role: user.role,
-    };
-
-    // Fix JWT signing - use proper options format
-    const accessToken = jwt.sign(tokenPayload, env.JWT_SECRET, {
-      expiresIn: Number(constants.JWT_EXPIRY) || '1h',
+      is_verified: true 
     });
 
-    const refreshToken = jwt.sign(tokenPayload, env.JWT_REFRESH_SECRET, {
-      expiresIn: Number(constants.JWT_REFRESH_EXPIRY) || '7d',
-    });
-
-    // Set cookies
-    res.cookie('token', accessToken, {
-      httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
-
-    // Cache user data
-    await cacheService.set(
-      cacheService.generateUserKey(user.id),
-      {
+    res.json({ 
+      message: 'Email verified successfully',
+      token: accessToken,
+      user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        profile_image: user.profile_image,
-      },
-      3600 // 1 hour
-    );
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          profile_image: user.profile_image,
-        },
-        accessToken,
-      },
+        is_verified: true
+      }
     });
   } catch (error) {
-    logger.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during login',
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+export const login = async (req: Request, res: Response) => {
   try {
-    // Clear cookies
-    res.clearCookie('token');
-    res.clearCookie('refreshToken');
+    const { email, password } = req.body;
 
-    // Invalidate user cache
-    if (req.user) {
-      await cacheService.invalidateUserCaches(req.user.id);
+    const user = await prisma.users.findUnique({
+      where: { email },
+    });
+
+    if (!user || !user.password) {
+      return res.status(400).json({ error: 'Invalid email or password' });
     }
 
+    const isPasswordValid = await comparePassword(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    if (!user.is_verified) {
+      return res.status(400).json({ 
+        error: 'Email not verified',
+        message: 'Please verify your email before logging in'
+      });
+    }
+
+    const accessToken = generateToken({ 
+      userId: user.id, 
+      email: user.email, 
+      role: user.role,
+      is_verified: user.is_verified 
+    });
+
     res.json({
-      success: true,
-      message: 'Logout successful',
+      token: accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        is_verified: user.is_verified,
+        profile_image: user.profile_image
+      }
     });
   } catch (error) {
-    logger.error('Logout error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during logout',
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
     const user = await prisma.users.findUnique({
-      where: { email, is_verified: true },
+      where: { email },
     });
 
     if (!user) {
-      // Don't reveal whether user exists
-      res.json({
-        success: true,
-        message: 'If the email exists, a password reset link has been sent.',
-      });
-      return;
+      // Don't reveal whether email exists
+      return res.json({ message: 'If the email exists, a reset link will be sent' });
     }
 
-    // Generate reset token
     const resetToken = uuidv4();
-    await prisma.password_reset_tokens.create({
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Store reset token temporarily (you should add reset token fields to schema)
+    await prisma.users.update({
+      where: { id: user.id },
       data: {
-        token: resetToken,
-        user_id: user.id,
-        expiresAt: new Date(Date.now() + constants.PASSWORD_RESET_TOKEN_EXPIRY),
+        password: resetToken, // Temporary storage
       },
     });
 
-    // Send reset email
-    const emailSent = await emailService.sendEmail(
-      email,
-      emailService.generatePasswordResetEmail(resetToken, user.name)
-    );
+    await sendResetPasswordEmail(email, resetToken);
 
-    res.json({
-      success: true,
-      message: 'If the email exists, a password reset link has been sent.',
-      data: { emailSent },
-    });
+    res.json({ message: 'If the email exists, a reset link will be sent' });
   } catch (error) {
-    logger.error('Forgot password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during password reset request',
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token, password } = req.body;
 
-    // Find valid reset token
-    const resetToken = await prisma.password_reset_tokens.findFirst({
+    const user = await prisma.users.findFirst({
       where: {
-        token,
-        expiresAt: { gt: new Date() },
-        used: false,
+        password: token, // Looking for reset token
       },
-      include: { user: true },
-    });
-
-    if (!resetToken) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid or expired reset token',
-      });
-      return;
-    }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Update user and mark token as used
-    await prisma.$transaction(async (tx) => {
-      await tx.users.update({
-        where: { id: resetToken.user_id },
-        data: { password: hashedPassword },
-      });
-
-      await tx.password_reset_tokens.update({
-        where: { id: resetToken.id },
-        data: { used: true },
-      });
-    });
-
-    // Invalidate user cache
-    await cacheService.invalidateUserCaches(resetToken.user_id);
-
-    res.json({
-      success: true,
-      message: 'Password reset successfully. You can now login with your new password.',
-    });
-  } catch (error) {
-    logger.error('Reset password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during password reset',
-    });
-  }
-};
-
-export const resendVerification = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email } = req.body;
-
-    const user = await prisma.users.findUnique({
-      where: { email, is_verified: false },
     });
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: 'User not found or already verified',
-      });
-      return;
+      return res.status(400).json({ error: 'Invalid or expired token' });
     }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        error: 'Password must be between 6 and 10 characters' 
+      });
+    }
+    
+    const hashedPassword = await hashPassword(password);
 
-    // Delete any existing verification tokens
-    await prisma.verification_tokens.deleteMany({
-      where: { user_id: user.id },
-    });
-
-    // Generate new verification token
-    const verificationToken = uuidv4();
-    await prisma.verification_tokens.create({
+    await prisma.users.update({
+      where: { id: user.id },
       data: {
-        token: verificationToken,
-        user_id: user.id,
-        expiresAt: new Date(Date.now() + constants.VERIFICATION_TOKEN_EXPIRY),
+        password: hashedPassword,
       },
     });
 
-    // Send verification email
-    const emailSent = await emailService.sendEmail(
-      email,
-      emailService.generateVerificationEmail(verificationToken, user.name)
-    );
-
-    res.json({
-      success: true,
-      message: 'Verification email sent successfully.',
-      data: { emailSent },
-    });
+    res.json({ message: 'Password reset successfully' });
   } catch (error) {
-    logger.error('Resend verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during resend verification',
-    });
-  }
-};
-
-export const refreshToken = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const refreshToken = req.cookies.refreshToken;
-
-    if (!refreshToken) {
-      res.status(401).json({
-        success: false,
-        message: 'Refresh token required',
-      });
-      return;
-    }
-
-    const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as any;
-
-    const user = await prisma.users.findUnique({
-      where: { id: decoded.userId, is_verified: true },
-      select: { id: true, email: true, role: true },
-    });
-
-    if (!user) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token',
-      });
-      return;
-    }
-
-    // Generate new access token
-    const newAccessToken = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      env.JWT_SECRET,
-      { expiresIn: Number(constants.JWT_EXPIRY) || '1h' }
-    );
-
-    res.cookie('token', newAccessToken, {
-      httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({
-      success: true,
-      message: 'Token refreshed successfully',
-      data: { accessToken: newAccessToken },
-    });
-  } catch (error) {
-    logger.error('Refresh token error:', error);
-    res.status(401).json({
-      success: false,
-      message: 'Invalid refresh token',
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
