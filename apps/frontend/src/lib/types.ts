@@ -12,10 +12,19 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export interface UserProfile {
-  id: string;
-  name: string | null;
-  email: string;
-  role: string;
-  is_verified: boolean;
+
+export interface Address {
+  id: number;
+  user_id: number;
+  label: string;
+  address_detail: string;
+  province: string;
+  city: string;
+  district: string;
+  latitude: number;
+  longitude: number;
+  is_main: boolean;
+  created_at: string;
+  updated_at: string;
 }
+
