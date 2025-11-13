@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { NextFunction } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../lib/prisma'
 
 export const getUserAddresses = async (req: AuthRequest, res: Response)  =>{
   try {
@@ -64,16 +63,17 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
       province, 
       city, 
       district, 
+      subdistrict,
       latitude, 
       longitude, 
       is_main 
     } = req.body;
 
-    // Validate required fields
-    if (!label || !address_detail || !province || !city || !district) {
+    // Validate required fields - added subdistrict
+    if (!label || !address_detail || !province || !city || !district || !subdistrict) {
       return res.status(400).json({
         success: false,
-        error: 'Label, address detail, province, city, and district are required'
+        error: 'Label, address detail, province, city, district, and subdistrict are required'
       });
     }
 
@@ -93,8 +93,9 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
         province,
         city,
         district,
-        latitude: parseFloat(latitude) || 0,
-        longitude: parseFloat(longitude) || 0,
+        subdistrict, // Added subdistrict
+        latitude: latitude ? parseFloat(latitude) : 0,
+        longitude: longitude ? parseFloat(longitude) : 0,
         is_main: is_main || false,
       },
     });
@@ -122,6 +123,7 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
       province, 
       city, 
       district, 
+      subdistrict, // Added subdistrict
       latitude, 
       longitude, 
       is_main 
@@ -158,6 +160,7 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
         province: province || existingAddress.province,
         city: city || existingAddress.city,
         district: district || existingAddress.district,
+        subdistrict: subdistrict || existingAddress.subdistrict, // Added subdistrict
         latitude: latitude ? parseFloat(latitude) : existingAddress.latitude,
         longitude: longitude ? parseFloat(longitude) : existingAddress.longitude,
         is_main: is_main !== undefined ? is_main : existingAddress.is_main,

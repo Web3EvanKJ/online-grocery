@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Address } from '@/lib/types';
+import { Address } from '../lib/types';
 
 export default function AddressManager() {
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -14,6 +14,7 @@ export default function AddressManager() {
     province: '',
     city: '',
     district: '',
+    subdistrict: '', // Added subdistrict field
     latitude: '',
     longitude: '',
     is_main: false
@@ -120,6 +121,7 @@ export default function AddressManager() {
       province: '',
       city: '',
       district: '',
+      subdistrict: '', // Added subdistrict field
       latitude: '',
       longitude: '',
       is_main: false
@@ -135,6 +137,7 @@ export default function AddressManager() {
       province: address.province,
       city: address.city,
       district: address.district,
+      subdistrict: address.subdistrict, // Added subdistrict field
       latitude: address.latitude.toString(),
       longitude: address.longitude.toString(),
       is_main: address.is_main
@@ -220,6 +223,18 @@ export default function AddressManager() {
                 required
                 value={formData.district}
                 onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            {/* Added Subdistrict Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Subdistrict *</label>
+              <input
+                type="text"
+                required
+                value={formData.subdistrict}
+                onChange={(e) => setFormData({ ...formData, subdistrict: e.target.value })}
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -340,7 +355,7 @@ export default function AddressManager() {
                   </div>
                   <p className="text-gray-600">{address.address_detail}</p>
                   <p className="text-sm text-gray-500">
-                    {address.district}, {address.city}, {address.province}
+                    {address.subdistrict}, {address.district}, {address.city}, {address.province}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
                     Coordinates: {address.latitude}, {address.longitude}
