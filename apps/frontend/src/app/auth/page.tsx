@@ -2,8 +2,7 @@ import React from 'react'
 import AuthPage from "@/components/AuthForm"
 
 const Page = () => {
-  return 
-  (
+  return (
     <div>
       <AuthPage />
     </div>

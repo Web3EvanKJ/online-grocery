@@ -2,8 +2,7 @@ import DashboarduserPage from "@/components/UserDashboard"
 import React from 'react'
 
 const Page = () => {
-  return 
-  (
+  return (
     <div>
       <DashboarduserPage params={{
         id: ""
