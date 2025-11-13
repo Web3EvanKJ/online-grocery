@@ -10,7 +10,8 @@ const nextConfig: NextConfig = {
       'via.placeholder.com',
       'res.cloudinary.com',
       'example.com',
-    ], 
+      'picsum.photos',
+    ],
   },
   async rewrites() {
     return [
