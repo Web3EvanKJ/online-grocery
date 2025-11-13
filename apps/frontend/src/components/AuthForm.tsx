@@ -82,8 +82,8 @@ export default function AuthPage() {
         setMessage('Success! Redirecting...');
         router.push(`/dashboarduser/${data.user.uuid}`);
       }
-    } catch (error: any) {
-      setMessage(error.message);
+    } catch (error: unknown) {
+      setMessage(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
@@ -282,7 +282,7 @@ export default function AuthPage() {
                   }}
                   className="block w-full text-sm text-blue-600 hover:text-blue-500"
                 >
-                  Don't have an account? Sign up
+                  Don&apos;t have an account? Sign up
                 </button>
                 <button
                   type="button"
