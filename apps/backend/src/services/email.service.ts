@@ -14,23 +14,23 @@ export class EmailService {
 
   // Order-related emails
   static async sendOrderConfirmation(orderId: number) {
-    return await OrderEmailService.sendOrderConfirmation(orderId);
+    await OrderEmailService.sendOrderConfirmation(orderId);
   }
 
   static async sendPaymentConfirmation(orderId: number) {
-    return await OrderEmailService.sendPaymentConfirmation(orderId);
+    await OrderEmailService.sendPaymentConfirmation(orderId);
   }
 
-  static async sendOrderShippedNotification(orderId: number, trackingNumber?: string) {
-    return await OrderEmailService.sendOrderShippedNotification(orderId, trackingNumber);
+  static async sendOrderShippedNotification(orderId: number) {
+    await OrderEmailService.sendOrderShippedNotification(orderId);
   }
 
   static async sendOrderDeliveredNotification(orderId: number) {
-    return await OrderEmailService.sendOrderDeliveredNotification(orderId);
+    await OrderEmailService.sendOrderDeliveredNotification(orderId);
   }
 
   static async sendOrderCancellationNotification(orderId: number, reason: string) {
-    return await OrderEmailService.sendOrderCancellationNotification(orderId, reason);
+    await OrderEmailService.sendOrderCancellationNotification(orderId, reason);
   }
 
   // Admin emails

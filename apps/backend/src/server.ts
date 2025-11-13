@@ -1,16 +1,10 @@
 // src/server.ts
 import express from 'express';
-import { ServerConfig } from './config/server.config';
 import { connectDatabase, disconnectDatabase } from './config/database.config';
-import { setupCronJobs } from './utils/cron';
-import { PaymentService } from './services/payment.service';
-import { errorHandler, notFoundHandler } from './middleware/error.middleware';
-import { EmailService } from './services/email.service';
-
-// Routes
-import cartRoutes from './routes/cart.routes';
-import orderRoutes from './routes/order.routes';
-import paymentRoutes from './routes/payment.routes';
+import { ServerConfig } from './config/server.config';
+import { EmailService } from './services/email.service'; // ✅ Import EmailService
+import { setupCronJobs } from './utils/cron'; // ✅ Import setupCronJobs
+// Import services yang diperlukan nanti
 
 class Application {
   private app: express.Application;
@@ -22,58 +16,61 @@ class Application {
 
   private async setup() {
     this.setupConfig();
-    this.setupRoutes();
-    this.setupErrorHandling();
     await this.initializeServices();
   }
 
   private setupConfig() {
+    // Panggil setupMiddleware langsung tanpa modification
     ServerConfig.setupMiddleware(this.app);
     ServerConfig.setupCloudinary();
   }
 
-  private setupRoutes() {
-    this.app.use('/api/cart', cartRoutes);
-    this.app.use('/api/orders', orderRoutes);
-    this.app.use('/api/payments', paymentRoutes);
-    
-    this.app.get('/health', this.healthCheck);
-  }
-
-  private setupErrorHandling() {
-    this.app.use(notFoundHandler);
-    this.app.use(errorHandler);
-  }
-
   private async initializeServices() {
-    await connectDatabase();
-    PaymentService.initializeMidtrans();
-    EmailService.initializeTransporter();
-    // Test email configuration
-    const emailTest = await EmailService.testEmail();
-    if (emailTest) {
-      console.log('✅ Email service initialized successfully');
-    } else {
-      console.log('❌ Email service initialization failed');
+    try {
+      await connectDatabase();
+      console.log('✅ Database connected successfully');
+
+      // Initialize Cloudinary
+      ServerConfig.setupCloudinary();
+      console.log('✅ Cloudinary configured');
+
+      // Initialize Email Service
+      await EmailService.initializeTransporter();
+      console.log('✅ Email service initialized');
+
+      // Setup cron jobs
+      setupCronJobs();
+      console.log('✅ Cron jobs initialized');
+      // Initialize other services nanti
+      // await PaymentService.initializeMidtrans();
+      // await EmailService.initializeTransporter();
+
+    } catch (error) {
+      console.error('❌ Service initialization failed:', error);
+      process.exit(1);
     }
-    setupCronJobs();
   }
 
-  private healthCheck = (req: express.Request, res: express.Response) => {
-    res.status(200).json({ 
-      status: 'OK', 
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV 
+  private setupRoutes() {
+    // Health check - tambahkan langsung di sini
+    this.app.get('/api/health', (req: express.Request, res: express.Response) => {
+      res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV 
+      });
     });
-  };
+  }
 
   public start() {
     const port = ServerConfig.getPort();
     
+    // Setup routes sebelum start
+    this.setupRoutes();
+    
     this.app.listen(port, () => {
       console.log(`Server running on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
-      console.log('Cron jobs initialized');
     });
   }
 }
