@@ -55,6 +55,9 @@ export const useCart = () => {
       return false;
     }
   };
+  const clearError = () => {
+    setError(null);
+  };
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
@@ -72,6 +75,7 @@ export const useCart = () => {
     addToCart,
     updateCartItem,
     removeFromCart,
+    clearError,
     refreshCart: fetchCart,
   };
 };

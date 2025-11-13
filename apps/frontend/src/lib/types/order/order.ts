@@ -29,6 +29,7 @@ export interface OrderItemResponse {
   product_id: number;
   quantity: number;
   price: number;
+  discount: number;
   product: {
     name: string;
     images: { image_url: string }[];
@@ -37,6 +38,7 @@ export interface OrderItemResponse {
 
 export interface PaymentResponse {
   id: number;
+  transaction_id: string;
   method: string;
   is_verified: boolean;
   proof_image?: string;
@@ -47,6 +49,9 @@ export interface StoreInfo {
   name: string;
   address: string;
   city: string;
+  district: string;
+  subdistrict: string;
+  province: string;
 }
 
 export interface AddressInfo {
@@ -55,6 +60,7 @@ export interface AddressInfo {
   address_detail: string;
   province: string;
   city: string;
+  subdistrict: string;
   district: string;
 }
 

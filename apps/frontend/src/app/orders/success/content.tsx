@@ -1,62 +1,172 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
-export default function OrderSuccessContent() {
+export const SuccessContent = () => {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const orderId = searchParams.get('orderId');
+  const [celebrations, setCelebrations] = useState<string[]>([]);
 
   useEffect(() => {
-    localStorage.removeItem('cart-storage');
+    // Simple celebration effect tanpa confetti
+    const celebrationMessages = [
+      "🎉 Yeay! Order Berhasil!",
+      "🥳 Selamat! Pembelian Sukses!",
+      "✨ Pesananmu Sedang Diproses!",
+      "🚀 Siap-siap Dikirim!",
+      "💖 Terima Kasih Sudah Berbelanja!"
+    ];
+
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      setCelebrations(prev => [...prev.slice(-2), celebrationMessages[currentIndex]]);
+      currentIndex = (currentIndex + 1) % celebrationMessages.length;
+    }, 1500);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center relative overflow-hidden">
+        {/* Floating Animation Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-float"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`
+              }}
+            >
+              {['🎉', '✨', '⭐', '🎊', '💫'][i % 5]}
+            </div>
+          ))}
+        </div>
+
+        {/* Animated Checkmark */}
+        <div className="relative z-10">
+          <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
+            <svg 
+              className="w-12 h-12 text-green-500 animate-bounce"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M5 13l4 4L19 7" 
+              />
             </svg>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Pesanan Berhasil!
-          </h1>
+          {/* Rotating Celebration Messages */}
+          {celebrations.length > 0 && (
+            <div className="mb-4 h-12 flex items-center justify-center">
+              <p className="text-lg font-semibold text-green-600 animate-pulse">
+                {celebrations[celebrations.length - 1]}
+              </p>
+            </div>
+          )}
 
+          {/* Success Message */}
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            Order Successful! 🥳
+          </h1>
+          
           <p className="text-lg text-gray-600 mb-2">
-            Terima kasih telah berbelanja di Online Grocery Store
+            Terima kasih sudah berbelanja!
           </p>
 
           {orderId && (
-            <p className="text-gray-600 mb-6">
-              Order ID: <strong>#{orderId}</strong>
+            <p className="text-sm text-gray-500 mb-6">
+              Order ID: <span className="font-mono font-semibold text-green-600">#{orderId}</span>
             </p>
           )}
 
-          <p className="text-gray-600 mb-8">
-            Kami akan mengirimkan konfirmasi pesanan dan detail pengiriman ke email Anda.
-          </p>
+          {/* Fun Message */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 transform hover:scale-105 transition-transform">
+            <p className="text-sm text-yellow-800">
+              <span className="font-semibold">Fun Fact:</span> Pesananmu sedang disiapkan dengan penuh cinta! 💖
+            </p>
+          </div>
 
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => router.push('/orders')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Lihat Pesanan
-            </button>
+          {/* Next Steps */}
+          <div className="space-y-4 mb-8">
+            <div className="flex items-center justify-center gap-3 text-sm text-gray-600 animate-fade-in">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+              Kamu akan menerima email konfirmasi segera
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm text-gray-600 animate-fade-in" style={{animationDelay: '0.5s'}}>
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
+              Pesanan akan diproses dalam 1-2 jam
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm text-gray-600 animate-fade-in" style={{animationDelay: '1s'}}>
+              <span className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></span>
+              Siap-siap menerima barang kesayangan! 🛍️
+            </div>
+          </div>
 
-            <button
-              onClick={() => router.push('/products')}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          {/* Action Buttons */}
+          <div className="space-y-3 relative z-10">
+            <Link
+              href={`/orders/${orderId || ''}`}
+              className="block w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
-              Lanjut Belanja
-            </button>
+              🚀 Track My Order
+            </Link>
+            
+            <Link
+              href="/orders"
+              className="block w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-all font-medium hover:border-gray-400"
+            >
+              📦 View All Orders
+            </Link>
+
+            <Link
+              href="/"
+              className="block w-full text-green-600 py-3 px-4 rounded-lg hover:bg-green-50 transition-all font-medium hover:text-green-700"
+            >
+              🛒 Continue Shopping
+            </Link>
+          </div>
+
+          {/* Fun Footer */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              "Groceries delivered with ❤️ from our store to your door!"
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Custom CSS untuk animations */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+          50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+        
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-float {
+          animation: float linear infinite;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out forwards;
+          opacity: 0;
+        }
+      `}</style>
     </div>
   );
-}
+};

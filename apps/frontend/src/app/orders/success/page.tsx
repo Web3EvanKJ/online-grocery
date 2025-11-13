@@ -1,12 +1,5 @@
-'use client';
-
-import { Suspense } from 'react';
-import OrderSuccessContent from './content';
+import { SuccessContent } from './content';
 
 export default function OrderSuccessPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <OrderSuccessContent />
-    </Suspense>
-  );
+  return <SuccessContent />;
 }

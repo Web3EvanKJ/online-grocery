@@ -1,7 +1,7 @@
 // src/server.ts
 import express from 'express';
 import { connectDatabase, disconnectDatabase } from './config/database.config';
-import { ServerConfig } from './config/server.config';
+import { ServerConfig } from './config/server.config'
 import { EmailService } from './services/email.service'; // ✅ Import EmailService
 import { setupCronJobs } from './utils/cron'; // ✅ Import setupCronJobs
 // Import services yang diperlukan nanti

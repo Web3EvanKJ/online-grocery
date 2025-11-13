@@ -6,20 +6,39 @@ export const usePayment = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createPayment = async (orderData: any): Promise<MidtransPaymentResponse | null> => {
+  const initializeMidtransPayment = async (
+    orderId: number, 
+    paymentMethod: string
+  ): Promise<MidtransPaymentResponse | null> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // FIX: Extract data from the API response
-      const response = await apiClient.createPayment(orderData);
+      const response = await apiClient.initializeMidtransPayment(orderId, paymentMethod);
+      // FIX: Access nested data property
       const paymentData = response.data?.data as MidtransPaymentResponse;
       
       return paymentData;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Payment creation failed';
+      const errorMessage = err instanceof Error ? err.message : 'Midtrans payment initialization failed';
       setError(errorMessage);
       return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const uploadManualPaymentProof = async (orderId: number, proofImage: File): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await apiClient.uploadManualPayment(orderId, proofImage);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload payment proof';
+      setError(errorMessage);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -31,7 +50,7 @@ export const usePayment = () => {
 
     try {
       const response = await apiClient.getPaymentStatus(transactionId);
-      // FIX: Extract data from the API response
+      // FIX: Access nested data property
       return response.data?.data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get payment status';
@@ -42,9 +61,21 @@ export const usePayment = () => {
     }
   };
 
+  // Keep createPayment for backward compatibility if needed
+  const createPayment = async (orderData: any): Promise<MidtransPaymentResponse | null> => {
+    return initializeMidtransPayment(orderData.order_id, orderData.payment_method);
+  };
+
   return {
-    createPayment,
+    // Main methods
+    initializeMidtransPayment,
+    uploadManualPaymentProof,
     getPaymentStatus,
+    
+    // Legacy method (optional)
+    createPayment,
+    
+    // State
     isLoading,
     error,
     clearError: () => setError(null),

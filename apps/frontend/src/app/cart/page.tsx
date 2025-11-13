@@ -2,23 +2,23 @@
 
 import { useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
-import CartItem from '@/components/cart/CartItem';
-import CartSummary from '@/components/cart/CartSummary';
-import EmptyCart from '@/components/cart/EmptyCart';
+import { CartItem } from '@/components/cart/CartItem';
+import { CartSummary } from '@/components/cart/CartSummary';
+import { EmptyCart } from '@/components/cart/EmptyCart';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function CartPage() {
   const { 
-    cartItems, 
-    isLoading, 
+    cart, 
+    loading, 
     error, 
-    loadCart,
+    refreshCart,
     clearError 
   } = useCart();
 
   useEffect(() => {
-    loadCart();
-  }, [loadCart]);
+    refreshCart();
+  }, [refreshCart]);
 
   useEffect(() => {
     if (error) {
@@ -27,7 +27,7 @@ export default function CartPage() {
     }
   }, [error]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -43,8 +43,8 @@ export default function CartPage() {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => {
-              clearError();
-              loadCart();
+              clearError?.();
+              refreshCart();
             }}
             className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
           >
@@ -55,7 +55,7 @@ export default function CartPage() {
     );
   }
 
-  if (!cartItems || cartItems.length === 0) {
+  if (!cart || cart.length === 0) {
     return <EmptyCart />;
   }
 
@@ -69,12 +69,12 @@ export default function CartPage() {
               <div className="p-6 border-b">
                 <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
                 <p className="text-gray-600 mt-2">
-                  {cartItems.length} item{cartItems.length > 1 ? 's' : ''} in your cart
+                  {cart.length} item{cart.length > 1 ? 's' : ''} in your cart
                 </p>
               </div>
               
               <div className="divide-y">
-                {cartItems.map((item) => (
+                {cart.map((item) => (
                   <CartItem 
                     key={item.id} 
                     item={item} 
@@ -86,13 +86,7 @@ export default function CartPage() {
 
           {/* Cart Summary Section */}
           <div className="lg:w-1/3">
-            <CartSummary 
-              cartItems={cartItems}
-              onCheckout={() => {
-                // Akan di-handle di CartSummary component
-                console.log('Proceed to checkout');
-              }}
-            />
+            <CartSummary />
           </div>
         </div>
       </div>

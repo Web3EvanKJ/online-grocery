@@ -7,7 +7,7 @@ export const CartSummary = () => {
   const { cartTotal, cartCount } = useCart();
 
   return (
-    <div className="bg-gray-50 p-6 rounded-lg">
+    <div className="bg-white p-6 rounded-lg shadow-sm border">
       <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
       
       <div className="space-y-2 mb-4">
@@ -27,7 +27,7 @@ export const CartSummary = () => {
 
       <Link
         href="/checkout"
-        className="block w-full bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+        className="block w-full bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 transition-colors"
       >
         Proceed to Checkout
       </Link>
