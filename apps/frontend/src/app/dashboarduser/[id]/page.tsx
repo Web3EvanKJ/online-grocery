@@ -1,10 +1,15 @@
 import DashboarduserPage from "@/components/UserDashboard"
+import React from 'react'
 
-
-const page = () => {
-  return (
-    <div>page</div>
+const Page = () => {
+  return 
+  (
+    <div>
+      <DashboarduserPage params={{
+        id: ""
+      }} />
+    </div>
   )
 }
 
-export default DashboarduserPage
+export default Page
