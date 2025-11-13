@@ -80,7 +80,7 @@ export default function AuthPage() {
       } else if (mode === 'verify' || mode === 'login') {
         localStorage.setItem('token', data.token);
         setMessage('Success! Redirecting...');
-        router.push(`/dashboarduser/${data.user.uuid}`);
+        router.push(`/dashboarduser/${data.user.id}`);
       }
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : 'An unknown error occurred');
