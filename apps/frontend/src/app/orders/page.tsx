@@ -50,7 +50,7 @@ export default function OrdersPage() {
               </div>
               <Link
                 href="/"
-                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
+                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
               >
                 Continue Shopping
               </Link>
@@ -87,7 +87,7 @@ export default function OrdersPage() {
                 <p className="text-gray-600 mb-6">Start shopping to see your orders here</p>
                 <Link
                   href="/"
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                 >
                   Start Shopping
                 </Link>

@@ -45,7 +45,10 @@ class Server {
    * Middleware dieksekusi secara berurutan untuk setiap request yang masuk.
    */
   private initializeMiddleware() {
-    this.app.use(cors()); // Mengizinkan request dari origin yang berbeda (Cross-Origin Resource Sharing)
+    this.app.use(cors({
+      origin: '*',
+      credentials: true,
+  })); // Mengizinkan request dari origin yang berbeda (Cross-Origin Resource Sharing)
     this.app.use(express.json()); // Mem-parsing body request yang berformat JSON
 
     // const limiter = rateLimit({
@@ -78,7 +81,6 @@ class Server {
     this.app.use('/api/admin/stocks', stockAdminRouter);
     this.app.use('/api/productSearch', productSearchRouter);
     this.app.use('/api/store-location/', storeLocationRouter);
-    this.app.use("/cart", cartRouter);
 
   }
 

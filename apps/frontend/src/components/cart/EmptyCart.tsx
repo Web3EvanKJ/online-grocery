@@ -29,7 +29,7 @@ export const EmptyCart = () => {
         
         <Link
           href="/"
-          className="inline-block bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors"
+          className="inline-block bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors"
         >
           Start Shopping
         </Link>

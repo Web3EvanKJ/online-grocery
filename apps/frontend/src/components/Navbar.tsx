@@ -19,9 +19,14 @@ export default function Navbar() {
             >
               Login
             </Link>
-            <Link href="/orders" className="hover:text-green-600">Orders</Link>
+            <Link href="/orders" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200"
+              >Orders
+            </Link>
             
-            <Link href="/cart" className="relative hover:text-green-600">
+            <Link href="/cart" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200"
+              >
               Cart
               {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
