@@ -28,7 +28,7 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/addresses`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -50,8 +50,8 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const url = editingAddress
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${editingAddress.id}`
-        : '${process.env.NEXT_PUBLIC_API_URL}/api/addresses';
+        ? `${process.env.NEXT_PUBLIC_API_URL}api/addresses/${editingAddress.id}`
+        : '${process.env.NEXT_PUBLIC_API_URL}api/addresses';
 
       const method = editingAddress ? 'PUT' : 'POST';
 
@@ -89,7 +89,7 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/addresses/${id}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
@@ -108,7 +108,7 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${id}/set-main`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/addresses/${id}/set-main`,
         {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },

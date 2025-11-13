@@ -174,7 +174,10 @@ export function ProductDetail() {
               </button>
             </div>
 
-            <PurchaseBox stock={Number(product.stock)} />
+            <PurchaseBox
+              stock={Number(product.stock)}
+              product_id={Number(product.id)}
+            />
           </div>
         </div>
       </main>
