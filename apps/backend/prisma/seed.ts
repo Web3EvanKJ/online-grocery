@@ -1,275 +1,355 @@
-// import {
-//   PrismaClient,
-//   Role,
-//   DiscountType,
-//   DiscountInputType,
-//   VoucherType,
-//   VoucherDiscountType,
-//   PaymentMethod,
-//   OrderStatus,
-//   StockType,
-// } from '@prisma/client';
-// import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-// const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
-// async function main() {
-//   console.log('🌱 Starting seed...');
+async function main() {
+  console.log('🌱 Starting database seeding...');
 
-//   // --- USERS ---
-//   const superAdmin = await prisma.users.create({
-//     data: {
-//       name: 'Super Admin',
-//       email: 'superadmin@example.com',
-//       password: 'hashedpassword',
-//       role: Role.super_admin,
-//       is_verified: true,
-//     },
-//   });
+  // Clear existing data
+  await prisma.stock_journals.deleteMany();
+  await prisma.payments.deleteMany();
+  await prisma.order_items.deleteMany();
+  await prisma.orders.deleteMany();
+  await prisma.carts.deleteMany();
+  await prisma.user_vouchers.deleteMany();
+  await prisma.vouchers.deleteMany();
+  await prisma.discounts.deleteMany();
+  await prisma.inventories.deleteMany();
+  await prisma.product_images.deleteMany();
+  await prisma.products.deleteMany();
+  await prisma.categories.deleteMany();
+  await prisma.addresses.deleteMany();
+  await prisma.store_admins.deleteMany();
+  await prisma.stores.deleteMany();
+  await prisma.shipping_methods.deleteMany();
+  await prisma.users.deleteMany();
 
-//   const storeAdmin1 = await prisma.users.create({
-//     data: {
-//       name: 'Store Admin 1',
-//       email: 'storeadmin1@example.com',
-//       password: 'hashedpassword',
-//       role: Role.store_admin,
-//       is_verified: true,
-//     },
-//   });
+  console.log('✅ Database cleared');
 
-//   const storeAdmin2 = await prisma.users.create({
-//     data: {
-//       name: 'Store Admin 2',
-//       email: 'storeadmin2@example.com',
-//       password: 'hashedpassword',
-//       role: Role.store_admin,
-//       is_verified: true,
-//     },
-//   });
+  // ========== CREATE USERS ==========
+  const hashedPassword = await bcrypt.hash('password123', 12);
+  
+  const users = await prisma.users.createMany({
+    data: [
+      {
+        name: 'Bagas Customer',
+        email: 'bagas@example.com',
+        password: hashedPassword,
+        phone: '081234567890',
+        role: 'user',
+        is_verified: true,
+        referral_code: 'BAGAS123'
+      },
+      {
+        name: 'Admin Toko Bekasi',
+        email: 'admin.bekasi@example.com',
+        password: hashedPassword,
+        phone: '081234567891',
+        role: 'store_admin',
+        is_verified: true
+      },
+      {
+        name: 'Super Admin',
+        email: 'superadmin@example.com', 
+        password: hashedPassword,
+        phone: '081234567892',
+        role: 'super_admin',
+        is_verified: true
+      },
+      {
+        name: 'Evan Customer',
+        email: 'evan@example.com',
+        password: hashedPassword,
+        phone: '081234567893',
+        role: 'user',
+        is_verified: true,
+        referral_code: 'EVAN456'
+      }
+    ]
+  });
+  console.log('✅ Users created');
 
-//   const user1 = await prisma.users.create({
-//     data: {
-//       name: 'John Doe',
-//       email: 'john@example.com',
-//       password: 'hashedpassword',
-//       role: Role.user,
-//       is_verified: true,
-//     },
-//   });
+  // ========== CREATE STORES (JABODETABEK) ==========
+  const stores = await prisma.stores.createMany({
+    data: [
+      // BEKASI Stores
+      {
+        name: 'Fresh Mart Bekasi Central',
+        address: 'Jl. Jend. Ahmad Yani No. 1, Bekasi Kota',
+        province: 'Jawa Barat',
+        city: 'Bekasi',
+        district: 'Bekasi Kota',
+        latitude: -6.2383,
+        longitude: 106.9926
+      },
+      {
+        name: 'Super Grocery Bekasi Timur',
+        address: 'Jl. Pramuka No. 45, Bekasi Timur',
+        province: 'Jawa Barat', 
+        city: 'Bekasi',
+        district: 'Bekasi Timur',
+        latitude: -6.2456,
+        longitude: 107.0069
+      },
+      {
+        name: 'Daily Needs Bekasi Selatan',
+        address: 'Jl. Raya Pondok Gede No. 123, Bekasi Selatan',
+        province: 'Jawa Barat',
+        city: 'Bekasi',
+        district: 'Bekasi Selatan', 
+        latitude: -6.2618,
+        longitude: 106.9854
+      },
+      // JAKARTA Stores
+      {
+        name: 'Mega Market Jakarta Pusat',
+        address: 'Jl. Thamrin No. 10, Jakarta Pusat',
+        province: 'DKI Jakarta',
+        city: 'Jakarta',
+        district: 'Jakarta Pusat',
+        latitude: -6.1866,
+        longitude: 106.8233
+      },
+      {
+        name: 'City Grocery Jakarta Selatan',
+        address: 'Jl. Sudirman Kav. 25, Jakarta Selatan',
+        province: 'DKI Jakarta',
+        city: 'Jakarta', 
+        district: 'Jakarta Selatan',
+        latitude: -6.2260,
+        longitude: 106.8099
+      },
+      // DEPOK Stores
+      {
+        name: 'Depok Fresh Market',
+        address: 'Jl. Margonda Raya No. 500, Depok',
+        province: 'Jawa Barat',
+        city: 'Depok',
+        district: 'Depok',
+        latitude: -6.3741,
+        longitude: 106.8324
+      },
+      // BOGOR Stores
+      {
+        name: 'Bogor Organic Store',
+        address: 'Jl. Raya Pajajaran No. 25, Bogor',
+        province: 'Jawa Barat',
+        city: 'Bogor',
+        district: 'Bogor',
+        latitude: -6.5971, 
+        longitude: 106.8060
+      },
+      // TANGERANG Stores
+      {
+        name: 'Tangerang Supermarket',
+        address: 'Jl. Jend. Sudirman No. 45, Tangerang',
+        province: 'Banten',
+        city: 'Tangerang',
+        district: 'Tangerang',
+        latitude: -6.1783,
+        longitude: 106.6319
+      }
+    ]
+  });
+  console.log('✅ Stores created');
 
-//   const user2 = await prisma.users.create({
-//     data: {
-//       name: 'Jane Smith',
-//       email: 'jane@example.com',
-//       password: 'hashedpassword',
-//       role: Role.user,
-//       is_verified: true,
-//     },
-//   });
+  // ========== ASSIGN STORE ADMINS ==========
+  const storeAdminUser = await prisma.users.findFirst({
+    where: { email: 'admin.bekasi@example.com' }
+  });
 
-//   // --- STORES ---
-//   const store1 = await prisma.stores.create({
-//     data: {
-//       name: 'Jakarta Store',
-//       address: 'Jl. Merdeka No.1',
-//       province: 'DKI Jakarta',
-//       city: 'Jakarta',
-//       district: 'Central Jakarta',
-//       latitude: new Decimal('-6.1751'),
-//       longitude: new Decimal('106.8650'),
-//     },
-//   });
+  const bekasiStore = await prisma.stores.findFirst({
+    where: { name: 'Fresh Mart Bekasi Central' }
+  });
 
-//   const store2 = await prisma.stores.create({
-//     data: {
-//       name: 'Bandung Store',
-//       address: 'Jl. Asia Afrika No.12',
-//       province: 'West Java',
-//       city: 'Bandung',
-//       district: 'Bandung Wetan',
-//       latitude: new Decimal('-6.9175'),
-//       longitude: new Decimal('107.6191'),
-//     },
-//   });
+  if (storeAdminUser && bekasiStore) {
+    await prisma.store_admins.create({
+      data: {
+        user_id: storeAdminUser.id,
+        store_id: bekasiStore.id
+      }
+    });
+  }
+  console.log('✅ Store admin assigned');
 
-//   // --- STORE ADMINS ---
-//   await prisma.store_admins.createMany({
-//     data: [
-//       { user_id: storeAdmin1.id, store_id: store1.id },
-//       { user_id: storeAdmin2.id, store_id: store2.id },
-//     ],
-//   });
+  // ========== CREATE CATEGORIES ==========
+  const categories = await prisma.categories.createMany({
+    data: [
+      { name: 'Buah & Sayuran' },
+      { name: 'Daging & Ikan' },
+      { name: 'Susu & Produk Olahan' },
+      { name: 'Makanan Pokok' },
+      { name: 'Snack & Minuman' },
+      { name: 'Kebutuhan Rumah Tangga' }
+    ]
+  });
+  console.log('✅ Categories created');
 
-//   // --- CATEGORIES ---
-//   const [catFood, catDrinks] = await prisma.$transaction([
-//     prisma.categories.create({ data: { name: 'Food' } }),
-//     prisma.categories.create({ data: { name: 'Drinks' } }),
-//   ]);
+  // ========== CREATE PRODUCTS ==========
+  const categoriesList = await prisma.categories.findMany();
+  
+  const products = await prisma.products.createMany({
+    data: [
+      {
+        category_id: categoriesList[0].id, // Buah & Sayuran
+        name: 'Apel Fuji',
+        slug: 'apel-fuji',
+        description: 'Apel Fuji segar impor',
+        price: 25000
+      },
+      {
+        category_id: categoriesList[0].id,
+        name: 'Pisang Ambon',
+        slug: 'pisang-ambon', 
+        description: 'Pisang Ambon lokal segar',
+        price: 15000
+      },
+      {
+        category_id: categoriesList[1].id, // Daging & Ikan
+        name: 'Daging Sapi Premium',
+        slug: 'daging-sapi-premium',
+        description: 'Daging sapi pilihan',
+        price: 120000
+      },
+      {
+        category_id: categoriesList[1].id,
+        name: 'Ikan Salmon Fillet',
+        slug: 'ikan-salmon-fillet',
+        description: 'Ikan salmon segar fillet',
+        price: 85000
+      },
+      {
+        category_id: categoriesList[2].id, // Susu & Produk Olahan
+        name: 'Susu Ultra Milk',
+        slug: 'susu-ultra-milk',
+        description: 'Susu UHT full cream',
+        price: 18000
+      },
+      {
+        category_id: categoriesList[3].id, // Makanan Pokok
+        name: 'Beras Premium',
+        slug: 'beras-premium',
+        description: 'Beras kualitas premium 5kg',
+        price: 75000
+      },
+      {
+        category_id: categoriesList[4].id, // Snack & Minuman
+        name: 'Coklat Silverqueen',
+        slug: 'coklat-silverqueen',
+        description: 'Coklat Silverqueen 100gr',
+        price: 22000
+      },
+      {
+        category_id: categoriesList[5].id, // Kebutuhan Rumah Tangga
+        name: 'Sabun Lifebuoy',
+        slug: 'sabun-lifebuoy',
+        description: 'Sabun cair Lifebuoy 450ml',
+        price: 18500
+      }
+    ]
+  });
+  console.log('✅ Products created');
 
-//   // --- PRODUCTS ---
-//   const burger = await prisma.products.create({
-//     data: {
-//       name: 'Classic Burger',
-//       slug: 'classic-burger',
-//       category_id: catFood.id,
-//       description: 'A delicious beef burger with cheese and lettuce.',
-//       price: new Decimal(35000),
-//       images: {
-//         createMany: {
-//           data: [
-//             { image_url: 'https://via.placeholder.com/300x300?text=Burger+1' },
-//             { image_url: 'https://via.placeholder.com/300x300?text=Burger+2' },
-//           ],
-//         },
-//       },
-//     },
-//   });
+  // ========== CREATE PRODUCT IMAGES ==========
+  const productsList = await prisma.products.findMany();
+  
+  for (const product of productsList) {
+    await prisma.product_images.create({
+      data: {
+        product_id: product.id,
+        image_url: `https://picsum.photos/400/300?random=${product.id}`
+      }
+    });
+  }
+  console.log('✅ Product images created');
 
-//   const cola = await prisma.products.create({
-//     data: {
-//       name: 'Coca Cola',
-//       slug: 'coca-cola',
-//       category_id: catDrinks.id,
-//       description: 'Refreshing carbonated drink.',
-//       price: new Decimal(10000),
-//       images: {
-//         createMany: {
-//           data: [
-//             { image_url: 'https://via.placeholder.com/300x300?text=Cola+1' },
-//             { image_url: 'https://via.placeholder.com/300x300?text=Cola+2' },
-//           ],
-//         },
-//       },
-//     },
-//   });
+  // ========== CREATE INVENTORIES ==========
+  const storesList = await prisma.stores.findMany();
+  
+  for (const store of storesList) {
+    for (const product of productsList) {
+      await prisma.inventories.create({
+        data: {
+          product_id: product.id,
+          store_id: store.id,
+          stock: Math.floor(Math.random() * 50) + 10 // Random stock 10-60
+        }
+      });
+    }
+  }
+  console.log('✅ Inventories created');
 
-//   // --- INVENTORIES ---
-//   const inv1 = await prisma.inventories.create({
-//     data: { product_id: burger.id, store_id: store1.id, stock: 50 },
-//   });
+  // ========== CREATE SHIPPING METHODS ==========
+  await prisma.shipping_methods.createMany({
+    data: [
+      {
+        name: 'Regular Delivery',
+        provider: 'jne',
+        base_cost: 10000,
+        cost_per_km: 1500
+      },
+      {
+        name: 'Express Delivery', 
+        provider: 'tiki',
+        base_cost: 20000,
+        cost_per_km: 2500
+      },
+      {
+        name: 'Same Day Delivery',
+        provider: 'jnt',
+        base_cost: 30000, 
+        cost_per_km: 3500
+      }
+    ]
+  });
+  console.log('✅ Shipping methods created');
 
-//   const inv2 = await prisma.inventories.create({
-//     data: { product_id: cola.id, store_id: store2.id, stock: 100 },
-//   });
+  // ========== CREATE USER ADDRESSES ==========
+  const customer = await prisma.users.findFirst({
+    where: { email: 'bagas@example.com' }
+  });
 
-//   await prisma.stock_journals.createMany({
-//     data: [
-//       {
-//         inventory_id: inv1.id,
-//         type: StockType.in,
-//         quantity: 50,
-//         note: 'Initial stock',
-//       },
-//       {
-//         inventory_id: inv2.id,
-//         type: StockType.in,
-//         quantity: 100,
-//         note: 'Initial stock',
-//       },
-//     ],
-//   });
+  if (customer) {
+    await prisma.addresses.createMany({
+      data: [
+        {
+          user_id: customer.id,
+          label: 'Rumah',
+          address_detail: 'Jl. Bekasi Raya No. 123, RT 01/RW 05',
+          province: 'Jawa Barat',
+          city: 'Bekasi',
+          district: 'Bekasi Kota',
+          subdistrict: 'Margahayu',
+          latitude: -6.2400,
+          longitude: 106.9900,
+          is_main: true
+        },
+        {
+          user_id: customer.id,
+          label: 'Kantor',
+          address_detail: 'Gedung Office Park Lt. 5, Jl. BSD Green Office Park',
+          province: 'Banten', 
+          city: 'Tangerang',
+          district: 'Tangerang',
+          subdistrict: 'Serpong',
+          latitude: -6.3022,
+          longitude: 106.6528,
+          is_main: false
+        }
+      ]
+    });
+  }
+  console.log('✅ User addresses created');
 
-//   // --- DISCOUNTS ---
-//   await prisma.discounts.create({
-//     data: {
-//       store_id: store1.id,
-//       product_id: burger.id,
-//       type: DiscountType.product,
-//       inputType: DiscountInputType.percentage,
-//       value: new Decimal(10),
-//       min_purchase: new Decimal(50000),
-//       max_discount: new Decimal(10000),
-//       start_date: new Date(),
-//       end_date: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-//     },
-//   });
+  console.log('🎉 Database seeding completed!');
+}
 
-//   // --- VOUCHERS ---
-//   const voucher = await prisma.vouchers.create({
-//     data: {
-//       code: 'PROMO10',
-//       type: VoucherType.total,
-//       discount_type: VoucherDiscountType.percentage,
-//       discount_value: new Decimal(10),
-//       expired_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-//     },
-//   });
-
-//   await prisma.user_vouchers.create({
-//     data: {
-//       user_id: user1.id,
-//       voucher_id: voucher.id,
-//     },
-//   });
-
-//   // --- SHIPPING METHODS ---
-//   const jne = await prisma.shipping_methods.create({
-//     data: {
-//       name: 'JNE Regular',
-//       provider: 'JNE',
-//       base_cost: new Decimal(10000),
-//       cost_per_km: new Decimal(1000),
-//     },
-//   });
-
-//   // --- ADDRESSES ---
-//   const address = await prisma.addresses.create({
-//     data: {
-//       user_id: user1.id,
-//       label: 'Home',
-//       address_detail: 'Jl. Kebon Jeruk No. 5',
-//       province: 'DKI Jakarta',
-//       city: 'Jakarta',
-//       district: 'West Jakarta',
-//       latitude: new Decimal('-6.2'),
-//       longitude: new Decimal('106.8'),
-//       is_main: true,
-//     },
-//   });
-
-//   // --- ORDERS ---
-//   const order = await prisma.orders.create({
-//     data: {
-//       user_id: user1.id,
-//       store_id: store1.id,
-//       address_id: address.id,
-//       voucher_id: voucher.id,
-//       shipping_method_id: jne.id,
-//       total_amount: new Decimal(70000),
-//       shipping_cost: new Decimal(10000),
-//       discount_amount: new Decimal(7000),
-//       status: OrderStatus.Diproses,
-//       order_items: {
-//         create: [
-//           {
-//             product_id: burger.id,
-//             quantity: 2,
-//             price: new Decimal(35000),
-//             discount: new Decimal(7000),
-//           },
-//         ],
-//       },
-//     },
-//   });
-
-//   await prisma.payments.create({
-//     data: {
-//       order_id: order.id,
-//       method: PaymentMethod.manual_transfer,
-//       proof_image: 'https://via.placeholder.com/300x300?text=Payment',
-//       is_verified: true,
-//       verified_by: superAdmin.id,
-//     },
-//   });
-
-//   console.log('✅ Seeding complete!');
-// }
-
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
+main()
+  .catch((e) => {
+    console.error('❌ Seeding error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

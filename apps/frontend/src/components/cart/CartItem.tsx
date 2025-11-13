@@ -1,109 +1,64 @@
-// apps/frontend/src/components/cart/CartItem.tsx
+// components/cart/CartItem.tsx
 'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
-import { CartItem } from '@/lib/types/cart/cart';
+import { CartItem as CartItemType } from '../../lib/types/cart/cart';
+import { useCart } from '../../hooks/useCart';
 
 interface CartItemProps {
-  item: CartItem;
-  onUpdateQuantity: (cartId: number, quantity: number) => void;
-  onRemove: (cartId: number) => void;
+  item: CartItemType;
 }
 
-export const CartItemComponent: React.FC<CartItemProps> = ({
-  item,
-  onUpdateQuantity,
-  onRemove,
-}) => {
-  const [quantity, setQuantity] = useState(item.quantity);
-  const [isUpdating, setIsUpdating] = useState(false);
+export const CartItem = ({ item }: CartItemProps) => {
+  const { updateCartItem, removeFromCart } = useCart();
 
   const handleQuantityChange = async (newQuantity: number) => {
-    if (newQuantity < 1 || newQuantity > 100) return;
-    
-    setIsUpdating(true);
-    setQuantity(newQuantity);
-    
-    try {
-      await onUpdateQuantity(item.id, newQuantity);
-    } catch {
-      // Revert on error
-      setQuantity(item.quantity);
-    } finally {
-      setIsUpdating(false);
-    }
+    if (newQuantity < 1) return;
+    await updateCartItem(item.id, newQuantity);
   };
 
-  const handleRemove = () => {
-    onRemove(item.id);
+  const handleRemove = async () => {
+    await removeFromCart(item.id);
   };
-
-  const productImage = item.product.images[0]?.image_url || '/images/placeholder-product.jpg';
-  const totalPrice = item.product.price * quantity;
-  const isAvailable = item.product.isAvailable;
 
   return (
-    <div className="flex items-center gap-4 p-4 border-b border-gray-200">
-      <div className="flex-shrink-0">
-        <Image
-          src={productImage}
-          alt={item.product.name}
-          width={80}
-          height={80}
-          className="rounded-lg object-cover"
-        />
-      </div>
+    <div className="flex items-center gap-4 py-4 border-b">
+      <img 
+        src={item.product.images[0]?.image_url || '/placeholder-image.jpg'} 
+        alt={item.product.name}
+        className="w-20 h-20 object-cover rounded"
+      />
       
-      <div className="flex-1 min-w-0">
-        <h3 className="text-lg font-semibold text-gray-900 truncate">
-          {item.product.name}
-        </h3>
-        
-        <p className="text-gray-600 mt-1">
+      <div className="flex-1">
+        <h3 className="font-semibold">{item.product.name}</h3>
+        <p className="text-green-600 font-medium">
           Rp {item.product.price.toLocaleString()}
         </p>
-        
-        {!isAvailable && (
-          <p className="text-red-600 text-sm mt-1">
-            Stok tidak mencukupi
-          </p>
-        )}
-        
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={() => handleQuantityChange(quantity - 1)}
-            disabled={quantity <= 1 || isUpdating}
-            className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md disabled:opacity-50"
-          >
-            -
-          </button>
-          
-          <span className="w-12 text-center font-medium">
-            {quantity}
-          </span>
-          
-          <button
-            onClick={() => handleQuantityChange(quantity + 1)}
-            disabled={quantity >= 100 || isUpdating || !isAvailable}
-            className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md disabled:opacity-50"
-          >
-            +
-          </button>
-        </div>
       </div>
-      
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleQuantityChange(item.quantity - 1)}
+          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
+        >
+          -
+        </button>
+        <span className="w-8 text-center">{item.quantity}</span>
+        <button
+          onClick={() => handleQuantityChange(item.quantity + 1)}
+          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
+        >
+          +
+        </button>
+      </div>
+
       <div className="text-right">
-        <p className="text-lg font-semibold text-gray-900">
-          Rp {totalPrice.toLocaleString()}
+        <p className="font-semibold">
+          Rp {(item.product.price * item.quantity).toLocaleString()}
         </p>
-        
         <button
           onClick={handleRemove}
-          disabled={isUpdating}
-          className="text-red-600 hover:text-red-800 text-sm mt-2 disabled:opacity-50"
+          className="text-red-500 text-sm hover:text-red-700 mt-1"
         >
-          Hapus
+          Remove
         </button>
       </div>
     </div>

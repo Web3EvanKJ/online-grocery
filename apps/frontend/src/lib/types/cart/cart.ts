@@ -1,30 +1,22 @@
+// lib/types/cart.ts
 export interface CartItem {
   id: number;
   user_id: number;
   product_id: number;
   quantity: number;
-  created_at: string;
-  updated_at: string;
   product: {
     id: number;
     name: string;
     price: number;
-    images: Array<{
-      id: number;
-      image_url: string;
-    }>;
-    availableStock: number;
-    isAvailable: boolean;
+    images: { image_url: string }[];
   };
 }
 
-export interface CartResponse {
-  success: boolean;
-  message: string;
-  data: CartItem[];
+export interface AddToCartRequest {
+  product_id: number;
+  quantity: number;
 }
 
-export interface AddToCartRequest {
-  productId: number;
+export interface UpdateCartRequest {
   quantity: number;
 }

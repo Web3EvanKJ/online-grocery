@@ -1,58 +1,52 @@
-// apps/frontend/src/hooks/usePayment.ts
 import { useState } from 'react';
-import { PaymentMethod, MidtransTransaction, UploadPaymentRequest } from '@/lib/types/payment/payment';
-import { apiClient } from '@/lib/api';
+import { apiClient } from '../lib/api';
+import { MidtransPaymentResponse } from '../lib/types/payment/payment';
 
 export const usePayment = () => {
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getShippingMethods = async (): Promise<PaymentMethod[]> => {
+  const createPayment = async (orderData: any): Promise<MidtransPaymentResponse | null> => {
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.getShippingMethods();
-      return response.data;
+      // FIX: Extract data from the API response
+      const response = await apiClient.createPayment(orderData);
+      const paymentData = response.data?.data as MidtransPaymentResponse;
+      
+      return paymentData;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch shipping methods');
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'Payment creation failed';
+      setError(errorMessage);
+      return null;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const createMidtransTransaction = async (orderId: number): Promise<MidtransTransaction> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.createMidtransTransaction(orderId);
-      return response.data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create payment transaction');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const getPaymentStatus = async (transactionId: string): Promise<any> => {
+    setIsLoading(true);
+    setError(null);
 
-  const uploadPaymentProof = async (data: UploadPaymentRequest) => {
     try {
-      setLoading(true);
-      setError(null);
-      await apiClient.uploadPaymentProof(data);
+      const response = await apiClient.getPaymentStatus(transactionId);
+      // FIX: Extract data from the API response
+      return response.data?.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload payment proof');
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get payment status';
+      setError(errorMessage);
+      return null;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return {
-    loading,
+    createPayment,
+    getPaymentStatus,
+    isLoading,
     error,
-    getShippingMethods,
-    createMidtransTransaction,
-    uploadPaymentProof,
+    clearError: () => setError(null),
   };
 };

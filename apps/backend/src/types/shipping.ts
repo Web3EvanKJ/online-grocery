@@ -22,6 +22,7 @@ export interface StoreInfo {
   name: string;
   address: string;
   city: string;
+  distance: number; //
 }
 
 export interface RajaOngkirResponse {

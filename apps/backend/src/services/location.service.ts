@@ -1,14 +1,13 @@
 import { prisma } from '../utils/prisma';
 
 export class LocationService {
-  static async findNearestStore(userLat: number, userLng: number) {
+  static async findNearestStore(userLat: number, userLng: number, maxDistance: number = 10) {
     const stores = await prisma.stores.findMany();
     
     if (stores.length === 0) {
       throw new Error('No stores available');
     }
 
-    // Simple distance calculation (Haversine formula)
     let nearestStore = stores[0];
     let shortestDistance = this.calculateDistance(
       userLat, userLng,
@@ -27,9 +26,9 @@ export class LocationService {
       }
     }
 
-    // Check if store is within service range (50km)
-    if (shortestDistance > 50) {
-      throw new Error('No store available within service range (50km)');
+    // FIX: Use the maxDistance parameter
+    if (shortestDistance > maxDistance) {
+      throw new Error(`No store available within ${maxDistance}km range. Nearest store is ${shortestDistance.toFixed(1)}km away`);
     }
 
     return {

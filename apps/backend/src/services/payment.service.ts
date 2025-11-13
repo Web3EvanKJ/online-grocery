@@ -1,11 +1,10 @@
+// services/payment.service.ts
 import { prisma } from '../utils/prisma';
 import { MidtransPaymentRequest, ManualPaymentRequest } from '../types/payment';
 
 export class PaymentService {
+  // ✅ Method name harus match dengan yang dipanggil di controller
   static async initializeMidtransPayment(data: MidtransPaymentRequest) {
-    // Simplified Midtrans integration
-    // In real implementation, integrate with Midtrans SDK
-    
     const order = await prisma.orders.findUnique({
       where: { id: data.order_id },
       include: { user: true }
@@ -43,16 +42,12 @@ export class PaymentService {
       throw new Error('Order not found');
     }
 
-    // In real implementation, upload to Cloudinary
-    // For now, accept the image URL directly
-    const proofImage = data.proof_image;
-
     // Update payment record
     await prisma.payments.updateMany({
       where: { order_id: data.order_id },
       data: {
         method: 'manual_transfer',
-        proof_image: proofImage,
+        proof_image: data.proof_image,
         is_verified: false
       }
     });
@@ -73,10 +68,8 @@ export class PaymentService {
   }
 
   static async handleMidtransWebhook(payload: any) {
-    // Simplified webhook handler
     console.log('Midtrans webhook received:', payload);
     
-    // In real implementation, verify signature and update payment status
     if (payload.transaction_status === 'settlement') {
       await prisma.payments.updateMany({
         where: { transaction_id: payload.transaction_id },

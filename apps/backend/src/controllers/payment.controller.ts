@@ -1,11 +1,23 @@
-
 // controllers/payment.controller.ts
 import { Response } from 'express';
 import { PaymentService } from '../services/payment.service';
-import { OrderEmailService } from '../services/order-email.service'; // ✅ Import yang benar
+import { OrderEmailService } from '../services/order-email.service';
 import { AuthRequest } from '../middleware/auth';
 
 export class PaymentController {
+  // ✅ Tambah method yang missing
+  static async initializeMidtransPayment(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const result = await PaymentService.initializeMidtransPayment(req.body);
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
   static async uploadManualPayment(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
@@ -19,10 +31,9 @@ export class PaymentController {
       
       const result = await PaymentService.uploadManualPayment({
         order_id: parseInt(order_id),
-        proof_image: req.file.path // Local file path
+        proof_image: req.file.path
       });
       
-      // Send email notification - FIX: pake OrderEmailService
       await OrderEmailService.sendPaymentProofUploaded(parseInt(order_id));
       
       res.json(result);
@@ -47,7 +58,6 @@ export class PaymentController {
 
   static async handleWebhook(req: AuthRequest, res: Response) {
     try {
-      // Webhook doesn't require authentication
       const result = await PaymentService.handleMidtransWebhook(req.body);
       res.json(result);
     } catch (error: any) {
