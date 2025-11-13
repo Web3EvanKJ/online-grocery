@@ -1,8 +1,17 @@
 // hooks/useOrders.ts
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/api';
 import { OrderResponse } from '../lib/types/order/order';
+
+// Define proper type for order data
+interface CreateOrderData {
+  address_id: number;
+  shipping_method_id: number;
+  voucher_code?: string;
+  notes?: string;
+  payment_method?: string;
+}
 
 export const useOrders = (isAdmin = false) => {
   const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -15,7 +24,7 @@ export const useOrders = (isAdmin = false) => {
     totalPages: 0,
   });
 
-  const fetchOrders = async (page = 1, limit = 10) => {
+  const fetchOrders = useCallback(async (page = 1, limit = 10) => {
     try {
       setLoading(true);
       const response = isAdmin 
@@ -30,9 +39,9 @@ export const useOrders = (isAdmin = false) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin]);
 
-  const createOrder = async (orderData: any) => {
+  const createOrder = async (orderData: CreateOrderData) => {
     try {
       const response = await apiClient.createOrder(orderData);
       await fetchOrders(1);
@@ -56,7 +65,7 @@ export const useOrders = (isAdmin = false) => {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   return {
     orders,

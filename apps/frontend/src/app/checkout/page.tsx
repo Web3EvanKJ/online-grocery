@@ -8,6 +8,23 @@ import CheckoutForm from '@/components/checkout/CheckoutForm';
 import OrderSummary from '@/components/checkout/OrderSummary';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
+// Define proper type for order data
+interface OrderData {
+  address_id: number;
+  shipping_method_id: number;
+  voucher_code?: string;
+  shippingAddress: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    postalCode: string;
+  };
+  paymentMethod: string;
+  notes?: string;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, cartTotal, loading: cartLoading, refreshCart } = useCart();
@@ -15,12 +32,12 @@ export default function CheckoutPage() {
   
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreateOrder = async (orderData: any) => {
+  const handleCreateOrder = async (orderData: OrderData) => {
     try {
       setError(null);
       const response = await createOrder(orderData);
       
-      // Fix: Add proper null/undefined check
+      // Proper null/undefined check
       if (response?.data?.id) {
         await refreshCart();
         router.push(`/payment?orderId=${response.data.id}`);

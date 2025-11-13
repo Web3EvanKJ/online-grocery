@@ -24,7 +24,7 @@ export const EmptyCart = () => {
         
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
         <p className="text-gray-600 mb-8">
-          Looks like you haven't added any items to your cart yet. Start shopping to discover amazing products!
+          Looks like you haven&apos;t added any items to your cart yet. Start shopping to discover amazing products!
         </p>
         
         <Link

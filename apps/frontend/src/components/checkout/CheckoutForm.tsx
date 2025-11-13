@@ -3,11 +3,7 @@
 import { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-interface CheckoutFormProps {
-  onSubmit: (orderData: any) => void;
-  isLoading: boolean;
-}
-
+// Define proper types for form data
 interface Address {
   id: number;
   label: string;
@@ -32,6 +28,11 @@ interface FormData {
   shipping_method_id: number;
   voucher_code?: string;
   notes?: string;
+}
+
+interface CheckoutFormProps {
+  onSubmit: (orderData: FormData) => void;
+  isLoading: boolean;
 }
 
 export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps) {

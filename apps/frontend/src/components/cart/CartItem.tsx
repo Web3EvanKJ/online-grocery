@@ -1,5 +1,7 @@
 // components/cart/CartItem.tsx
 'use client';
+import { useState } from 'react';
+import Image from 'next/image';
 import { apiClient } from '@/lib/api';
 import { CartItem as CartItemType } from '../../lib/types/cart/cart';
 import { useCart } from '../../hooks/useCart';
@@ -9,24 +11,47 @@ interface CartItemProps {
 }
 
 export const CartItem = ({ item }: CartItemProps) => {
-  const { updateCartItem, removeFromCart } = useCart();
+  const { refreshCart } = useCart();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const handleQuantityChange = async (newQuantity: number) => {
     if (newQuantity < 1) return;
-    await apiClient.updateCartItem(item.id, newQuantity);
+    
+    try {
+      setIsUpdating(true);
+      await apiClient.updateCartItem(item.id, newQuantity);
+      refreshCart(); // Refresh cart using hook
+    } catch (error) {
+      console.error('Failed to update cart item:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleRemove = async () => {
-    await apiClient.removeFromCart(item.id);
+    try {
+      setIsRemoving(true);
+      await apiClient.removeFromCart(item.id);
+      refreshCart(); // Refresh cart using hook
+    } catch (error) {
+      console.error('Failed to remove cart item:', error);
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   return (
     <div className="flex items-center gap-4 py-4 border-b">
-      <img 
-        src={item.product.images[0]?.image_url || '/placeholder-image.jpg'} 
-        alt={item.product.name}
-        className="w-20 h-20 object-cover rounded"
-      />
+      <div className="relative w-20 h-20">
+        <Image 
+          src={item.product.images[0]?.image_url || '/placeholder-image.jpg'} 
+          alt={item.product.name}
+          fill
+          className="object-cover rounded"
+          sizes="80px"
+        />
+      </div>
       
       <div className="flex-1">
         <h3 className="font-semibold">{item.product.name}</h3>
@@ -38,14 +63,18 @@ export const CartItem = ({ item }: CartItemProps) => {
       <div className="flex items-center gap-2">
         <button
           onClick={() => handleQuantityChange(item.quantity - 1)}
-          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
+          disabled={isUpdating || item.quantity <= 1}
+          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           -
         </button>
-        <span className="w-8 text-center">{item.quantity}</span>
+        <span className="w-8 text-center">
+          {isUpdating ? '...' : item.quantity}
+        </span>
         <button
           onClick={() => handleQuantityChange(item.quantity + 1)}
-          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
+          disabled={isUpdating}
+          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           +
         </button>
@@ -57,9 +86,10 @@ export const CartItem = ({ item }: CartItemProps) => {
         </p>
         <button
           onClick={handleRemove}
-          className="text-red-500 text-sm hover:text-red-700 mt-1"
+          disabled={isRemoving}
+          className="text-red-500 text-sm hover:text-red-700 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Remove
+          {isRemoving ? 'Removing...' : 'Remove'}
         </button>
       </div>
     </div>

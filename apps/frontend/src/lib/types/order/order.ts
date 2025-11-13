@@ -14,7 +14,7 @@ export interface OrderResponse {
   shipping_method_id: number;
   total_amount: number;
   shipping_cost: number;
-  discount_amount: number;
+  discount_amount?: number;
   status: string;
   created_at: string;
   order_items: OrderItemResponse[];
@@ -29,7 +29,7 @@ export interface OrderItemResponse {
   product_id: number;
   quantity: number;
   price: number;
-  discount: number;
+  discount?: number;
   product: {
     name: string;
     images: { image_url: string }[];

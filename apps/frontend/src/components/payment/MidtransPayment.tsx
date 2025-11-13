@@ -1,10 +1,18 @@
 'use client';
 
+interface MidtransPaymentData {
+  payment_url?: string;
+  token?: string;
+  redirect_url?: string;
+  status_code?: string;
+  transaction_id?: string;
+}
+
 interface MidtransPaymentProps {
   onInitialize: () => Promise<void>;
   isLoading: boolean;
   isInitialized: boolean;
-  paymentData: any;
+  paymentData: MidtransPaymentData | null;
 }
 
 export default function MidtransPayment({

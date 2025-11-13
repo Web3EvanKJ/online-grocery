@@ -7,8 +7,18 @@ import PaymentMethodSelector from '@/components/payment/PaymentMethod';
 import ManualPaymentUpload from '@/components/payment/PaymentProof';
 import MidtransPayment from '@/components/payment/MidtransPayment';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { MidtransPaymentResponse } from '@/lib/types/payment/payment';
 
 type PaymentMethod = 'manual_transfer' | 'payment_gateway';
+
+// Define proper type for Midtrans payment data
+interface MidtransPaymentData {
+  payment_url?: string;
+  token?: string;
+  redirect_url?: string;
+  // Add other possible properties from Midtrans response
+  [key: string]: unknown;
+}
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -23,7 +33,7 @@ export default function PaymentPage() {
   
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('manual_transfer');
   const [paymentInitialized, setPaymentInitialized] = useState(false);
-  const [midtransData, setMidtransData] = useState<any>(null);
+  const [midtransData, setMidtransData] = useState<MidtransPaymentResponse | null>(null);
 
   const handleManualPayment = async (proofImage: File) => {
     if (!orderId) return false;

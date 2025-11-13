@@ -1,8 +1,10 @@
 'use client';
 
+type PaymentMethodType = 'manual_transfer' | 'payment_gateway';
+
 interface PaymentMethodSelectorProps {
-  selectedMethod: 'manual_transfer' | 'payment_gateway';
-  onMethodChange: (method: 'manual_transfer' | 'payment_gateway') => void;
+  selectedMethod: PaymentMethodType;
+  onMethodChange: (method: PaymentMethodType) => void;
   disabled?: boolean;
 }
 
@@ -13,7 +15,7 @@ export default function PaymentMethodSelector({
 }: PaymentMethodSelectorProps) {
   const paymentMethods = [
     {
-      id: 'manual_transfer',
+      id: 'manual_transfer' as PaymentMethodType,
       name: 'Manual Transfer',
       description: 'Transfer bank manual dan upload bukti transfer',
       banks: [
@@ -23,12 +25,18 @@ export default function PaymentMethodSelector({
       ]
     },
     {
-      id: 'payment_gateway',
+      id: 'payment_gateway' as PaymentMethodType,
       name: 'Payment Gateway',
       description: 'Bayar dengan Midtrans (Credit Card, E-Wallet, Bank Transfer)',
       features: ['Credit Card', 'Gopay', 'ShopeePay', 'Bank Transfer']
     }
   ];
+
+  const handleMethodClick = (methodId: PaymentMethodType) => {
+    if (!disabled) {
+      onMethodChange(methodId);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -43,7 +51,7 @@ export default function PaymentMethodSelector({
                 ? 'border-green-500 bg-green-50'
                 : 'border-gray-200 hover:border-gray-300'
             } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={() => !disabled && onMethodChange(method.id as any)}
+            onClick={() => handleMethodClick(method.id)}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
