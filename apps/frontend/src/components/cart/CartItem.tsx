@@ -1,5 +1,6 @@
 // components/cart/CartItem.tsx
 'use client';
+import { apiClient } from '@/lib/api';
 import { CartItem as CartItemType } from '../../lib/types/cart/cart';
 import { useCart } from '../../hooks/useCart';
 
@@ -12,11 +13,11 @@ export const CartItem = ({ item }: CartItemProps) => {
 
   const handleQuantityChange = async (newQuantity: number) => {
     if (newQuantity < 1) return;
-    await updateCartItem(item.id, newQuantity);
+    await apiClient.updateCartItem(item.id, newQuantity);
   };
 
   const handleRemove = async () => {
-    await removeFromCart(item.id);
+    await apiClient.removeFromCart(item.id);
   };
 
   return (
