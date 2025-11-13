@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserProfile, Address } from '@/lib/types';
+import { UserProfile } from '@/lib/types';
 import AddressManager from './AddressManager';
-import dotenv from 'dotenv';
 
-dotenv.config();
 export default function DashboardPage({ params }: { params: { id: string } }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +19,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/user/profile`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -32,7 +30,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         setUser(userData);
       }
     } catch (error) {
-      console.error('Failed to fetch profile');
+      console.error('Failed to fetch profile', error);
     } finally {
       setLoading(false);
     }

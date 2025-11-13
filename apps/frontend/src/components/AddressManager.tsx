@@ -28,7 +28,7 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/addresses`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -39,7 +39,7 @@ export default function AddressManager() {
         setAddresses(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch addresses');
+      console.error('Failed to fetch addresses', error);
     } finally {
       setLoading(false);
     }
@@ -50,8 +50,8 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const url = editingAddress
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${editingAddress.id}`
-        : '${process.env.NEXT_PUBLIC_API_URL}/api/addresses';
+        ? `${process.env.NEXT_PUBLIC_API_URL}api/addresses/${editingAddress.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}api/addresses`;
 
       const method = editingAddress ? 'PUT' : 'POST';
 
@@ -89,7 +89,7 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/addresses/${id}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
@@ -100,7 +100,7 @@ export default function AddressManager() {
         await fetchAddresses();
       }
     } catch (error) {
-      console.error('Failed to delete address');
+      console.error('Failed to delete address', error);
     }
   };
 
@@ -108,7 +108,7 @@ export default function AddressManager() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${id}/set-main`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/addresses/${id}/set-main`,
         {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },
@@ -119,7 +119,7 @@ export default function AddressManager() {
         await fetchAddresses();
       }
     } catch (error) {
-      console.error('Failed to set main address');
+      console.error('Failed to set main address', error);
     }
   };
 
@@ -378,7 +378,7 @@ export default function AddressManager() {
             </h4>
             <p className="text-xs text-blue-700">
               You can find latitude and longitude using Google Maps: Right-click
-              on a location → "What's here?" → Coordinates will appear at the
+              on a location → &quot;What&apos;s here?&quot; → Coordinates will appear at the
               bottom. Format: Latitude (-90 to 90), Longitude (-180 to 180)
             </p>
           </div>
