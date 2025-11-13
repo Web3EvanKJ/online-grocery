@@ -8,9 +8,13 @@ import { SummaryCard } from '@/components/reports/SummaryCard';
 import type { AxiosError } from 'axios';
 import { StockHistoryItem } from '@/lib/types/reports/reports';
 
-export default function PageStocks() {
-  const role = 'super_admin';
-  const user_id = 1;
+export default function PageStocks({
+  role,
+  user_id,
+}: {
+  role: string;
+  user_id: number;
+}) {
   const isSuperAdmin = role === 'super_admin';
   const [selectedStore, setSelectedStore] = useState<number | 'all'>('all');
   const [selectedMonth, setSelectedMonth] = useState(

@@ -11,8 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { sections } from '@/lib/types/adminDashboard/adminDashboard';
 
-export default function PageAdminDashboard() {
-  const role = 'super_admin';
+export default function PageAdminDashboard({ role }: { role: string }) {
   const isSuperAdmin = role === 'super_admin';
   const router = useRouter();
 

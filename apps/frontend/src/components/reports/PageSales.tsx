@@ -8,9 +8,13 @@ import { SummaryCard } from './SummaryCard';
 import { AxiosError } from 'axios';
 import { SalesReportItem } from '@/lib/types/reports/reports';
 
-export default function PageSales() {
-  const role = 'super_admin'; // or 'super_admin'
-  const userId = 1;
+export default function PageSales({
+  role,
+  userId,
+}: {
+  role: string;
+  userId: number;
+}) {
   const isSuperAdmin = role === 'super_admin';
   const [selectedStore, setSelectedStore] = useState<number | 'all'>('all');
   const [selectedCategory, setSelectedCategory] = useState<'all' | number>(

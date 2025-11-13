@@ -16,8 +16,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { AxiosError } from 'axios';
 
-export default function PageInventories() {
-  const role = 'super_admin';
+export default function PageInventories({
+  role,
+  user_id,
+}: {
+  role: string;
+  user_id: number;
+}) {
   const isSuperAdmin = role === 'super_admin';
 
   const [data, setData] = useState<StockProduct[]>([]);
@@ -39,7 +44,7 @@ export default function PageInventories() {
   const fetchStores = async () => {
     try {
       const res = await api.get('/admin/inventories/stores/list', {
-        params: { role: 'super_admin' },
+        params: { role, user_id },
       });
       setStores(res.data);
       if (res.data.length > 0 && selectedStore === null) {
