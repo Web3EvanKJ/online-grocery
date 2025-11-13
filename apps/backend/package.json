@@ -50,7 +50,6 @@
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
-    "bcrypt": "^6.0.0",
     "@smithy/config-resolver": "^4.4.3",
     "@smithy/middleware-endpoint": "^4.3.7",
     "@smithy/middleware-retry": "^4.4.7",
@@ -70,6 +69,7 @@
     "@smithy/util-middleware": "^4.2.5",
     "@smithy/util-retry": "^4.2.5",
     "@smithy/util-utf8": "^4.2.0",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "c12": "^3.1.0",
     "citty": "^0.1.6",
@@ -87,6 +87,7 @@
     "express-rate-limit": "^8.1.0",
     "fast-check": "^3.23.2",
     "helmet": "^8.1.0",
+    "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "midtrans-client": "^1.4.3",
     "mkdirp": "^3.0.1",
@@ -99,6 +100,7 @@
     "rajaongkir-nodejs": "^0.2.0",
     "slugify": "^1.6.6",
     "uuid": "^13.0.0",
+    "winston": "^3.18.3",
     "zod": "^3.25.76"
   }
 }
