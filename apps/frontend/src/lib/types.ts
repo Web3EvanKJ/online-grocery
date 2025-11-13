@@ -21,10 +21,10 @@ export interface Address {
   province: string;
   city: string;
   district: string;
+  subdistrict: string; // Added subdistrict field
   latitude: number;
   longitude: number;
   is_main: boolean;
   created_at: string;
   updated_at: string;
 }
-
