@@ -11,9 +11,8 @@ import { api } from '@/lib/axios';
 import { ErrorModal } from '../ErrorModal';
 import type { AxiosError } from 'axios';
 
-export function ProductPage() {
-  const userRole = 'super admin';
-  const isSuperAdmin = userRole === 'super admin';
+export function ProductPage({ userRole }: { userRole: string }) {
+  const isSuperAdmin = userRole === 'super_admin';
 
   const [products, setProducts] = useState<Products[]>([]);
   const [modalOpen, setModalOpen] = useState(false);

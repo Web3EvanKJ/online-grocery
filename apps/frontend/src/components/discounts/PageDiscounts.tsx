@@ -10,9 +10,13 @@ import { Discount } from '@/lib/types/discounts/discounts';
 import { api } from '@/lib/axios';
 import type { AxiosError } from 'axios';
 
-export default function PageDiscounts() {
-  const role = 'super_admin';
-  const user_id = 1;
+export default function PageDiscounts({
+  role,
+  user_id,
+}: {
+  role: string;
+  user_id: number;
+}) {
   const isSuperAdmin = role === 'super_admin';
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [modalOpen, setModalOpen] = useState(false);
@@ -26,7 +30,7 @@ export default function PageDiscounts() {
   const fetchStores = async () => {
     try {
       const res = await api.get('/admin/inventories/stores/list', {
-        params: { role: 'super_admin', user_id },
+        params: { role, user_id },
       });
       setStores(res.data);
       if (res.data.length > 0 && selectedStore === null) {
