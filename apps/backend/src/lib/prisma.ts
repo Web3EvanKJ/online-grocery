@@ -1,7 +1,7 @@
 // src/lib/prisma.ts
 import { PrismaClient } from '@prisma/client';
-import { env } from '../config/env.js';
-import { logger } from '../utils/logger.js';
+import { env } from '../config/env';
+import { logger } from '../utils/logger';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

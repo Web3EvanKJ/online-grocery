@@ -1,28 +1,44 @@
 export interface ShippingCostRequest {
-  origin: string;
-  destination: string;
-  weight: number;
-  courier: string;
+  addressId: number;
+  shippingMethodId: number;
+  items: ShippingItem[];
+}
+
+export interface ShippingItem {
+  product_id: number;
+  quantity: number;
+  weight: number; // in grams
 }
 
 export interface ShippingCostResponse {
-  service: string;
-  description: string;
   cost: number;
-  etd: string;
+  estimated_days: number;
+  service: string;
+  store: StoreInfo;
+}
+
+export interface StoreInfo {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  distance: number; //
 }
 
 export interface RajaOngkirResponse {
-  rajaongkir: {
-    results: {
-      costs: {
-        service: string;
-        description: string;
-        cost: {
-          value: number;
-          etd: string;
-        }[];
-      }[];
-    }[];
-  };
+  code: string;
+  name: string;
+  costs: ShippingCost[];
+}
+
+export interface ShippingCost {
+  service: string;
+  description: string;
+  cost: CostDetail[];
+}
+
+export interface CostDetail {
+  value: number;
+  etd: string;
+  note: string;
 }

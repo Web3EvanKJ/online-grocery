@@ -1,5 +1,3 @@
-import { ProductImage, Store } from "./cart";
-
 export interface CreateOrderRequest {
   addressId: number;
   shippingMethodId: number;
@@ -7,70 +5,35 @@ export interface CreateOrderRequest {
   paymentMethod: 'manual_transfer' | 'payment_gateway';
 }
 
-export interface OrderItemRequest {
-  productId: number;
-  quantity: number;
-  price: number;
-  discount?: number;
-}
-
+// Use any for Decimal fields to avoid type issues
 export interface OrderResponse {
   id: number;
   user_id: number;
   store_id: number;
   address_id: number;
-  voucher_id?: number;
   shipping_method_id: number;
-  total_amount: number;
-  shipping_cost: number;
-  discount_amount?: number;
+  total_amount: any; // Use any to accept Decimal
+  shipping_cost: any;
+  discount_amount: any;
   status: string;
   created_at: Date;
-  updated_at: Date;
   order_items: OrderItemResponse[];
-  store: Store;
-  address: Address;
-  shipping_method: ShippingMethod;
-  payments: Payment[];
+  payments: PaymentResponse[];
 }
 
 export interface OrderItemResponse {
   id: number;
-  product: Product;
+  product_id: number;
   quantity: number;
-  price: number;
-  discount?: number;
+  price: any; // Use any for Decimal
+  product: {
+    name: string;
+    images: { image_url: string }[];
+  };
 }
 
-export interface Product {
-  id: number;
-  name: string;
-  images: ProductImage [];
-}
-
-export interface Address {
-  id: number;
-  label: string;
-  address_detail: string;
-  province: string;
-  city: string;
-  district: string;
-  latitude: number;
-  longitude: number;
-}
-
-export interface ShippingMethod {
-  id: number;
-  name: string;
-  provider: string;
-  base_cost: number;
-  cost_per_km: number;
-}
-
-export interface Payment {
+export interface PaymentResponse {
   id: number;
   method: string;
-  proof_image?: string;
   is_verified: boolean;
-  created_at: Date;
 }

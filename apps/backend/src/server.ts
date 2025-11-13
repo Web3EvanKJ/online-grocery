@@ -9,6 +9,9 @@ import { EmailService } from './services/email.service';
 import type { ErrorRequestHandler } from 'express';
 
 // Routes
+import authRoutes from './routes/auth';
+import userRoutes from './routes/profile';
+import addressRoutes from './routes/addresses';
 import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
 import paymentRoutes from './routes/payment.routes';
@@ -43,6 +46,9 @@ class Application {
   }
 
   private setupRoutes() {
+    this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/user', userRoutes);
+    this.app.use('/api/addresses', addressRoutes);
     this.app.use('/api/cart', cartRoutes);
     this.app.use('/api/orders', orderRoutes);
     this.app.use('/api/payments', paymentRoutes);
@@ -66,7 +72,6 @@ class Application {
 
   private async initializeServices() {
     await connectDatabase();
-    PaymentService.initializeMidtrans();
     EmailService.initializeTransporter();
     // Test email configuration
     const emailTest = await EmailService.testEmail();

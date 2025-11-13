@@ -1,42 +1,68 @@
-// src/controllers/payment.controller.ts
+// controllers/payment.controller.ts
 import { Response } from 'express';
-import { AuthRequest } from '../types/express';
-import { BaseController } from './base.controller';
 import { PaymentService } from '../services/payment.service';
+import { OrderEmailService } from '../services/order-email.service';
+import { AuthRequest } from '../middleware/auth';
 
-export class PaymentController extends BaseController {
-  static async uploadPaymentProof(req: AuthRequest, res: Response) {
+export class PaymentController {
+  // ✅ Tambah method yang missing
+  static async initializeMidtransPayment(req: AuthRequest, res: Response) {
     try {
-      const { orderId } = req.body;
-      
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const result = await PaymentService.initializeMidtransPayment(req.body);
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  static async uploadManualPayment(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
       if (!req.file) {
-        this.handleError(res, new Error('Payment proof image is required'));
-        return;
+        return res.status(400).json({ error: 'Payment proof image is required' });
       }
 
-      const result = await PaymentService.uploadPaymentProof(orderId, req.file.buffer);
-      this.handleSuccess(res, result, result.message);
-    } catch (error) {
-      this.handleError(res, error);
+      const { order_id } = req.body;
+      
+      const result = await PaymentService.uploadManualPayment({
+        order_id: parseInt(order_id),
+        proof_image: req.file.path
+      });
+      
+      await OrderEmailService.sendPaymentProofUploaded(parseInt(order_id));
+      
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   }
 
-  static async createPayment(req: AuthRequest, res: Response) {
+  static async getPaymentStatus(req: AuthRequest, res: Response) {
     try {
-      const { orderId } = req.body;
-      const transaction = await PaymentService.createMidtransTransaction(orderId, req.user);
-      this.handleSuccess(res, transaction, 'Payment transaction created');
-    } catch (error) {
-      this.handleError(res, error);
+      const userId = req.user?.id;
+      const orderId = parseInt(req.params.orderId);
+      
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const payment = await PaymentService.getPaymentStatus(orderId);
+      res.json(payment);
+    } catch (error: any) {
+      res.status(404).json({ error: error.message });
     }
   }
 
-  static async handleMidtransNotification(req: AuthRequest, res: Response) {
+  static async handleWebhook(req: AuthRequest, res: Response) {
     try {
-      await PaymentService.handleMidtransNotification(req.body);
-      this.handleSuccess(res, null, 'Notification processed');
-    } catch (error) {
-      this.handleError(res, error);
+      const result = await PaymentService.handleMidtransWebhook(req.body);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Webhook error:', error);
+      res.status(400).json({ error: error.message });
     }
   }
 }

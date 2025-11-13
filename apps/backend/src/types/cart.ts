@@ -3,34 +3,19 @@ export interface CartItem {
   user_id: number;
   product_id: number;
   quantity: number;
-  // add null
-  created_at: Date | null;
-  updated_at: Date | null;
-  product: ProductWithDetails;
+  product: {
+    id: number;
+    name: string;
+    price: number;
+    images: { image_url: string }[];
+  };
 }
 
-export interface ProductWithDetails {
-  id: number;
-  name: string;
-  price: number;
-  images: ProductImage[];
-  inventories: InventoryWithStore[];
-  availableStock: number;
-  isAvailable: boolean;
+export interface AddToCartRequest {
+  product_id: number;
+  quantity: number;
 }
 
-export interface ProductImage {
-  id: number;
-  image_url: string;
-}
-
-export interface InventoryWithStore {
-  id: number;
-  stock: number;
-  store: Store;
-}
-
-export interface Store {
-  id: number;
-  name: string;
+export interface UpdateCartRequest {
+  quantity: number;
 }

@@ -10,7 +10,15 @@ const nextConfig: NextConfig = {
       'via.placeholder.com',
       'res.cloudinary.com',
       'example.com',
-    ], // ✅ allow this image host
+    ], 
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/api/:path*',
+      },
+    ];
   },
 };
 

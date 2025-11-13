@@ -1,128 +1,189 @@
-// apps/frontend/src/lib/api.ts
-import { AddToCartRequest, CartResponse } from '@/lib/types/cart/cart';
-import { Order, CreateOrderRequest, OrdersResponse } from '@/lib/types/order/order';
-import { PaymentMethod, MidtransTransaction, UploadPaymentRequest } from '@/lib/types/payment/payment';
+import { ApiResponse, PaginationParams, ApiError } from './types/api/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
-  private async fetchWithAuth(url: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('token');
+  private token: string | null = null;
+
+  setToken(token: string) {
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', token);
+    }
+  }
+
+  getToken(): string | null {
+    if (!this.token && typeof window !== 'undefined') {
+      this.token = localStorage.getItem('token');
+    }
+    return this.token;
+  }
+
+  clearToken() {
+    this.token = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+  }
+
+  // lib/api.ts
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const url = `${API_BASE}${endpoint}`;
+    const token = this.getToken();
     
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
-    const response = await fetch(`${API_BASE_URL}${url}`, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return response.json();
-  }
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-  private async fetchWithFormData(url: string, formData: FormData) {
-    const token = localStorage.getItem('token');
-    
-    const response = await fetch(`${API_BASE_URL}${url}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+      if (!response.ok) {
+        const errorData: ApiError = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const data: ApiResponse<T> = await response.json();
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Network error occurred');
     }
-
-    return response.json();
   }
-
-  // Cart APIs
-  async getCart(): Promise<CartResponse> {
-    return this.fetchWithAuth('/cart');
-  }
-
-  async addToCart(data: AddToCartRequest): Promise<CartResponse> {
-    return this.fetchWithAuth('/cart', {
+  // Auth API
+  async login(email: string, password: string) {
+    return this.request<{ token: string; user: any }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ email, password }),
     });
   }
 
-  async updateCartItem(cartId: number, quantity: number): Promise<CartResponse> {
-    return this.fetchWithAuth(`/cart/${cartId}`, {
-      method: 'PUT',
+  async register(email: string, name: string) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, name }),
+    });
+  }
+
+  // Cart API
+  async getCart() {
+    return this.request<{ data: any[] }>('/cart');
+  }
+
+  async addToCart(productId: number, quantity: number) {
+    return this.request('/cart', {
+      method: 'POST',
+      body: JSON.stringify({ product_id: productId, quantity }),
+    });
+  }
+
+  async updateCartItem(cartId: number, quantity: number) {
+    return this.request(`/cart/${cartId}`, {
+      method: 'PATCH',
       body: JSON.stringify({ quantity }),
     });
   }
 
-  async removeFromCart(cartId: number): Promise<{ success: boolean; message: string }> {
-    return this.fetchWithAuth(`/cart/${cartId}`, {
+  async removeFromCart(cartId: number) {
+    return this.request(`/cart/${cartId}`, {
       method: 'DELETE',
     });
   }
 
-  async clearCart(): Promise<{ success: boolean; message: string }> {
-    return this.fetchWithAuth('/cart', {
-      method: 'DELETE',
+  // Orders API
+  async createOrder(orderData: any) {
+    return this.request<{ data: any }>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
     });
   }
 
-  // Order APIs
-  async createOrder(data: CreateOrderRequest): Promise<{ success: boolean; message: string; data: Order }> {
-    return this.fetchWithAuth('/orders', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  async getOrders(params?: PaginationParams) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    return this.request<{ data: any[]; pagination: any }>(`/orders?${queryParams}`);
   }
 
-  async getOrders(page: number = 1, limit: number = 10): Promise<OrdersResponse> {
-    return this.fetchWithAuth(`/orders?page=${page}&limit=${limit}`);
+  async getOrderById(orderId: number) {
+    return this.request<{ data: any }>(`/orders/${orderId}`);
   }
 
-  async getOrder(orderId: number): Promise<{ success: boolean; message: string; data: Order }> {
-    return this.fetchWithAuth(`/orders/${orderId}`);
-  }
-
-  async cancelOrder(orderId: number, reason: string): Promise<{ success: boolean; message: string }> {
-    return this.fetchWithAuth(`/orders/${orderId}/cancel`, {
-      method: 'POST',
+  async cancelOrder(orderId: number, reason: string) {
+    return this.request(`/orders/${orderId}/cancel`, {
+      method: 'PATCH',
       body: JSON.stringify({ reason }),
     });
   }
 
-  async confirmOrder(orderId: number): Promise<{ success: boolean; message: string }> {
-    return this.fetchWithAuth(`/orders/${orderId}/confirm`, {
+  // Payment API
+  async initializeMidtransPayment(orderId: number, paymentMethod: string) {
+    return this.request<{ data: any }>('/payments/midtrans/initialize', {
       method: 'POST',
+      body: JSON.stringify({ order_id: orderId, payment_method: paymentMethod }),
     });
   }
 
-  // Payment APIs
-  async getShippingMethods(): Promise<{ success: boolean; message: string; data: PaymentMethod[] }> {
-    return this.fetchWithAuth('/shipping/methods');
-  }
-
-  async createMidtransTransaction(orderId: number): Promise<{ success: boolean; message: string; data: MidtransTransaction }> {
-    return this.fetchWithAuth('/payments/create-transaction', {
-      method: 'POST',
-      body: JSON.stringify({ orderId }),
-    });
-  }
-
-  async uploadPaymentProof(data: UploadPaymentRequest): Promise<{ success: boolean; message: string }> {
+  async uploadManualPayment(orderId: number, proofImage: File) {
     const formData = new FormData();
-    formData.append('orderId', data.orderId.toString());
-    formData.append('proofImage', data.proofImage);
+    formData.append('order_id', orderId.toString());
+    formData.append('proof_image', proofImage);
+
+    return this.request('/payments/manual/upload', {
+      method: 'POST',
+      headers: {}, // Let browser set Content-Type for FormData
+      body: formData,
+    });
+  }
+
+  // Admin API
+  async getAdminOrders(params?: PaginationParams & { storeId?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.storeId) queryParams.append('storeId', params.storeId.toString());
     
-    return this.fetchWithFormData('/payments/upload-proof', formData);
+    return this.request<{ data: any[]; pagination: any }>(`/admin/orders?${queryParams}`);
+  }
+
+  async updateOrderStatus(orderId: number, status: string) {
+    return this.request(`/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async verifyPayment(orderId: number, isVerified: boolean) {
+    return this.request(`/admin/orders/${orderId}/verify-payment`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isVerified }),
+    });
+  }
+
+  // Payment API - tambahkan method ini
+  async getPaymentStatus(transactionId: string) {
+    return this.request<{ data: any }>(`/payments/status/${transactionId}`);
+  }
+
+  async createPayment(paymentData: any) {
+    return this.request<{ data: any }>('/payments/create', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
   }
 }
 

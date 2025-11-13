@@ -1,7 +1,7 @@
 // src/config/redis.ts
 import Redis, { type Redis as RedisType, type RedisOptions } from 'ioredis';
-import { env } from '../config/env.js';
-import { logger } from '@/utils/logger.js';
+import { env } from '../config/env';
+import { logger } from '../utils/logger';
 
 class RedisClient {
   private client: RedisType;

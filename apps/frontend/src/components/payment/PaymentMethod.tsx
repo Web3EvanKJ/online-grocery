@@ -1,88 +1,99 @@
-// apps/frontend/src/components/payment/PaymentMethod.tsx
 'use client';
 
-import { PaymentMethod as PaymentMethodType } from '@/lib/types/payment/payment';
-
-interface PaymentMethodProps {
-  methods: PaymentMethodType[];
+interface PaymentMethodSelectorProps {
   selectedMethod: 'manual_transfer' | 'payment_gateway';
   onMethodChange: (method: 'manual_transfer' | 'payment_gateway') => void;
+  disabled?: boolean;
 }
 
-export const PaymentMethodComponent: React.FC<PaymentMethodProps> = ({
-//   methods,
+export default function PaymentMethodSelector({
   selectedMethod,
   onMethodChange,
-}) => {
+  disabled = false
+}: PaymentMethodSelectorProps) {
+  const paymentMethods = [
+    {
+      id: 'manual_transfer',
+      name: 'Manual Transfer',
+      description: 'Transfer bank manual dan upload bukti transfer',
+      banks: [
+        { name: 'BCA', account: '1234567890', holder: 'Online Grocery Store' },
+        { name: 'BNI', account: '0987654321', holder: 'Online Grocery Store' },
+        { name: 'Mandiri', account: '1122334455', holder: 'Online Grocery Store' }
+      ]
+    },
+    {
+      id: 'payment_gateway',
+      name: 'Payment Gateway',
+      description: 'Bayar dengan Midtrans (Credit Card, E-Wallet, Bank Transfer)',
+      features: ['Credit Card', 'Gopay', 'ShopeePay', 'Bank Transfer']
+    }
+  ];
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Metode Pembayaran
-      </h3>
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-gray-900">Select Payment Method</h3>
       
-      <div className="space-y-3">
-        <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-          <input
-            type="radio"
-            name="paymentMethod"
-            value="manual_transfer"
-            checked={selectedMethod === 'manual_transfer'}
-            onChange={() => onMethodChange('manual_transfer')}
-            className="text-blue-600 focus:ring-blue-500"
-          />
-          <div className="flex-1">
-            <span className="font-medium text-gray-900">Transfer Manual</span>
-            <p className="text-sm text-gray-600 mt-1">
-              Transfer ke rekening bank dan upload bukti transfer
-            </p>
+      <div className="grid gap-4">
+        {paymentMethods.map((method) => (
+          <div
+            key={method.id}
+            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+              selectedMethod === method.id
+                ? 'border-green-500 bg-green-50'
+                : 'border-gray-200 hover:border-gray-300'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => !disabled && onMethodChange(method.id as any)}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 ${
+                      selectedMethod === method.id
+                        ? 'border-green-500 bg-green-500'
+                        : 'border-gray-300'
+                    }`}
+                  />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{method.name}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{method.description}</p>
+                    
+                    {/* Bank Details for Manual Transfer */}
+                    {method.id === 'manual_transfer' && selectedMethod === 'manual_transfer' && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Transfer ke rekening:</p>
+                        {method.banks?.map((bank, index) => (
+                          <div key={index} className="text-sm text-gray-600 bg-white p-2 rounded border">
+                            <span className="font-medium">{bank.name}</span>: {bank.account} a.n {bank.holder}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Features for Payment Gateway */}
+                    {method.id === 'payment_gateway' && selectedMethod === 'payment_gateway' && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Supported methods:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {method.features?.map((feature, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                            >
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </label>
-
-        <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-          <input
-            type="radio"
-            name="paymentMethod"
-            value="payment_gateway"
-            checked={selectedMethod === 'payment_gateway'}
-            onChange={() => onMethodChange('payment_gateway')}
-            className="text-blue-600 focus:ring-blue-500"
-          />
-          <div className="flex-1">
-            <span className="font-medium text-gray-900">Payment Gateway</span>
-            <p className="text-sm text-gray-600 mt-1">
-              Bayar secara online melalui Midtrans (Credit Card, E-Wallet, dll)
-            </p>
-          </div>
-        </label>
+        ))}
       </div>
-
-      {selectedMethod === 'manual_transfer' && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">
-            Instruksi Transfer Manual
-          </h4>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Transfer ke rekening BCA: 1234567890 (Online Grocery Store)</li>
-            <li>• Jumlah transfer: Sesuai total pesanan</li>
-            <li>• Upload bukti transfer setelah melakukan pembayaran</li>
-            <li>• Pesanan akan diproses setelah pembayaran dikonfirmasi</li>
-          </ul>
-        </div>
-      )}
-
-      {selectedMethod === 'payment_gateway' && (
-        <div className="mt-4 p-4 bg-green-50 rounded-lg">
-          <h4 className="font-medium text-green-900 mb-2">
-            Instruksi Payment Gateway
-          </h4>
-          <ul className="text-sm text-green-800 space-y-1">
-            <li>• Anda akan diarahkan ke halaman pembayaran Midtrans</li>
-            <li>• Pilih metode pembayaran yang diinginkan</li>
-            <li>• Ikuti instruksi untuk menyelesaikan pembayaran</li>
-            <li>• Pesanan akan otomatis diproses setelah pembayaran berhasil</li>
-          </ul>
-        </div>
-      )}
     </div>
   );
-};
+}

@@ -1,222 +1,206 @@
-// src/services/order.service.ts
 import { prisma } from '../utils/prisma';
+import { DecimalHelper } from '../utils/decimal';
 import { OrderValidationService } from './order-validation.service';
 import { OrderCalculationService } from './order-calculation.service';
 import { OrderTransactionService } from './order-transaction.service';
 import { CreateOrderRequest, OrderResponse } from '../types/order';
-import { EmailService } from './email.service';
-import { AdminEmailService } from './admin-email.service';
+import { ShippingService } from './shipping.service';
 
 export class OrderService {
-  static async createOrder(userId: number, orderData: CreateOrderRequest): Promise<OrderResponse> {
-    const { addressId, shippingMethodId, voucherCode, paymentMethod } = orderData;
-
-    const address = await OrderValidationService.validateAddress(userId, addressId);
+  static async createOrder(userId: number, data: CreateOrderRequest): Promise<OrderResponse> {
+    const address = await OrderValidationService.validateAddress(data.addressId, userId);
     const cartItems = await OrderValidationService.validateCart(userId);
     const nearestStore = await OrderValidationService.findNearestStore(
-      Number(address.latitude),
+      Number(address.latitude), 
       Number(address.longitude)
     );
 
     await OrderValidationService.validateStock(cartItems, nearestStore.id);
 
-    const { totalAmount, discountAmount, orderItems } = 
-      OrderCalculationService.calculateItemsTotal(cartItems);
+    const { totalAmount, orderItems } = OrderCalculationService.calculateItemsTotal(cartItems);
+    
+    // FIX: Get shipping cost object and extract the cost
+    const shippingResult = await ShippingService.calculateShippingCost({
+      addressId: data.addressId,
+      shippingMethodId: data.shippingMethodId,
+      items: cartItems.map(item => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        weight: 100 // 100g per item, simplified
+      }))
+    });
 
-    const { discount: voucherDiscount, voucher } = 
-    // await OrderCalculationService.applyVoucherDiscount(voucherCode, totalAmount);
-      await OrderCalculationService.applyVoucherDiscount(voucherCode || '', totalAmount);
-
-    const finalDiscountAmount = discountAmount + voucherDiscount;
-    const amountAfterDiscount = totalAmount - voucherDiscount;
-
-    const shippingCost = await OrderCalculationService.calculateShipping(
-      addressId,
-      shippingMethodId,
-      cartItems,
-      nearestStore
-    );
-
-    const finalAmount = amountAfterDiscount + shippingCost;
+    const shippingCost = shippingResult.cost;
+    const totalAmountWithShipping = totalAmount + shippingCost;
 
     const transactionData = {
       storeId: nearestStore.id,
-      addressId,
-      shippingMethodId,
-      totalAmount: finalAmount,
-      shippingCost,
-      discountAmount: finalDiscountAmount,
-      paymentMethod
+      addressId: data.addressId,
+      shippingMethodId: data.shippingMethodId,
+      totalAmount: totalAmountWithShipping,
+      shippingCost: shippingCost,
+      paymentMethod: data.paymentMethod
     };
 
     const order = await OrderTransactionService.createOrderTransaction(
-      userId,
-      transactionData,
-      orderItems,
-      cartItems,
-      voucher
+      userId, 
+      transactionData, 
+      orderItems
     );
 
-    // Send order confirmation email
-    await EmailService.sendOrderConfirmation(order.id);
-    // Send admin notifications
-    await AdminEmailService.sendNewOrderNotification(order.id);
-
-    return order as OrderResponse;
+    const orderDetails = await this.getOrderById(order.id, userId);
+    return DecimalHelper.convertToNumber(orderDetails) as OrderResponse;
   }
 
   static async getOrders(userId: number, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
     const [orders, total] = await Promise.all([
-      this.fetchUserOrders(userId, skip, limit),
-      this.countUserOrders(userId)
+      prisma.orders.findMany({
+        where: { user_id: userId },
+        include: { 
+          order_items: { 
+            include: { 
+              product: { 
+                include: { images: true } 
+              } 
+            } 
+          }, 
+          payments: true 
+        },
+        orderBy: { created_at: 'desc' },
+        skip, 
+        take: limit
+      }),
+      prisma.orders.count({ where: { user_id: userId } })
     ]);
 
     return {
-      orders,
+      orders: DecimalHelper.convertToNumber(orders) as OrderResponse[],
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     };
   }
 
-  private static async fetchUserOrders(userId: number, skip: number, limit: number) {
-    return await prisma.orders.findMany({
-      where: { user_id: userId },
-      include: this.getOrderInclude(),
-      orderBy: { created_at: 'desc' },
-      skip,
-      take: limit
+  static async getOrderById(orderId: number, userId: number) {
+    const order = await prisma.orders.findFirst({
+      where: { id: orderId, user_id: userId },
+      include: { 
+        order_items: { 
+          include: { 
+            product: { 
+              include: { images: true } 
+            } 
+          } 
+        }, 
+        payments: true 
+      }
     });
-  }
 
-  private static async countUserOrders(userId: number) {
-    return await prisma.orders.count({ where: { user_id: userId } });
+    if (!order) throw new Error('Order not found');
+    return DecimalHelper.convertToNumber(order);
   }
-
-  private static getOrderInclude() {
-    return {
-      store: true,
-      address: true,
-      shipping_method: true,
-      order_items: {
-        include: {
-          product: {
-            include: { images: true }
-          }
-        }
-      },
-      payments: true
-    };
-  }
-
+  
   static async cancelOrder(orderId: number, userId: number, reason: string) {
-    const order = await this.validateOrderCancellation(orderId, userId);
-
-    await this.processOrderCancellation(order, reason);
-    // Send cancellation email
-    await EmailService.sendOrderCancellationNotification(orderId, reason);
-
-    return { message: 'Order cancelled successfully' };
-  }
-
-  private static async validateOrderCancellation(orderId: number, userId: number) {
     const order = await prisma.orders.findFirst({
       where: { id: orderId, user_id: userId },
       include: { order_items: true, payments: true }
     });
 
-    if (!order) throw new Error('Order not found');
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    // Validate cancellation rules
     if (order.status !== 'Menunggu_Pembayaran') {
       throw new Error('Cannot cancel order after payment');
     }
+
     if (order.payments[0]?.is_verified) {
-      throw new Error('Cannot cancel verified payment order');
+      throw new Error('Cannot cancel order with verified payment');
     }
 
-    return order;
-  }
-
-  private static async processOrderCancellation(order: any, reason: string) {
+    // Return stock and update order status
     await prisma.$transaction(async (tx) => {
-      await this.restoreInventory(tx, order, reason);
-      await this.updateOrderStatus(tx, order.id);
-    });
-  }
-
-  private static async restoreInventory(tx: any, order: any, reason: string) {
-    for (const item of order.order_items) {
-      const inventory = await tx.inventories.findFirst({
-        where: { product_id: item.product_id, store_id: order.store_id }
-      });
-
-      if (inventory) {
-        await tx.inventories.update({
-          where: { id: inventory.id },
-          data: { stock: { increment: item.quantity } }
-        });
-
-        await tx.stock_journals.create({
-          data: {
-            inventory_id: inventory.id,
-            type: 'in',
-            quantity: item.quantity,
-            note: `Order #${order.id} cancellation: ${reason}`
+      // Return stock to inventory
+      for (const item of order.order_items) {
+        const inventory = await tx.inventories.findFirst({
+          where: { 
+            product_id: item.product_id, 
+            store_id: order.store_id 
           }
         });
+
+        if (inventory) {
+          await tx.inventories.update({
+            where: { id: inventory.id },
+            data: { stock: { increment: item.quantity } }
+          });
+
+          // Create stock journal
+          await tx.stock_journals.create({
+            data: {
+              inventory_id: inventory.id,
+              type: 'in',
+              quantity: item.quantity,
+              note: `Order #${order.id} cancelled: ${reason}`
+            }
+          });
+        }
       }
-    }
-  }
 
-  private static async updateOrderStatus(tx: any, orderId: number) {
-    await tx.orders.update({
-      where: { id: orderId },
-      data: { status: 'Dibatalkan' }
+      // Update order status
+      await tx.orders.update({
+        where: { id: order.id },
+        data: { status: 'Dibatalkan' }
+      });
     });
+
+    return { message: 'Order cancelled successfully' };
   }
 
-  static async confirmOrder(orderId: number, userId: number) {
+  static async confirmOrderDelivery(orderId: number, userId: number) {
     const order = await prisma.orders.findFirst({
-      where: { id: orderId, user_id: userId, status: 'Dikirim' }
+      where: { 
+        id: orderId, 
+        user_id: userId,
+        status: 'Dikirim' 
+      }
     });
 
-    if (!order) throw new Error('Order not found or cannot be confirmed');
+    if (!order) {
+      throw new Error('Order not found or cannot be confirmed');
+    }
 
     await prisma.orders.update({
       where: { id: orderId },
       data: { status: 'Pesanan_Dikonfirmasi' }
     });
 
-    // Send delivery confirmation email
-    await EmailService.sendOrderDeliveredNotification(orderId);
-
     return { message: 'Order confirmed successfully' };
   }
 
-  static async getOrderById(orderId: number, userId: number) {
+  static async getOrderStatus(orderId: number, userId: number) {
     const order = await prisma.orders.findFirst({
       where: { id: orderId, user_id: userId },
-      include: this.getOrderDetailInclude()
-    });
-
-    if (!order) throw new Error('Order not found');
-
-    return order;
-  }
-
-  private static getOrderDetailInclude() {
-    return {
-      store: true,
-      address: true,
-      shipping_method: true,
-      order_items: {
-        include: {
-          product: {
-            include: { images: true }
+      select: { 
+        id: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+        payments: {
+          select: {
+            method: true,
+            is_verified: true,
+            proof_image: true
           }
         }
-      },
-      payments: true,
-      voucher: true
-    };
+      }
+    });
+
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    return order;
   }
 }

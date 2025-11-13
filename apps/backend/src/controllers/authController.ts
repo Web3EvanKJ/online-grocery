@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { prisma } from '../lib/prisma'
+import { prisma } from '../utils/prisma'
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
 import { sendVerificationEmail, sendResetPasswordEmail } from '../utils/email';

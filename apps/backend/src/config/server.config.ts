@@ -14,13 +14,13 @@ config();
 export class ServerConfig {
   static setupMiddleware(app: express.Application) {
     app.use(helmet());
-    app.use(compression());
     app.use(morgan('combined'));
-    app.use(cookieParser());
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
-    app.use(this.setupCors());
-    app.use(this.setupRateLimit());
+    const corsMiddleware = this.setupCors();
+    const rateLimitMiddleware = this.setupRateLimit();
+    app.use(corsMiddleware);
+    // app.use(rateLimitMiddleware);
   }
 
   static setupCors() {
