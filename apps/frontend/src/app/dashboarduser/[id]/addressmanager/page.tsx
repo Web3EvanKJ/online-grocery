@@ -2,8 +2,7 @@ import React from 'react'
 import AddressManager from '@/components/AddressManager'
 
 const Page = () => {
-  return 
-  (
+  return (
     <div>
       <AddressManager />
     </div>
