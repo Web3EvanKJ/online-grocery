@@ -3,7 +3,7 @@ import PageUsers from '@/components/users/PageUsers';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/authAdmin';
 
-export default function page() {
+export default function Page() {
   const { checkAuth } = useAuth(['super_admin']);
   const [userInfo, setUserInfo] = useState<{
     role: string;

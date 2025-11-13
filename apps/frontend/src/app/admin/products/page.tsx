@@ -3,7 +3,7 @@ import { ProductPage } from '@/components/products/PageProducts';
 import { useAuth } from '@/lib/authAdmin';
 import { useEffect, useState } from 'react';
 
-export default function page() {
+export default function Page() {
   const { checkAuth } = useAuth(['super_admin', 'store_admin']);
   const [userInfo, setUserInfo] = useState<{
     role: string;
