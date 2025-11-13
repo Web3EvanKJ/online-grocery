@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       'i.pinimg.com',
       'via.placeholder.com',
       'res.cloudinary.com',
+      'example.com',
     ], // ✅ allow this image host
   },
 };

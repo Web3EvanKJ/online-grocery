@@ -25,8 +25,8 @@ export class ServerConfig {
 
   static setupCors() {
     return cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:3001',
-      credentials: true
+      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      credentials: true,
     });
   }
 
@@ -34,7 +34,7 @@ export class ServerConfig {
     return rateLimit({
       windowMs: 15 * 60 * 1000,
       max: 100,
-      message: 'Too many requests from this IP, please try again later.'
+      message: 'Too many requests from this IP, please try again later.',
     });
   }
 
@@ -42,7 +42,7 @@ export class ServerConfig {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET
+      api_secret: process.env.CLOUDINARY_API_SECRET,
     });
   }
 
