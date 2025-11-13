@@ -33,19 +33,19 @@ export default function AuthPage() {
       let body = {};
 
       if (mode === 'register') {
-        url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}api/auth/register`;
         body = { email: formData.email, name: formData.name };
       } else if (mode === 'verify') {
-        url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-email`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}api/auth/verify-email`;
         body = { token: formData.token, password: formData.password };
       } else if (mode === 'forgot-password') {
-        url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/forgot-password`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}api/auth/forgot-password`;
         body = { email: formData.email };
       } else if (mode === 'reset-password') {
-        url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/reset-password`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}api/auth/reset-password`;
         body = { token: formData.token, password: formData.newPassword };
       } else {
-        url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}api/auth/login`;
         body = { email: formData.email, password: formData.password };
       }
 

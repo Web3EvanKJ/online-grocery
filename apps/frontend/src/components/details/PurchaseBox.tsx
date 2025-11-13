@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus } from 'lucide-react';
 
-export function PurchaseBox({ stock }: { stock: number }) {
+export function PurchaseBox({
+  stock,
+  product_id,
+}: {
+  stock: number;
+  product_id: number;
+}) {
   const [quantity, setQuantity] = useState(1);
 
   return (
