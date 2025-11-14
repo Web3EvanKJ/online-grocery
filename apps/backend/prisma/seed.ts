@@ -52,7 +52,7 @@ async function main() {
       {
         name: 'Super Admin',
         email: 'superadmin@example.com',
-        password: 'hashedPassword',
+        password: hashedPassword,
         phone: '081234567892',
         role: 'super_admin',
         is_verified: true,
