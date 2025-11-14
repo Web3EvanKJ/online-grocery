@@ -88,7 +88,7 @@ export default function PageStocks({
   useEffect(() => {
     if (!filtersLoaded) return;
     fetchStockHistory();
-  }, [selectedStore, selectedMonth, page]);
+  }, [filtersLoaded, selectedStore, selectedMonth, page]);
 
   const monthlySummary = useMemo(() => summary, [summary]);
 

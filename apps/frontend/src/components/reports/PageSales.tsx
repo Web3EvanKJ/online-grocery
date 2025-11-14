@@ -94,7 +94,14 @@ export default function PageSales({
   useEffect(() => {
     if (!filtersLoaded) return;
     fetchSales();
-  }, [selectedStore, selectedCategory, selectedMonth, sortOrder, page]);
+  }, [
+    filtersLoaded,
+    selectedStore,
+    selectedCategory,
+    selectedMonth,
+    sortOrder,
+    page,
+  ]);
   const toggleSort = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
 
   return (
