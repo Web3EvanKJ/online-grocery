@@ -40,7 +40,7 @@ export function PageFind() {
       const res = await api.get('/productSearch', {
         params: {
           page: queryPage,
-          limit: 10,
+          limit: 30,
           name: queryName,
           category: queryCategory,
           discounted: queryDiscounted,
