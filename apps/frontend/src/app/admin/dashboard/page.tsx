@@ -24,7 +24,5 @@ export default function Page() {
     );
   }
 
-  console.log(userInfo);
-
   return <PageAdminDashboard role={userInfo.role} />;
 }
