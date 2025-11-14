@@ -7,6 +7,7 @@ import {
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { getCoordinates } from '../utils/address';
 import { dataInput } from '../utils/type/user';
+import { hashPassword } from '../utils/password';
 
 export class UserAdminService {
   private prisma: PrismaClient;
@@ -32,12 +33,13 @@ export class UserAdminService {
         where: { email: data.email },
       });
       if (existingUser) throw new ConflictError('Email already registered');
+      const hashedPassword = await hashPassword(`${data.email}12345`);
 
       const user = await tx.users.create({
         data: {
           name: data.name,
           email: data.email,
-          password: `${data.email}12345`,
+          password: hashedPassword,
           role: 'store_admin',
           is_verified: true,
         },
