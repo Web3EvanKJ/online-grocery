@@ -1,7 +1,7 @@
 import { ApiResponse, PaginationParams, ApiError } from './types/api/api';
 
 const API_BASE =
-  `${process.env.NEXT_PUBLIC_API_URL}/api` || 'http://localhost:5000/api';
+  `${process.env.NEXT_PUBLIC_API_URL}api/` || 'http://localhost:5000/api';
 
 // Define proper types for API responses
 interface LoginResponse {

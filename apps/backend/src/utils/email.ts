@@ -12,34 +12,14 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendVerificationEmail = async (email: string, token: string) => {
-  console.log('📧 [Email] Preparing verification email...');
-  console.log('📧 [Email] To:', email);
-  console.log('📧 [Email] Token:', token);
+  const verificationUrl = `${token}`;
 
-  try {
-    const verificationUrl = `${token}`;
-
-    console.log('📧 [Email] Sending via Nodemailer...');
-
-    const response = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Email Verification',
-      html: `"${verificationUrl}" This token will expire in 1 hour.`,
-    });
-
-    console.log('✅ [Email] Email sent successfully!');
-    console.log('📨 [Email Info]:', response);
-
-    return true;
-  } catch (err: any) {
-    console.error('❌ [Email Error] Failed to send email!');
-    console.error('❌ SMTP ERROR:', err?.message || err);
-    console.error('❌ FULL ERROR:', err);
-
-    // IMPORTANT: return false so your register route does not hang
-    return false;
-  }
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Email Verification',
+    html: `"${verificationUrl}" This token will expire in 1 hour.`,
+  });
 };
 
 export const sendResetPasswordEmail = async (email: string, token: string) => {
