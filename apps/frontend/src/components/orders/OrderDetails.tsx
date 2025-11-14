@@ -1,14 +1,14 @@
 'use client';
 
+import Image from 'next/image';
 import { OrderResponse } from '../../lib/types/order/order';
 import { OrderStatus } from './OrderStatus';
 
 interface OrderDetailsProps {
   order: OrderResponse;
-  isAdmin?: boolean;
 }
 
-export const OrderDetails = ({ order, isAdmin = false }: OrderDetailsProps) => {
+export const OrderDetails = ({ order }: OrderDetailsProps) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border">
       {/* Order Header */}
@@ -80,11 +80,15 @@ export const OrderDetails = ({ order, isAdmin = false }: OrderDetailsProps) => {
         <div className="space-y-4">
           {order.order_items?.map((item) => (
             <div key={item.id} className="flex items-center gap-4 py-3 border-b">
-              <img 
-                src={item.product?.images?.[0]?.image_url || '/placeholder-image.jpg'} 
-                alt={item.product?.name}
-                className="w-16 h-16 object-cover rounded"
-              />
+              <div className="relative w-16 h-16">
+                <Image 
+                  src={item.product?.images?.[0]?.image_url || '/placeholder-image.jpg'} 
+                  alt={item.product?.name || 'Product image'}
+                  fill
+                  className="object-cover rounded"
+                  sizes="64px"
+                />
+              </div>
               <div className="flex-1">
                 <h4 className="font-medium text-gray-900">{item.product?.name}</h4>
                 <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
@@ -158,11 +162,15 @@ export const OrderDetails = ({ order, isAdmin = false }: OrderDetailsProps) => {
                   )}
                 </div>
                 {payment.proof_image && (
-                  <img 
-                    src={payment.proof_image} 
-                    alt="Payment proof"
-                    className="w-20 h-20 object-cover rounded border"
-                  />
+                  <div className="relative w-20 h-20">
+                    <Image 
+                      src={payment.proof_image} 
+                      alt="Payment proof"
+                      fill
+                      className="object-cover rounded border"
+                      sizes="80px"
+                    />
+                  </div>
                 )}
               </div>
             ))}

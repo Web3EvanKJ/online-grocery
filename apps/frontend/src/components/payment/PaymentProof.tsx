@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 
 interface ManualPaymentUploadProps {
   onSubmit: (proofImage: File) => Promise<boolean>;
@@ -85,6 +86,9 @@ export default function ManualPaymentUpload({ onSubmit, isLoading }: ManualPayme
 
   const removeFile = () => {
     setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setPreviewUrl(null);
     setUploadProgress(0);
     if (fileInputRef.current) {
@@ -125,11 +129,15 @@ export default function ManualPaymentUpload({ onSubmit, isLoading }: ManualPayme
               {/* File Preview */}
               {previewUrl ? (
                 <div className="flex justify-center">
-                  <img
-                    src={previewUrl}
-                    alt="Payment proof preview"
-                    className="max-h-48 rounded-lg border"
-                  />
+                  <div className="relative max-h-48 rounded-lg border overflow-hidden">
+                    <Image
+                      src={previewUrl}
+                      alt="Payment proof preview"
+                      width={200}
+                      height={192}
+                      className="object-contain max-h-48"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2 p-4 bg-gray-100 rounded-lg">

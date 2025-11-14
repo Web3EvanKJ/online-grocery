@@ -22,7 +22,7 @@ export interface PaymentStatusResponse {
   method: 'manual_transfer' | 'payment_gateway';
   status: 'pending' | 'verified' | 'failed';
   proof_image?: string;
-  transaction_id?: string;
+  transaction_id: string;
   is_verified: boolean;
   created_at: string;
 }
