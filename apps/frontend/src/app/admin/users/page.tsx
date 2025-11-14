@@ -8,7 +8,7 @@ export default function Page() {
   const [userInfo, setUserInfo] = useState<{
     role: string;
     userId: string;
-  } | null>({ role: 'user', userId: '0' });
+  } | null>(null);
 
   useEffect(() => {
     const authData = checkAuth();

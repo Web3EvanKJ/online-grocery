@@ -8,7 +8,7 @@ export default function Page() {
   const [userInfo, setUserInfo] = useState<{
     role: string;
     userId: string;
-  } | null>({ role: 'user', userId: '0' });
+  } | null>(null);
 
   useEffect(() => {
     const authData = checkAuth();
@@ -23,7 +23,5 @@ export default function Page() {
     );
   }
 
-  userInfo.role = 'super_admin';
-  userInfo.userId = '1';
   return <PageStocks role={userInfo.role} user_id={Number(userInfo.userId)} />;
 }

@@ -9,7 +9,7 @@ export default function Page() {
   const [userInfo, setUserInfo] = useState<{
     role: string;
     userId: string;
-  } | null>({ role: 'user', userId: '0' });
+  } | null>(null);
 
   useEffect(() => {
     const authData = checkAuth();
@@ -23,8 +23,6 @@ export default function Page() {
       </div>
     );
   }
-
-  userInfo.role = 'super_admin';
 
   return <PageAdminDashboard role={userInfo.role} />;
 }

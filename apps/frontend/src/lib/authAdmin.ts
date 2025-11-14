@@ -22,7 +22,7 @@ export function useAuth(requiredRoles?: string[]) {
   const checkAuth = (): { role: string; userId: string } | null => {
     const token = localStorage.getItem('token');
     if (!token) {
-      // router.push('/');
+      router.push('/');
       return null;
     }
 
@@ -32,20 +32,20 @@ export function useAuth(requiredRoles?: string[]) {
       // Expiration check
       if (decoded.exp && Date.now() >= decoded.exp * 1000) {
         localStorage.removeItem('token');
-        // router.push('/');
+        router.push('/');
         return null;
       }
 
       // Role check
       if (requiredRoles && !requiredRoles.includes(decoded.role)) {
-        // router.push('/');
+        router.push('/');
         return null;
       }
 
       return { role: decoded.role, userId: decoded.userId };
-    } catch (err) {
+    } catch {
       localStorage.removeItem('token');
-      // router.push('/');
+      router.push('/');
       return null;
     }
   };
