@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
+import { useCallback } from 'react';
 
 type DecodedToken = {
   userId: string;
@@ -19,7 +20,7 @@ type DecodedToken = {
 export function useAuth(requiredRoles?: string[]) {
   const router = useRouter();
 
-  const checkAuth = (): { role: string; userId: string } | null => {
+  const checkAuth = useCallback(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/');
@@ -29,14 +30,12 @@ export function useAuth(requiredRoles?: string[]) {
     try {
       const decoded: DecodedToken = jwtDecode(token);
 
-      // Expiration check
       if (decoded.exp && Date.now() >= decoded.exp * 1000) {
         localStorage.removeItem('token');
         router.push('/');
         return null;
       }
 
-      // Role check
       if (requiredRoles && !requiredRoles.includes(decoded.role)) {
         router.push('/');
         return null;
@@ -48,7 +47,7 @@ export function useAuth(requiredRoles?: string[]) {
       router.push('/');
       return null;
     }
-  };
+  }, [router, requiredRoles]);
 
   return { checkAuth };
 }
