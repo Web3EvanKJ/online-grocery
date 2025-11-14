@@ -21,7 +21,7 @@ export default function PageCatalog() {
     try {
       setLoading(true);
       const res = await api.get(`/productSearch`, {
-        params: { page: pageNum, limit: 10, store_id: storeId },
+        params: { page: pageNum, limit: 12, store_id: storeId },
       });
       setProducts(res.data.data);
       setTotalPages(res.data.totalPages);

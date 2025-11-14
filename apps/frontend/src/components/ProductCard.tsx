@@ -74,10 +74,12 @@ export function ProductCard({
           <div className="flex flex-1 flex-col justify-between text-center">
             {/* Name + Category */}
             <div className="mb-3 min-h-[2rem]">
-              <h3 className="line-clamp-2 text-sm leading-tight font-medium text-gray-800">
+              <h3 className="line-clamp-1 text-sm leading-tight font-medium text-gray-800">
                 {name}
               </h3>
-              <p className="mt-1 text-xs text-gray-500">{category}</p>
+              <p className="mt-1 line-clamp-1 text-xs text-gray-500">
+                {category}
+              </p>
             </div>
 
             {/* Price Section */}

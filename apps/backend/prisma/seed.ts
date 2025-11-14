@@ -342,6 +342,160 @@ async function main() {
   }
   console.log('✅ User addresses created');
 
+  // ========== CREATE SAMPLE ORDERS (VARIOUS STATUSES) ==========
+
+  function calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  console.log('🛒 Creating sample orders...');
+
+  const customer1 = await prisma.users.findFirst({
+    where: { email: 'bagas@example.com' },
+  });
+
+  const customer2 = await prisma.users.findFirst({
+    where: { email: 'evan@example.com' },
+  });
+
+  const storesAll = await prisma.stores.findMany();
+  const productsAll = await prisma.products.findMany();
+  const shippingMethods = await prisma.shipping_methods.findMany();
+
+  async function createOrdersWithStatuses(user: any) {
+    if (!user) return;
+
+    const statuses = [
+      'Menunggu_Pembayaran',
+      'Menunggu_Konfirmasi_Pembayaran',
+      'Diproses',
+      'Dikirim',
+      'Pesanan_Dikonfirmasi',
+      'Dibatalkan',
+    ] as const;
+
+    const mainAddress = await prisma.addresses.findFirst({
+      where: { user_id: user.id, is_main: true },
+    });
+
+    if (!mainAddress) return;
+
+    // find closest store
+    let closestStore = null;
+    let minDist = Infinity;
+
+    for (const store of storesAll) {
+      const dist = calculateDistance(
+        Number(mainAddress.latitude),
+        Number(mainAddress.longitude),
+        Number(store.latitude),
+        Number(store.longitude)
+      );
+
+      if (dist < minDist) {
+        minDist = dist;
+        closestStore = store;
+      }
+    }
+
+    if (!closestStore) return;
+
+    for (const status of statuses) {
+      const shipping =
+        shippingMethods[Math.floor(Math.random() * shippingMethods.length)];
+
+      const selectedProducts = [...productsAll]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 2);
+
+      let subtotal = 0;
+      let orderItems: any[] = [];
+
+      for (const p of selectedProducts) {
+        const qty = Math.floor(Math.random() * 3) + 1;
+        const price = Number(p.price);
+
+        subtotal += price * qty;
+
+        orderItems.push({
+          product_id: p.id,
+          quantity: qty,
+          price,
+        });
+      }
+
+      const shippingCost =
+        Number(shipping.base_cost) + minDist * Number(shipping.cost_per_km);
+
+      const total = subtotal + shippingCost;
+
+      // create order
+      const order = await prisma.orders.create({
+        data: {
+          user_id: user.id,
+          store_id: closestStore.id,
+          address_id: mainAddress.id,
+          shipping_method_id: shipping.id,
+          status,
+          total_amount: total,
+          shipping_cost: shippingCost,
+          discount_amount: 0,
+        },
+      });
+
+      // order items
+      for (const item of orderItems) {
+        await prisma.order_items.create({
+          data: {
+            order_id: order.id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            price: item.price,
+          },
+        });
+      }
+
+      // payment rules based on status
+      const isPaid =
+        status === 'Diproses' ||
+        status === 'Dikirim' ||
+        status === 'Pesanan_Dikonfirmasi';
+
+      await prisma.payments.create({
+        data: {
+          order_id: order.id,
+          method: 'manual_transfer',
+          is_verified: isPaid,
+          proof_image: isPaid ? 'https://picsum.photos/200/200' : null,
+        },
+      });
+
+      console.log(`🧾 Order (${status}) created for ${user.email}`);
+    }
+  }
+
+  // generate orders for 2 customers
+  await createOrdersWithStatuses(customer1);
+  await createOrdersWithStatuses(customer2);
+
+  console.log('✅ Sample orders with various statuses created');
+
   console.log('🎉 Database seeding completed!');
 }
 
