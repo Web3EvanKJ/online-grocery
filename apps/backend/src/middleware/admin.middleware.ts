@@ -4,7 +4,7 @@ import { prisma } from '../utils/prisma';
 
 export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -27,7 +27,7 @@ export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFu
 
 export const requireSuperAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });

@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 export class CartController {
   static async getCart(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
@@ -19,7 +19,7 @@ export class CartController {
 
   static async addToCart(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
@@ -33,7 +33,7 @@ export class CartController {
 
   static async updateCartItem(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const cartId = parseInt(req.params.id);
       
       if (!userId) {
@@ -49,7 +49,7 @@ export class CartController {
 
   static async removeFromCart(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const cartId = parseInt(req.params.id);
       
       if (!userId) {

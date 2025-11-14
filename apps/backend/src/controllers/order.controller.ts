@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 export class OrderController {
   static async createOrder(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const order = await OrderService.createOrder(userId, req.body);
@@ -17,7 +17,7 @@ export class OrderController {
 
   static async getOrders(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const page = parseInt(req.query.page as string) || 1;
@@ -32,7 +32,7 @@ export class OrderController {
 
   static async getOrderById(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const orderId = parseInt(req.params.id);
       
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -46,7 +46,7 @@ export class OrderController {
 
   static async cancelOrder(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const orderId = parseInt(req.params.id);
       const { reason } = req.body;
       
@@ -62,7 +62,7 @@ export class OrderController {
 
   static async confirmOrder(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const orderId = parseInt(req.params.id);
       
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -76,7 +76,7 @@ export class OrderController {
 
   static async getOrderStatus(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const orderId = parseInt(req.params.id);
       
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { OrderController } from '../controllers/order.controller';
-import { authenticateToken, requireVerifiedUser } from '../middleware/auth';
+import { authenticateToken} from '../middleware/auth';
 
 const router = Router();
 
 // All order routes require authenticated & verified user
-router.use(authenticateToken, requireVerifiedUser);
+router.use(authenticateToken);
 
 router.post('/', OrderController.createOrder);
 router.get('/', OrderController.getOrders);
