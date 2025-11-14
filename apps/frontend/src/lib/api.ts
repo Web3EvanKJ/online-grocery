@@ -1,6 +1,7 @@
 import { ApiResponse, PaginationParams, ApiError } from './types/api/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE =
+  `${process.env.NEXT_PUBLIC_API_URL}api/` || 'http://localhost:5000/api';
 
 // Define proper types for API responses
 interface LoginResponse {
@@ -169,7 +170,7 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE}${endpoint}`;
     const token = this.getToken();
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
@@ -187,7 +188,9 @@ class ApiClient {
 
       if (!response.ok) {
         const errorData: ApiError = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.error || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data: ApiResponse<T> = await response.json();
@@ -252,8 +255,10 @@ class ApiClient {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
-    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(`orders?${queryParams}`);
+
+    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(
+      `orders?${queryParams}`
+    );
   }
 
   async getOrderById(orderId: number) {
@@ -269,10 +274,16 @@ class ApiClient {
 
   // Payment API
   async initializeMidtransPayment(orderId: number, paymentMethod: string) {
-    return this.request<{ data: MidtransPaymentResponse }>('payments/midtrans/initialize', {
-      method: 'POST',
-      body: JSON.stringify({ order_id: orderId, payment_method: paymentMethod }),
-    });
+    return this.request<{ data: MidtransPaymentResponse }>(
+      'payments/midtrans/initialize',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderId,
+          payment_method: paymentMethod,
+        }),
+      }
+    );
   }
 
   async uploadManualPayment(orderId: number, proofImage: File) {
@@ -292,9 +303,12 @@ class ApiClient {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.storeId) queryParams.append('storeId', params.storeId.toString());
-    
-    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(`admin/orders?${queryParams}`);
+    if (params?.storeId)
+      queryParams.append('storeId', params.storeId.toString());
+
+    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(
+      `admin/orders?${queryParams}`
+    );
   }
 
   async updateOrderStatus(orderId: number, status: string) {
@@ -305,18 +319,26 @@ class ApiClient {
   }
 
   async verifyPayment(orderId: number, isVerified: boolean) {
-    return this.request<{ message: string }>(`admin/orders/${orderId}/verify-payment`, {
-      method: 'PATCH',
-      body: JSON.stringify({ isVerified }),
-    });
+    return this.request<{ message: string }>(
+      `admin/orders/${orderId}/verify-payment`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ isVerified }),
+      }
+    );
   }
 
   // Payment API - tambahkan method ini
   async getPaymentStatus(transactionId: string) {
-    return this.request<{ data: PaymentStatusResponse }>(`payments/status/${transactionId}`);
+    return this.request<{ data: PaymentStatusResponse }>(
+      `payments/status/${transactionId}`
+    );
   }
 
-  async createPayment(paymentData: { order_id: number; payment_method: string }) {
+  async createPayment(paymentData: {
+    order_id: number;
+    payment_method: string;
+  }) {
     return this.request<{ data: MidtransPaymentResponse }>('payments/create', {
       method: 'POST',
       body: JSON.stringify(paymentData),

@@ -31,7 +31,7 @@ export default function PageAdminDashboard({ role }: { role: string }) {
                 className="rounded-sm border border-sky-200 bg-white transition hover:border-sky-400 hover:bg-sky-50"
               >
                 <CardHeader className="flex min-h-20 flex-row items-center gap-3 pb-2">
-                  {section.icon}
+                  {section.icon()}
                   <div>
                     <CardTitle className="text-lg font-medium text-sky-700">
                       {section.title}

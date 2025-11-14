@@ -13,7 +13,7 @@ export default function Page() {
   useEffect(() => {
     const authData = checkAuth();
     if (authData) setUserInfo(authData);
-  }, [checkAuth]);
+  }, []);
 
   if (!userInfo) {
     return (
