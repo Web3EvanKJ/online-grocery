@@ -65,7 +65,7 @@ export default function PageInventories({
           limit: 10,
           search,
           store_id: selectedStore,
-          role: 'super_admin',
+          role,
           sort: sortField,
           order: sortOrder,
         },
