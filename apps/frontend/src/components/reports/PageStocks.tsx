@@ -33,6 +33,7 @@ export default function PageStocks({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
   const limit = 10;
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function PageStocks({
             setSelectedStore(res.data[0].id); // auto-select
           }
         }
+        setFiltersLoaded(true);
       } catch (err) {
         const error = err as AxiosError<{ msg?: string }>;
         setError(error.response?.data?.msg || 'Failed to load store data.');
@@ -84,6 +86,7 @@ export default function PageStocks({
     }
   };
   useEffect(() => {
+    if (!filtersLoaded) return;
     fetchStockHistory();
   }, [selectedStore, selectedMonth, page]);
 
