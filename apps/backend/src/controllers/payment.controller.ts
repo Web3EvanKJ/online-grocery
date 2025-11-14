@@ -8,7 +8,7 @@ export class PaymentController {
   // ✅ Tambah method yang missing
   static async initializeMidtransPayment(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const result = await PaymentService.initializeMidtransPayment(req.body);
@@ -20,7 +20,7 @@ export class PaymentController {
 
   static async uploadManualPayment(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       if (!req.file) {
@@ -44,7 +44,7 @@ export class PaymentController {
 
   static async getPaymentStatus(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user.userId;
       const orderId = parseInt(req.params.orderId);
       
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });

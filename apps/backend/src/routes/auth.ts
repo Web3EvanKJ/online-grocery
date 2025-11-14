@@ -3,7 +3,7 @@ import {
   register,
   verifyEmail,
   login,
-  forgotPassword,git
+  forgotPassword,
   resetPassword,
 } from '../controllers/authController';
 

@@ -19,7 +19,7 @@ export class AdminOrderController {
 
   static async updateOrderStatus(req: AuthRequest, res: Response) {
     try {
-      const adminId = req.user?.id;
+      const adminId = req.user?.userId;
       const orderId = parseInt(req.params.id);
       const { status } = req.body;
 
@@ -35,7 +35,7 @@ export class AdminOrderController {
 
   static async verifyPayment(req: AuthRequest, res: Response) {
     try {
-      const adminId = req.user?.id;
+      const adminId = req.user?.userId;
       const orderId = parseInt(req.params.id);
       const { isVerified } = req.body;
 
@@ -53,7 +53,7 @@ export class AdminOrderController {
 
   static async cancelOrder(req: AuthRequest, res: Response) {
     try {
-      const adminId = req.user?.id;
+      const adminId = req.user?.userId;
       const orderId = parseInt(req.params.id);
       const { reason } = req.body;
 
@@ -69,7 +69,7 @@ export class AdminOrderController {
 
   static async getOrderDetails(req: AuthRequest, res: Response) {
     try {
-      const adminId = req.user?.id;
+      const adminId = req.user?.userId;
       const orderId = parseInt(req.params.id);
 
       if (!adminId) return res.status(401).json({ error: 'Unauthorized' });

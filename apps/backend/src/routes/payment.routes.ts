@@ -1,14 +1,13 @@
 // routes/payment.routes.ts - QUICK FIX
 import { Router } from 'express';
 import { PaymentController } from '../controllers/payment.controller';
-import { authenticateToken, requireVerifiedUser } from '../middleware/auth';
+import { authenticateToken} from '../middleware/auth';
 import { uploadPaymentProof } from '../middleware/upload.middleware';
 
 const router = Router();
 
 // Apply middleware dengan any type
-router.use(authenticateToken as any);
-router.use(requireVerifiedUser as any);
+router.use(authenticateToken);
 
 // Routes dengan any type
 router.post('/midtrans/initialize', PaymentController.initializeMidtransPayment as any);
