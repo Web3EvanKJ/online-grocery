@@ -202,14 +202,14 @@ class ApiClient {
 
   // Auth API
   async login(email: string, password: string) {
-    return this.request<LoginResponse>('/auth/login', {
+    return this.request<LoginResponse>('auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   }
 
   async register(email: string, name: string) {
-    return this.request<{ message: string }>('/auth/register', {
+    return this.request<{ message: string }>('auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, name }),
     });
@@ -217,32 +217,32 @@ class ApiClient {
 
   // Cart API
   async getCart() {
-    return this.request<{ data: CartItem[] }>('/cart');
+    return this.request<{ data: CartItem[] }>('cart');
   }
 
   async addToCart(productId: number, quantity: number) {
-    return this.request<{ message: string }>('/cart', {
+    return this.request<{ message: string }>('cart', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, quantity }),
     });
   }
 
   async updateCartItem(cartId: number, quantity: number) {
-    return this.request<{ message: string }>(`/cart/${cartId}`, {
+    return this.request<{ message: string }>(`cart/${cartId}`, {
       method: 'PATCH',
       body: JSON.stringify({ quantity }),
     });
   }
 
   async removeFromCart(cartId: number) {
-    return this.request<{ message: string }>(`/cart/${cartId}`, {
+    return this.request<{ message: string }>(`cart/${cartId}`, {
       method: 'DELETE',
     });
   }
 
   // Orders API
   async createOrder(orderData: CreateOrderData) {
-    return this.request<{ data: OrderResponse }>('/orders', {
+    return this.request<{ data: OrderResponse }>('orders', {
       method: 'POST',
       body: JSON.stringify(orderData),
     });
@@ -253,15 +253,15 @@ class ApiClient {
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     
-    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(`/orders?${queryParams}`);
+    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(`orders?${queryParams}`);
   }
 
   async getOrderById(orderId: number) {
-    return this.request<{ data: OrderResponse }>(`/orders/${orderId}`);
+    return this.request<{ data: OrderResponse }>(`orders/${orderId}`);
   }
 
   async cancelOrder(orderId: number, reason: string) {
-    return this.request<{ message: string }>(`/orders/${orderId}/cancel`, {
+    return this.request<{ message: string }>(`orders/${orderId}/cancel`, {
       method: 'PATCH',
       body: JSON.stringify({ reason }),
     });
@@ -269,7 +269,7 @@ class ApiClient {
 
   // Payment API
   async initializeMidtransPayment(orderId: number, paymentMethod: string) {
-    return this.request<{ data: MidtransPaymentResponse }>('/payments/midtrans/initialize', {
+    return this.request<{ data: MidtransPaymentResponse }>('payments/midtrans/initialize', {
       method: 'POST',
       body: JSON.stringify({ order_id: orderId, payment_method: paymentMethod }),
     });
@@ -280,7 +280,7 @@ class ApiClient {
     formData.append('order_id', orderId.toString());
     formData.append('proof_image', proofImage);
 
-    return this.request<{ message: string }>('/payments/manual/upload', {
+    return this.request<{ message: string }>('payments/manual/upload', {
       method: 'POST',
       headers: {}, // Let browser set Content-Type for FormData
       body: formData,
@@ -294,18 +294,18 @@ class ApiClient {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.storeId) queryParams.append('storeId', params.storeId.toString());
     
-    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(`/admin/orders?${queryParams}`);
+    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(`admin/orders?${queryParams}`);
   }
 
   async updateOrderStatus(orderId: number, status: string) {
-    return this.request<{ message: string }>(`/admin/orders/${orderId}/status`, {
+    return this.request<{ message: string }>(`admin/orders/${orderId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
   }
 
   async verifyPayment(orderId: number, isVerified: boolean) {
-    return this.request<{ message: string }>(`/admin/orders/${orderId}/verify-payment`, {
+    return this.request<{ message: string }>(`admin/orders/${orderId}/verify-payment`, {
       method: 'PATCH',
       body: JSON.stringify({ isVerified }),
     });
@@ -313,11 +313,11 @@ class ApiClient {
 
   // Payment API - tambahkan method ini
   async getPaymentStatus(transactionId: string) {
-    return this.request<{ data: PaymentStatusResponse }>(`/payments/status/${transactionId}`);
+    return this.request<{ data: PaymentStatusResponse }>(`payments/status/${transactionId}`);
   }
 
   async createPayment(paymentData: { order_id: number; payment_method: string }) {
-    return this.request<{ data: MidtransPaymentResponse }>('/payments/create', {
+    return this.request<{ data: MidtransPaymentResponse }>('payments/create', {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });

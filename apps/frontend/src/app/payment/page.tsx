@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { usePayment } from '@/hooks/usePayment';
@@ -10,15 +9,6 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { MidtransPaymentResponse } from '@/lib/types/payment/payment';
 
 type PaymentMethod = 'manual_transfer' | 'payment_gateway';
-
-// Define proper type for Midtrans payment data
-interface MidtransPaymentData {
-  payment_url?: string;
-  token?: string;
-  redirect_url?: string;
-  // Add other possible properties from Midtrans response
-  [key: string]: unknown;
-}
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
