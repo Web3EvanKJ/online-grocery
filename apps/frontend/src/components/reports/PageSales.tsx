@@ -40,6 +40,7 @@ export default function PageSales({
   const limit = 10;
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -62,6 +63,7 @@ export default function PageSales({
             setSelectedStore(storeRes.data[0].id);
           }
         }
+        setFiltersLoaded(true);
       } catch (err) {
         const error = err as AxiosError<{ msg?: string }>;
         setError(error.response?.data?.msg || 'Failed to fetch filters.');
@@ -90,6 +92,7 @@ export default function PageSales({
     }
   };
   useEffect(() => {
+    if (!filtersLoaded) return;
     fetchSales();
   }, [selectedStore, selectedCategory, selectedMonth, sortOrder, page]);
   const toggleSort = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
