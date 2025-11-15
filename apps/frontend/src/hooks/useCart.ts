@@ -9,6 +9,7 @@ export const useCart = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+
   const fetchCart = useCallback(async () => {
     try {
       setLoading(true);

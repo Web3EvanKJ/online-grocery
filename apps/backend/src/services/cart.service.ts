@@ -75,8 +75,12 @@ export class CartService {
   }
 
   static async clearCart(userId: number) {
-    return await prisma.carts.deleteMany({
-      where: { user_id: userId }
-    });
+    try {
+      return await prisma.carts.deleteMany({
+        where: { user_id: userId },
+      });
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
   }
 }

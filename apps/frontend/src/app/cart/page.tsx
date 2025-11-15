@@ -18,7 +18,7 @@ export default function CartPage() {
 
   useEffect(() => {
     refreshCart();
-  }, []);
+  }, [refreshCart]);
 
   useEffect(() => {
     if (error) {

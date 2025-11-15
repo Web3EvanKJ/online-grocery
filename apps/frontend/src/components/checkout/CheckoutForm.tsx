@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { apiClient } from '@/lib/api';
 
-// Define proper types for form data
 interface Address {
   id: number;
   label: string;
@@ -12,15 +12,17 @@ interface Address {
   city: string;
   district: string;
   subdistrict: string;
-  is_main: boolean;
+  latitude?: string;
+  longitude?: string;
+  is_main?: boolean;
 }
 
 interface ShippingMethod {
   id: number;
   name: string;
   provider: string;
-  base_cost: number;
-  cost_per_km: number;
+  base_cost: string | number;
+  cost_per_km: string | number;
 }
 
 interface FormData {
@@ -31,200 +33,138 @@ interface FormData {
 }
 
 interface CheckoutFormProps {
-  onSubmit: (orderData: FormData) => void;
+  onSubmit: (data: FormData) => void;
   isLoading: boolean;
+  selectedAddressId: number | null;
+  setSelectedAddressId: (id: number) => void;
+  selectedShippingMethodId: number | null;
+  setSelectedShippingMethodId: (id: number) => void;
+  paymentMethod: string;
+  setPaymentMethod: (m: string) => void;
 }
 
-export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps) {
-  const [formData, setFormData] = useState<FormData>({
-    address_id: 0,
-    shipping_method_id: 0,
-    voucher_code: '',
-    notes: ''
-  });
+export default function CheckoutForm({
+  onSubmit, isLoading,
+  selectedAddressId, setSelectedAddressId,
+  selectedShippingMethodId, setSelectedShippingMethodId,
+  paymentMethod, setPaymentMethod
+}: CheckoutFormProps) {
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formState, setFormState] = useState<FormData>({
+    address_id: selectedAddressId || 0,
+    shipping_method_id: selectedShippingMethodId || 0,
+    voucher_code: '',
+    notes: ''
+  });
 
-  // Fetch addresses and shipping methods
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
+      setLoading(true);
       try {
-        // TODO: Replace with actual API calls
-        const mockAddresses: Address[] = [
-          {
-            id: 1,
-            label: 'Rumah',
-            address_detail: 'Jl. Contoh No. 123',
-            province: 'Jawa Barat',
-            city: 'Bekasi',
-            district: 'Bekasi Timur',
-            subdistrict: 'Margahayu',
-            is_main: true
-          }
-        ];
+        const addrRes = await apiClient.getAddresses();
+        const addressData = addrRes.data || [];
+        setAddresses(addressData as Address[]);
 
-        const mockShippingMethods: ShippingMethod[] = [
-          {
-            id: 1,
-            name: 'Standard Delivery',
-            provider: 'JNE',
-            base_cost: 10000,
-            cost_per_km: 2000
-          },
-          {
-            id: 2,
-            name: 'Express Delivery',
-            provider: 'JNE',
-            base_cost: 15000,
-            cost_per_km: 3000
-          }
-        ];
+        const shipRes = await apiClient.getShippingMethods();
+        const shippingData = shipRes.data || [];
+        setShippingMethods(shippingData as ShippingMethod[]);
 
-        setAddresses(mockAddresses);
-        setShippingMethods(mockShippingMethods);
-        
-        // Set default values
-        if (mockAddresses.length > 0) {
-          const mainAddress = mockAddresses.find(addr => addr.is_main) || mockAddresses[0];
-          setFormData(prev => ({ ...prev, address_id: mainAddress.id }));
+        const defaultAddress = addressData.find(a => a.is_main) || addressData[0];
+        if (defaultAddress && !selectedAddressId) {
+          setSelectedAddressId(defaultAddress.id);
+          setFormState(prev => ({ ...prev, address_id: defaultAddress.id }));
         }
-        if (mockShippingMethods.length > 0) {
-          setFormData(prev => ({ ...prev, shipping_method_id: mockShippingMethods[0].id }));
+
+        if (shippingData.length > 0 && !selectedShippingMethodId) {
+          setSelectedShippingMethodId(shippingData[0].id);
+          setFormState(prev => ({ ...prev, shipping_method_id: shippingData[0].id }));
         }
-      } catch (error) {
-        console.error('Error fetching checkout data:', error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    load();
   }, []);
+
+  useEffect(() => {
+    if (selectedAddressId) setFormState(prev => ({ ...prev, address_id: selectedAddressId }));
+    if (selectedShippingMethodId) setFormState(prev => ({ ...prev, shipping_method_id: selectedShippingMethodId }));
+  }, [selectedAddressId, selectedShippingMethodId]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const parsed = (name === 'address_id' || name === 'shipping_method_id') ? parseInt(value) : value;
+    setFormState(prev => ({ ...prev, [name]: parsed }));
+    if (name === 'address_id') setSelectedAddressId(Number(value));
+    if (name === 'shipping_method_id') setSelectedShippingMethodId(Number(value));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.address_id === 0 || formData.shipping_method_id === 0) {
-      alert('Please select address and shipping method');
-      return;
-    }
-    
-    onSubmit(formData);
+    if (!formState.address_id || !formState.shipping_method_id) return alert('Please select address and shipping method');
+    onSubmit(formState);
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: name === 'address_id' || name === 'shipping_method_id' ? parseInt(value) : value 
-    }));
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <LoadingSpinner size="md" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center py-8"><LoadingSpinner size="md" /></div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Shipping Address Selection */}
+      {/* Address */}
       <div>
-        <label htmlFor="address_id" className="block text-sm font-medium text-gray-700 mb-2">
-          Shipping Address *
-        </label>
-        <select
-          id="address_id"
-          name="address_id"
-          value={formData.address_id}
-          onChange={handleInputChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        >
-          <option value={0}>Select Address</option>
-          {addresses.map((address) => (
-            <option key={address.id} value={address.id}>
-              {address.label} - {address.address_detail}, {address.subdistrict}, {address.district}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="text-sm text-green-600 hover:text-green-700 mt-2"
-          onClick={() => {/* TODO: Add address modal */}}
-        >
-          + Add New Address
-        </button>
-      </div>
-
-      {/* Shipping Method Selection */}
-      <div>
-        <label htmlFor="shipping_method_id" className="block text-sm font-medium text-gray-700 mb-2">
-          Shipping Method *
-        </label>
-        <select
-          id="shipping_method_id"
-          name="shipping_method_id"
-          value={formData.shipping_method_id}
-          onChange={handleInputChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        >
-          <option value={0}>Select Shipping Method</option>
-          {shippingMethods.map((method) => (
-            <option key={method.id} value={method.id}>
-              {method.name} ({method.provider}) - Rp {method.base_cost.toLocaleString()}
+        <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address *</label>
+        <select name="address_id" value={formState.address_id} onChange={handleInputChange} className="w-full px-3 py-2 border rounded">
+          <option value={0}>Select address</option>
+          {addresses.map(addr => (
+            <option key={addr.id} value={addr.id}>
+              {addr.label} - {addr.address_detail}, {addr.subdistrict}, {addr.district}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Voucher Code */}
+      {/* Shipping Method */}
       <div>
-        <label htmlFor="voucher_code" className="block text-sm font-medium text-gray-700 mb-2">
-          Voucher Code (Optional)
-        </label>
-        <input
-          type="text"
-          id="voucher_code"
-          name="voucher_code"
-          value={formData.voucher_code}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          placeholder="Enter voucher code"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Method *</label>
+        <select name="shipping_method_id" value={formState.shipping_method_id} onChange={handleInputChange} className="w-full px-3 py-2 border rounded">
+          <option value={0}>Select shipping method</option>
+          {shippingMethods.map(m => (
+            <option key={m.id} value={m.id}>
+              {m.name} ({m.provider}) - Rp {Number(m.base_cost).toLocaleString()}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Payment Method */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+        <select name="payment_method" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full px-3 py-2 border rounded">
+          <option value="midtrans">Midtrans</option>
+          <option value="manual">Manual Transfer</option>
+        </select>
+      </div>
+
+      {/* Voucher */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Voucher Code (optional)</label>
+        <input name="voucher_code" value={formState.voucher_code} onChange={handleInputChange} className="w-full px-3 py-2 border rounded" placeholder="Enter voucher code" />
       </div>
 
       {/* Notes */}
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-          Order Notes (Optional)
-        </label>
-        <textarea
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleInputChange}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          placeholder="Any special instructions for your order..."
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+        <textarea name="notes" value={formState.notes} onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border rounded" placeholder="Any instructions..." />
       </div>
 
-      {/* Submit Button */}
       <div className="border-t pt-6">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isLoading ? 'Creating Order...' : 'Place Order'}
+        <button type="submit" disabled={isLoading} className="w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 disabled:opacity-50">
+          {isLoading ? 'Processing...' : 'Place Order'}
         </button>
       </div>
     </form>

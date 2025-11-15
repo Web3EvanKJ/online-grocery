@@ -1,53 +1,32 @@
 'use client';
+
 import { useState } from 'react';
 import Image from 'next/image';
-import { apiClient } from '@/lib/api';
-import { CartItem as CartItemType } from '../../lib/types/cart/cart';
-import { useCart } from '../../hooks/useCart';
+import { useCartStore } from '@/store/cartStore';
 
-interface CartItemProps {
-  item: CartItemType;
-}
+export const CartItem = ({ item }) => {
+  const updateCartItem = useCartStore((s) => s.updateCartItem);
+  const removeFromCart = useCartStore((s) => s.removeFromCart);
 
-export const CartItem = ({ item }: CartItemProps) => {
-  const { refreshCart } = useCart();
   const [localQty, setLocalQty] = useState(item.quantity);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleQuantityChange = async (newQuantity: number) => {
-    if (newQuantity < 1) return;
+  const handleQuantityChange = async (newQty: number) => {
+    if (newQty < 1) return;
 
-    // Optimistic UI
-    setLocalQty(newQuantity);
+    setLocalQty(newQty); // optimistic
+    setLoading(true);
 
-    try {
-      setIsUpdating(true);
+    const success = await updateCartItem(item.id, newQty);
+    if (!success) setLocalQty(item.quantity); // rollback
 
-      await apiClient.updateCartItem(item.id, newQuantity);
-
-      // wait refresh
-      await refreshCart();
-    } catch (error) {
-      console.error('Failed to update cart item:', error);
-      setLocalQty(item.quantity); // rollback
-    } finally {
-      setIsUpdating(false);
-    }
+    setLoading(false);
   };
 
   const handleRemove = async () => {
-    try {
-      setIsRemoving(true);
-
-      await apiClient.removeFromCart(item.id);
-
-      await refreshCart();
-    } catch (error) {
-      console.error('Failed to remove cart item:', error);
-    } finally {
-      setIsRemoving(false);
-    }
+    setLoading(true);
+    await removeFromCart(item.id);
+    setLoading(false);
   };
 
   return (
@@ -58,7 +37,6 @@ export const CartItem = ({ item }: CartItemProps) => {
           alt={item.product.name}
           fill
           className="object-cover rounded"
-          sizes="80px"
         />
       </div>
 
@@ -72,20 +50,18 @@ export const CartItem = ({ item }: CartItemProps) => {
       <div className="flex items-center gap-2">
         <button
           onClick={() => handleQuantityChange(localQty - 1)}
-          disabled={isUpdating || localQty <= 1}
-          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || localQty <= 1}
+          className="w-8 h-8 border rounded-full flex items-center justify-center"
         >
           -
         </button>
 
-        <span className="w-8 text-center">
-          {isUpdating ? '...' : localQty}
-        </span>
+        <span className="w-8 text-center">{loading ? '...' : localQty}</span>
 
         <button
           onClick={() => handleQuantityChange(localQty + 1)}
-          disabled={isUpdating}
-          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          className="w-8 h-8 border rounded-full flex items-center justify-center"
         >
           +
         </button>
@@ -98,10 +74,10 @@ export const CartItem = ({ item }: CartItemProps) => {
 
         <button
           onClick={handleRemove}
-          disabled={isRemoving}
-          className="text-red-500 text-sm hover:text-red-700 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          className="text-red-500 text-sm"
         >
-          {isRemoving ? 'Removing...' : 'Remove'}
+          Remove
         </button>
       </div>
     </div>

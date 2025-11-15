@@ -63,4 +63,20 @@ export class CartController {
       res.status(400).json({ error: error.message });
     }
   }
+
+    static async clearCart(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      await CartService.clearCart(userId);
+
+      return res.json({ message: "Cart cleared successfully" });
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
 }

@@ -1,18 +1,24 @@
-// routes/payment.routes.ts - QUICK FIX
+// routes/payment.routes.ts
 import { Router } from 'express';
 import { PaymentController } from '../controllers/payment.controller';
-import { authenticateToken} from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 import { uploadPaymentProof } from '../middleware/upload.middleware';
 
 const router = Router();
 
-// Apply middleware dengan any type
+// Semua route pakai auth
 router.use(authenticateToken);
 
-// Routes dengan any type
-router.post('/midtrans/initialize', PaymentController.initializeMidtransPayment as any);
-router.post('/manual/upload', uploadPaymentProof as any, PaymentController.uploadManualPayment as any);
-router.get('/status/:orderId', PaymentController.getPaymentStatus as any);
-router.post('/webhook/midtrans', PaymentController.handleWebhook as any);
+// Midtrans initialize
+router.post('/midtrans/initialize', PaymentController.initializeMidtransPayment);
+
+// Manual upload
+router.post('/manual/upload', uploadPaymentProof, PaymentController.uploadManualPayment);
+
+// Get payment status
+router.get('/status/:orderId', PaymentController.getPaymentStatus);
+
+// Midtrans webhook
+router.post('/webhook/midtrans', PaymentController.handleWebhook);
 
 export default router;

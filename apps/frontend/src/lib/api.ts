@@ -1,137 +1,12 @@
 import { ApiResponse, PaginationParams, ApiError } from './types/api/api';
+import { LoginResponse } from './types/auth/auth';
+import { CartItem } from './types/cart/cart';
+import { CreateOrderData, OrderResponse } from './types/order/order'
+import { MidtransPaymentResponse, PaymentStatusResponse } from './types/payment/payment';
+
 
 const API_BASE =
   `${process.env.NEXT_PUBLIC_API_URL}api/` || 'http://localhost:5000/api';
-
-// Define proper types for API responses
-interface LoginResponse {
-  token: string;
-  user: {
-    id: number;
-    email: string;
-    name: string;
-    role: string;
-  };
-}
-
-interface CartItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  product: {
-    id: number;
-    name: string;
-    price: number;
-    images: Array<{
-      image_url: string;
-    }>;
-  };
-}
-
-interface OrderItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  price: number;
-  discount?: number;
-  product: {
-    id: number;
-    name: string;
-    images: Array<{
-      image_url: string;
-    }>;
-  };
-}
-
-interface OrderResponse {
-  id: number;
-  user_id: number;
-  store_id: number;
-  address_id: number;
-  shipping_method_id: number;
-  status: string;
-  total_amount: number;
-  shipping_cost: number;
-  discount_amount?: number;
-  created_at: string;
-  updated_at: string;
-  address?: {
-    id: number;
-    user_id: number;
-    label: string;
-    address_detail: string;
-    province: string;
-    city: string;
-    district: string;
-    subdistrict: string;
-    postal_code: string;
-    is_main: boolean;
-    created_at: string;
-    updated_at: string;
-  };
-  shipping_method?: {
-    id: number;
-    name: string;
-    provider: string;
-    base_cost: number;
-    cost_per_km: number;
-    created_at: string;
-    updated_at: string;
-  };
-  store?: {
-    id: number;
-    name: string;
-    description?: string;
-    address: string;
-    province: string;
-    city: string;
-    district: string;
-    subdistrict: string;
-    postal_code: string;
-    latitude?: number;
-    longitude?: number;
-    created_at: string;
-    updated_at: string;
-  };
-  order_items: OrderItem[];
-  payments: Array<{
-    id: number;
-    order_id: number;
-    method: string;
-    amount: number;
-    status: string;
-    transaction_id: string;
-    proof_image?: string;
-    is_verified: boolean;
-    verified_at?: string;
-    created_at: string;
-    updated_at: string;
-  }>;
-}
-
-interface CreateOrderData {
-  address_id: number;
-  shipping_method_id: number;
-  voucher_code?: string;
-  notes?: string;
-}
-
-interface MidtransPaymentResponse {
-  payment_url?: string;
-  token?: string;
-  redirect_url?: string;
-  status_code?: string;
-  transaction_id: string;
-}
-
-interface PaymentStatusResponse {
-  status: string;
-  transaction_id: string;
-  order_id: number;
-  payment_method: string;
-  amount: number;
-  [key: string]: unknown;
-}
 
 interface PaginationInfo {
   page: number;
@@ -256,6 +131,12 @@ class ApiClient {
     });
   }
 
+  async clearCart() {
+  return this.request<[]>("cart/clear", {
+    method: "DELETE",
+    });
+  }
+
   // Orders API
   async createOrder(orderData: CreateOrderData) {
     return this.request<{ data: OrderResponse }>('orders', {
@@ -357,6 +238,36 @@ class ApiClient {
       body: JSON.stringify(paymentData),
     });
   }
+
+  // Addresses
+  async getAddresses() {
+    return this.request<{ data: any[] }>('addresses', {
+      method: 'GET',
+    });
+  }
+
+  // Shipping methods
+  async getShippingMethods() {
+    return this.request<{ data: any[] }>('shipping/methods', {
+      method: 'GET',
+    });
+  }
+
+ // calculateShippingCost
+async calculateShippingCost(payload: {
+  addressId: number;
+  shippingMethodId: number;
+  items: { product_id: number; quantity: number; weight?: number }[];
+}) {
+  return this.request<{
+    data: { cost: number; estimated_days: number; service: string; store: any };
+  }>('shipping/calculate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+
 }
 
 export const apiClient = new ApiClient();

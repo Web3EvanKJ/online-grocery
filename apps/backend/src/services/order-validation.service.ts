@@ -19,16 +19,17 @@ export class OrderValidationService {
   }
 
   static async validateAddress(addressId: number, userId: number) {
-    const address = await prisma.addresses.findUnique({
-      where: { id: addressId, user_id: userId }
-    });
+  const address = await prisma.addresses.findFirst({
+    where: { id: addressId, user_id: userId }
+  });
 
-    if (!address) {
-      throw new Error('Address not found');
-    }
-
-    return address;
+  if (!address) {
+    throw new Error('Address not found');
   }
+
+  return address;
+}
+
 
   static async validateStock(cartItems: any[], storeId: number) {
     for (const item of cartItems) {

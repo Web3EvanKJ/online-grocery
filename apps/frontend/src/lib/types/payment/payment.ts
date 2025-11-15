@@ -6,9 +6,11 @@ export interface PaymentRequest {
 }
 
 export interface MidtransPaymentResponse {
+  payment_url?: string;
+  token?: string;
+  redirect_url?: string;
+  status_code?: string;
   transaction_id: string;
-  payment_url: string;
-  status: string;
 }
 
 export interface ManualPaymentResponse {
@@ -17,12 +19,19 @@ export interface ManualPaymentResponse {
 }
 
 export interface PaymentStatusResponse {
-  id: number;
-  order_id: number;
-  method: 'manual_transfer' | 'payment_gateway';
-  status: 'pending' | 'verified' | 'failed';
-  proof_image?: string;
+  // id: number;
+  // order_id: number;
+  // amount: number;
+  // payment_method: string;
+  // status: string;
+  // proof_image?: string;
+  // transaction_id: string;
+  // is_verified: boolean;
+  // created_at: string;
+  status: string;
   transaction_id: string;
-  is_verified: boolean;
-  created_at: string;
+  order_id: number;
+  payment_method: string;
+  amount: number;
+  [key: string]: unknown;
 }
