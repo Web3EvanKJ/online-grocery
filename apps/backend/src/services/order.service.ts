@@ -1,3 +1,4 @@
+// src/services/order.service.ts
 import { prisma } from '../utils/prisma';
 import { DecimalHelper } from '../utils/decimal';
 import { OrderValidationService } from './order-validation.service';
@@ -49,7 +50,7 @@ export class OrderService {
     );
 
     const orderDetails = await this.getOrderById(order.id, userId);
-    return DecimalHelper.convertToNumber(orderDetails) as OrderResponse;
+    return DecimalHelper.simpleConvert(orderDetails) as OrderResponse;
   }
 
   static async getOrders(userId: number, page: number = 1, limit: number = 10) {
@@ -66,7 +67,28 @@ export class OrderService {
               } 
             } 
           }, 
-          payments: true 
+          payments: true,
+          store: {
+            select: {
+              id: true,
+              name: true,
+              address: true
+            }
+          },
+          address: {
+            select: {
+              id: true,
+              label: true,
+              address_detail: true
+            }
+          },
+          shipping_method: {
+            select: {
+              id: true,
+              name: true,
+              provider: true
+            }
+          }
         },
         orderBy: { created_at: 'desc' },
         skip, 
@@ -75,8 +97,21 @@ export class OrderService {
       prisma.orders.count({ where: { user_id: userId } })
     ]);
 
+    // Convert Decimal values to numbers
+    const convertedOrders = orders.map(order => ({
+      ...order,
+      total_amount: Number(order.total_amount),
+      shipping_cost: Number(order.shipping_cost),
+      discount_amount: order.discount_amount ? Number(order.discount_amount) : 0,
+      order_items: order.order_items.map(item => ({
+        ...item,
+        price: Number(item.price),
+        discount: item.discount ? Number(item.discount) : 0
+      }))
+    }));
+
     return {
-      orders: DecimalHelper.convertToNumber(orders) as OrderResponse[],
+      orders: convertedOrders,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     };
   }
@@ -92,14 +127,59 @@ export class OrderService {
             } 
           } 
         }, 
-        payments: true 
+        payments: true,
+        store: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true
+          }
+        },
+        address: {
+          select: {
+            id: true,
+            label: true,
+            address_detail: true,
+            province: true,
+            city: true,
+            district: true
+          }
+        },
+        shipping_method: {
+          select: {
+            id: true,
+            name: true,
+            provider: true
+          }
+        },
+        voucher: {
+          select: {
+            id: true,
+            code: true,
+            type: true
+          }
+        }
       }
     });
 
     if (!order) throw new Error('Order not found');
-    return DecimalHelper.convertToNumber(order);
+    
+    // Convert Decimal values manually
+    return {
+      ...order,
+      total_amount: Number(order.total_amount),
+      shipping_cost: Number(order.shipping_cost),
+      discount_amount: order.discount_amount ? Number(order.discount_amount) : 0,
+      order_items: order.order_items.map(item => ({
+        ...item,
+        price: Number(item.price),
+        discount: item.discount ? Number(item.discount) : 0
+      }))
+    };
   }
-  
+
+  // ... rest of the methods remain the same
   static async cancelOrder(orderId: number, userId: number, reason: string) {
     const order = await prisma.orders.findFirst({
       where: { id: orderId, user_id: userId },

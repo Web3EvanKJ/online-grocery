@@ -422,7 +422,7 @@ async function main() {
   console.log('🎁 Vouchers assigned to users')
 
   // Create Shipping Methods
-  await prisma.shipping_methods.createMany({
+  const shippingMethods = await prisma.shipping_methods.createMany({
     data: [
       {
         name: 'Regular Delivery',
@@ -447,8 +447,14 @@ async function main() {
 
   console.log('🚚 Shipping methods created')
 
+  // Get shipping method IDs
+  const shippingMethodList = await prisma.shipping_methods.findMany()
+  const regularDelivery = shippingMethodList.find(s => s.name === 'Regular Delivery')!
+  const sameDayDelivery = shippingMethodList.find(s => s.name === 'Same Day Delivery')!
+  const pickupInStore = shippingMethodList.find(s => s.name === 'Pickup In-Store')!
+
   // Create Addresses
-  await prisma.addresses.createMany({
+  const addresses = await prisma.addresses.createMany({
     data: [
       {
         user_id: customer1.id,
@@ -479,6 +485,223 @@ async function main() {
 
   console.log('🏠 Addresses created')
 
+  // Get address IDs
+  const addressList = await prisma.addresses.findMany()
+  const customer1Address = addressList.find(a => a.user_id === customer1.id)!
+  const customer2Address = addressList.find(a => a.user_id === customer2.id)!
+
+  // Create Orders
+  console.log('📦 Creating orders...')
+
+  // Order 1: Customer 1 - Completed order
+  const order1 = await prisma.orders.create({
+    data: {
+      user_id: customer1.id,
+      store_id: store1.id,
+      address_id: customer1Address.id,
+      shipping_method_id: regularDelivery.id,
+      voucher_id: voucherList[0].id, // WELCOME10
+      total_amount: 68500,
+      shipping_cost: 12000,
+      discount_amount: 6850, // 10% dari total
+      status: 'Pesanan_Dikonfirmasi',
+      created_at: new Date('2025-11-14T10:00:00Z')
+    }
+  })
+
+  // Order items for order 1
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order1.id,
+        product_id: productList[0].id, // Chips Kentang
+        quantity: 2,
+        price: 12500,
+        discount: 1250 // 10% discount
+      },
+      {
+        order_id: order1.id,
+        product_id: productList[3].id, // Air Mineral
+        quantity: 3,
+        price: 4000,
+        discount: 0
+      },
+      {
+        order_id: order1.id,
+        product_id: productList[9].id, // Roti Tawar
+        quantity: 1,
+        price: 15000,
+        discount: 0
+      }
+    ]
+  })
+
+  // Payment for order 1
+  await prisma.payments.create({
+    data: {
+      order_id: order1.id,
+      method: 'manual_transfer',
+      proof_image: 'https://example.com/payments/proof1.jpg',
+      is_verified: true,
+      verified_by: superAdmin.id,
+      created_at: new Date('2025-10-14T10:30:00Z')
+    }
+  })
+
+  // Order 2: Customer 1 - Processing order
+  const order2 = await prisma.orders.create({
+    data: {
+      user_id: customer1.id,
+      store_id: store1.id,
+      address_id: customer1Address.id,
+      shipping_method_id: sameDayDelivery.id,
+      total_amount: 47500,
+      shipping_cost: 15000,
+      discount_amount: 0,
+      status: 'Diproses',
+      created_at: new Date('2025-11-14T14:30:00Z')
+    }
+  })
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order2.id,
+        product_id: productList[6].id, // Susu UHT
+        quantity: 1,
+        price: 25000,
+        discount: 0
+      },
+      {
+        order_id: order2.id,
+        product_id: productList[7].id, // Yogurt
+        quantity: 2,
+        price: 9500,
+        discount: 0
+      }
+    ]
+  })
+
+  await prisma.payments.create({
+    data: {
+      order_id: order2.id,
+      method: 'payment_gateway',
+      transaction_id: 'TXN_00123456',
+      is_verified: true,
+      verified_by: superAdmin.id,
+      created_at: new Date('2024-01-20T14:35:00Z')
+    }
+  })
+
+  // Order 3: Customer 2 - Waiting for payment
+  const order3 = await prisma.orders.create({
+    data: {
+      user_id: customer2.id,
+      store_id: store2.id,
+      address_id: customer2Address.id,
+      shipping_method_id: regularDelivery.id,
+      voucher_id: voucherList[0].id, // WELCOME10
+      total_amount: 36600,
+      shipping_cost: 10000,
+      discount_amount: 3600, // 10% dari 36000
+      status: 'Menunggu_Pembayaran',
+      created_at: new Date('2025-11-15T09:15:00Z')
+    }
+  })
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order3.id,
+        product_id: productList[5].id, // Kopi Susu
+        quantity: 2,
+        price: 12000,
+        discount: 0
+      },
+      {
+        order_id: order3.id,
+        product_id: productList[8].id, // Keju Slice
+        quantity: 1,
+        price: 28500,
+        discount: 0
+      }
+    ]
+  })
+
+  // Order 4: Customer 1 - Shipped order
+  const order4 = await prisma.orders.create({
+    data: {
+      user_id: customer1.id,
+      store_id: store3.id,
+      address_id: customer1Address.id,
+      shipping_method_id: regularDelivery.id,
+      total_amount: 22000,
+      shipping_cost: 8000,
+      discount_amount: 0,
+      status: 'Dikirim',
+      created_at: new Date('2025-11-14T16:45:00Z')
+    }
+  })
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order4.id,
+        product_id: productList[1].id, // Biskuit Coklat
+        quantity: 2,
+        price: 8500,
+        discount: 0
+      },
+      {
+        order_id: order4.id,
+        product_id: productList[2].id, // Kerupuk Udang
+        quantity: 1,
+        price: 7500,
+        discount: 0
+      }
+    ]
+  })
+
+  await prisma.payments.create({
+    data: {
+      order_id: order4.id,
+      method: 'manual_transfer',
+      proof_image: 'https://example.com/payments/proof4.jpg',
+      is_verified: true,
+      verified_by: superAdmin.id,
+      created_at: new Date('2024-01-18T17:00:00Z')
+    }
+  })
+
+  // Order 5: Customer 2 - Cancelled order
+  const order5 = await prisma.orders.create({
+    data: {
+      user_id: customer2.id,
+      store_id: store1.id,
+      address_id: customer2Address.id,
+      shipping_method_id: pickupInStore.id,
+      total_amount: 12500,
+      shipping_cost: 0,
+      discount_amount: 0,
+      status: 'Dibatalkan',
+      created_at: new Date('2024-01-22T11:20:00Z')
+    }
+  })
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order5.id,
+        product_id: productList[10].id, // Croissant
+        quantity: 1,
+        price: 12500,
+        discount: 0
+      }
+    ]
+  })
+
+  console.log('📋 Orders created')
+
   // Create Carts
   await prisma.carts.createMany({
     data: [
@@ -494,7 +717,7 @@ async function main() {
 
   console.log('✅ Seed completed successfully!')
   
-  // Tampilkan informasi login untuk testing
+  // Tampilkan informasi login dan testing data
   console.log('\n📋 TESTING CREDENTIALS:')
   console.log('======================')
   console.log('Super Admin:')
@@ -506,7 +729,26 @@ async function main() {
   console.log('\nRegular Customer:')
   console.log('Email: customer@email.com')
   console.log('Password: password123')
-  console.log('\nVouchers: WELCOME10, GRATISONGKIR, DISKONROTI')
+  console.log('\nAnother Customer:')
+  console.log('Email: customer2@email.com')
+  console.log('Password: password123')
+  
+  console.log('\n🛒 TESTING DATA SUMMARY:')
+  console.log('=======================')
+  console.log(`📦 Products: ${productList.length} items`)
+  console.log(`🏪 Stores: 3 stores`)
+  console.log(`👥 Users: 5 users`)
+  console.log(`📋 Orders: 5 orders with various statuses`)
+  console.log(`💳 Payments: 3 verified payments`)
+  console.log(`🎫 Vouchers: WELCOME10, GRATISONGKIR, DISKONROTI`)
+  
+  console.log('\n📊 ORDER STATUSES:')
+  console.log('=================')
+  console.log('✅ Order 1: Pesanan_Dikonfirmasi (Completed)')
+  console.log('🔄 Order 2: Diproses (Processing)') 
+  console.log('⏳ Order 3: Menunggu_Pembayaran (Pending Payment)')
+  console.log('🚚 Order 4: Dikirim (Shipped)')
+  console.log('❌ Order 5: Dibatalkan (Cancelled)')
 }
 
 main()
