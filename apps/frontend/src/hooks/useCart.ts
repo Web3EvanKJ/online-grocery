@@ -1,6 +1,6 @@
 // hooks/useCart.ts
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/api';
 import { CartItem } from '../lib/types/cart/cart';
 
@@ -9,19 +9,19 @@ export const useCart = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient.getCart();
       // FIX: Access the nested data property
-      const cartData = response.data?.data as CartItem[];
-      setCart(cartData || []);
+      const cartData = response as CartItem[];
+      setCart(cartData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch cart');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const addToCart = async (productId: number, quantity: number) => {
     try {
@@ -64,7 +64,7 @@ export const useCart = () => {
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [fetchCart]);
 
   return {
     cart,

@@ -220,25 +220,38 @@ class ApiClient {
 
   // Cart API
   async getCart() {
-    return this.request<{ data: CartItem[] }>('cart');
+    const url = `${API_BASE}cart`;
+    const token = this.getToken();
+
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch cart, status: ${response.status}`);
+    }
+
+    return await response.json(); // <-- langsung array
   }
 
+
   async addToCart(productId: number, quantity: number) {
-    return this.request<{ message: string }>('cart', {
+    return this.request<CartItem[]>('cart', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, quantity }),
     });
   }
 
   async updateCartItem(cartId: number, quantity: number) {
-    return this.request<{ message: string }>(`cart/${cartId}`, {
+    return this.request<CartItem[]>(`cart/${cartId}`, {
       method: 'PATCH',
       body: JSON.stringify({ quantity }),
     });
   }
 
   async removeFromCart(cartId: number) {
-    return this.request<{ message: string }>(`cart/${cartId}`, {
+    return this.request<CartItem[]>(`cart/${cartId}`, {
       method: 'DELETE',
     });
   }
