@@ -1,36 +1,9 @@
-# 📌 Template React + ExpressJs + Prisma
+# Grocify
 
-"Template monorepo menggunakan Next.js untuk frontend dan Express untuk backend, dengan TypeScript dan Prisma untuk manajemen database."
+Online Grocery Web App where users shop from the nearest store branch based on their real-time location. The system displays products and stock from the closest store within a service radius and notifies users if they are outside the coverage area. Users must create an account to make purchases, while super admins manage store admins and store admins handle inventory and order processing. Orders are routed to the appropriate branch and follow a full order-status flow. The app also includes customizable discounts such as product-based deals, vouchers, referral rewards, and free-shipping benefits.
 
-## 📂 Struktur Folder
-
-```
-root
-│── apps/
-│   ├── frontend/  # Next.js + Tailwind + TypeScript
-│   ├── backend/   # Node.js + Express + TypeScript + Prisma
-│── package.json
-│── tsconfig.json
-│── README.md
-```
-
-## 🚀 Teknologi yang Digunakan
+## 🚀 Tech Stack
 
 Frontend: Next.js, Tailwind CSS, TypeScript <br/>
 Backend: Node.js, Express, TypeScript, Prisma
 
-## ⚡ Cara Install & Menjalankan
-
-### 1️⃣ Clone repository
-
-`git clone https://github.com/RadidDesfandri/monorepo.git`
-
-### 2️⃣ Install dependencies
-
-npm install
-
-### 3️⃣ Menjalankan aplikasi
-
-npm run dev
-Akses di browser: http://localhost:3000
-API dapat diakses di: http://localhost:8000
