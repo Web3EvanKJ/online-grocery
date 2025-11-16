@@ -9,14 +9,17 @@ export class PaymentController {
   static async initializeMidtransPayment(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.userId;
-      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-
-      const result = await PaymentService.initializeMidtransPayment(req.body);
-      res.json({ success: true, data: result });
+      const { order_id, payment_method } = req.body;
+      const result = await PaymentService.initializeMidtransPayment({ 
+        order_id,
+        payment_method,
+      });
+      res.json({ success: true, data: result }); // frontend akan redirect ke result.redirectUrl
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
     }
   }
+
 
   // Manual payment upload
   static async uploadManualPayment(req: AuthRequest, res: Response) {

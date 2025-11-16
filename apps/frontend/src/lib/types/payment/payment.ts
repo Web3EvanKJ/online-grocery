@@ -11,6 +11,7 @@ export interface MidtransPaymentResponse {
   redirect_url?: string;
   status_code?: string;
   transaction_id: string;
+  paymentMethod?: string;
 }
 
 export interface ManualPaymentResponse {

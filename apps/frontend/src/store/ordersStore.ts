@@ -1,160 +1,157 @@
-// src/store/ordersStore.ts
-'use client';
-
-import { create } from 'zustand';
-import { apiClient } from '@/lib/api';
-import { OrderResponse, AddressInfo, ShippingMethodInfo, CreateOrderData } from '@/lib/types/order/order';
-import { MidtransPaymentResponse } from '@/lib/types/payment/payment';
+// apps/frontend/src/store/ordersStore.ts
+import { create } from "zustand";
+import { apiClient } from "@/lib/api";
+import { CreateOrderRequest, OrderResponse } from "@/lib/types/order/order";
 
 interface OrdersState {
-  addresses: AddressInfo[];
-  shippingMethods: ShippingMethodInfo[];
-  selectedAddressId: number | null;
-  selectedShippingMethodId: number | null;
-  shippingCost: number | null;
-  voucherCode: string | null;
-  notes: string | null;
-  paymentMethod: string | null;
-  order: OrderResponse | null;
-  midtransPayment: MidtransPaymentResponse | null;
-  isLoading: boolean;
+  orders: any[];
+  orderDetails: any | null;
+  orderStatus: any | null;
+
+  loading: boolean;
   error: string | null;
 
-  fetchAddresses: () => Promise<void>;
-  fetchShippingMethods: () => Promise<void>;
-  calculateShippingCost: () => Promise<void>;
-  createOrder: () => Promise<void>;
-  initializeMidtransPayment: () => Promise<void>;
+  // ===== METHODS =====
+  createOrder: (data: CreateOrderRequest) => Promise<OrderResponse>;
+  getOrders: (page?: number, limit?: number) => Promise<void>;
+  getOrderById: (orderId: number) => Promise<void>;
+  cancelOrder: (orderId: number, reason: string) => Promise<void>;
+  confirmOrderDelivery: (orderId: number) => Promise<void>;
+  getOrderStatus: (orderId: number) => Promise<void>;
 
-  setSelectedAddressId: (id: number) => void;
-  setSelectedShippingMethodId: (id: number) => void;
-  setVoucherCode: (code: string) => void;
-  setNotes: (notes: string) => void;
-  setPaymentMethod: (method: string) => void;
-  clearError: () => void;
+  clearOrderDetails: () => void;
 }
 
 export const useOrdersStore = create<OrdersState>((set, get) => ({
-  addresses: [],
-  shippingMethods: [],
-  selectedAddressId: null,
-  selectedShippingMethodId: null,
-  shippingCost: null,
-  voucherCode: null,
-  notes: null,
-  paymentMethod: null,
-  order: null,
-  midtransPayment: null,
-  isLoading: false,
+  orders: [],
+  orderDetails: null,
+  orderStatus: null,
+
+  loading: false,
   error: null,
 
-  fetchAddresses: async () => {
-    set({ isLoading: true, error: null });
+  // ===========================
+  // CREATE ORDER (CHECKOUT)
+  // ===========================
+  createOrder: async (data) => {
     try {
-      const res = await apiClient.getAddresses();
-      set({ addresses: res.data });
+      set({ loading: true, error: null });
+
+      const res = await apiClient.createOrder(data);
+      set({ orderDetails: res });
+
+      return res;
     } catch (err: any) {
-      set({ error: err.message || 'Failed to fetch addresses' });
+      set({ error: err?.message || "Failed to create order" });
+      throw err;
     } finally {
-      set({ isLoading: false });
+      set({ loading: false });
     }
   },
 
-  fetchShippingMethods: async () => {
-    set({ isLoading: true, error: null });
+  // Tambahkan method updateOrderStatus untuk admin
+    updateOrderStatus: async (orderId: number, status: 'pending' | 'verified' | 'cancelled') => {
+      try {
+        set({ loading: true, error: null });
+
+        await apiClient.updateOrderStatus(orderId, status);
+
+    // Refresh order details
+    await get().getOrderById(orderId);
+  } catch (err: any) {
+    set({ error: err?.message || 'Failed to update order status' });
+    throw err;
+  } finally {
+    set({ loading: false });
+  }
+},
+
+
+  // ===========================
+  // GET ORDERS
+  // ===========================
+   getOrders: async () => {
     try {
-      const res = await apiClient.getShippingMethods();
-      set({ shippingMethods: res.data });
+      set({ loading: true, error: null });
+      const userId = Number(localStorage.getItem('userId')); // pastikan userId ada
+      const data = await apiClient.getOrders(userId);
+      set({ orders: data });
     } catch (err: any) {
-      set({ error: err.message || 'Failed to fetch shipping methods' });
+      set({ error: err?.message || 'Failed to fetch orders' });
     } finally {
-      set({ isLoading: false });
+      set({ loading: false });
     }
   },
 
-  calculateShippingCost: async () => {
-    const { selectedAddressId, selectedShippingMethodId } = get();
-    if (!selectedAddressId || !selectedShippingMethodId) return;
-    set({ isLoading: true, error: null });
+  // ===========================
+  // GET ORDER BY ID
+  // ===========================
+  getOrderById: async (orderId: number) => {
     try {
-      const cart = await apiClient.getCart();
-      const items = cart.data.map((item: any) => ({
-        product_id: item.product.id,
-        quantity: item.quantity,
-        weight: item.product.weight || 0,
-      }));
+      set({ loading: true, error: null });
 
-      const res = await apiClient.calculateShippingCost({
-        addressId: selectedAddressId,
-        shippingMethodId: selectedShippingMethodId,
-        items,
-      });
-
-      set({ shippingCost: res.data.cost });
+      const res = await apiClient.getOrderById(orderId);
+      set({ orderDetails: res });
     } catch (err: any) {
-      set({ error: err.message || 'Failed to calculate shipping cost' });
+      set({ error: err?.message || "Failed to fetch order" });
     } finally {
-      set({ isLoading: false });
+      set({ loading: false });
     }
   },
 
-  createOrder: async () => {
-    const {
-      selectedAddressId,
-      selectedShippingMethodId,
-      voucherCode,
-      notes,
-      shippingCost,
-    } = get();
-
-    if (!selectedAddressId || !selectedShippingMethodId) {
-      set({ error: 'Please select address and shipping method' });
-      return;
-    }
-
-    set({ isLoading: true, error: null });
+  // ===========================
+  // CANCEL ORDER (User/Admin)
+  // ===========================
+  cancelOrder: async (orderId: number, reason: string) => {
     try {
-      const orderData: CreateOrderData = {
-        address_id: selectedAddressId,
-        shipping_method_id: selectedShippingMethodId,
-        voucher_code: voucherCode || undefined,
-        notes: notes || undefined,
-      };
+      set({ loading: true, error: null });
 
-      const res = await apiClient.createOrder(orderData);
-      set({ order: res.data, shippingCost: res.data.shipping_cost });
+      await apiClient.cancelOrder(orderId, reason);
+
+      // Refresh orders
+      const { getOrders } = get();
+      await getOrders();
     } catch (err: any) {
-      set({ error: err.message || 'Failed to create order' });
+      set({ error: err?.message || "Failed to cancel order" });
+      throw err;
     } finally {
-      set({ isLoading: false });
+      set({ loading: false });
     }
   },
 
-  initializeMidtransPayment: async () => {
-    const { order, paymentMethod } = get();
-    if (!order || !paymentMethod) {
-      set({ error: 'Order or payment method missing' });
-      return;
-    }
-
-    set({ isLoading: true, error: null });
+  // ===========================
+  // CONFIRM DELIVERY (User)
+  // ===========================
+  confirmOrderDelivery: async (orderId: number) => {
     try {
-      const res = await apiClient.initializeMidtransPayment(
-        order.id,
-        paymentMethod
-      );
-      set({ midtransPayment: res.data });
+      set({ loading: true, error: null });
+
+      await apiClient.confirmOrderDelivery(orderId);
+
+      // Refresh details
+      await get().getOrderById(orderId);
     } catch (err: any) {
-      set({ error: err.message || 'Failed to initialize payment' });
+      set({ error: err?.message || "Failed to confirm order" });
     } finally {
-      set({ isLoading: false });
+      set({ loading: false });
     }
   },
 
-  setSelectedAddressId: (id) => set({ selectedAddressId: id }),
-  setSelectedShippingMethodId: (id) => set({ selectedShippingMethodId: id }),
-  setVoucherCode: (code) => set({ voucherCode: code }),
-  setNotes: (notes) => set({ notes }),
-  setPaymentMethod: (method) => set({ paymentMethod: method }),
-  clearError: () => set({ error: null }),
+  // ===========================
+  // GET ORDER STATUS (Live Tracking)
+  // ===========================
+  getOrderStatus: async (orderId: number) => {
+    try {
+      set({ loading: true, error: null });
+
+      const res = await apiClient.getOrderStatus(orderId);
+      set({ orderStatus: res });
+    } catch (err: any) {
+      set({ error: err?.message || "Failed to fetch order status" });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  clearOrderDetails: () => set({ orderDetails: null, orderStatus: null })
 }));

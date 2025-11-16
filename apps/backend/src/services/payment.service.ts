@@ -1,47 +1,93 @@
 // services/payment.service.ts
 import { prisma } from '../utils/prisma';
 import { MidtransPaymentRequest, ManualPaymentRequest } from '../types/payment';
-import { v4 as uuidv4 } from 'uuid';
+import midtransClient from 'midtrans-client';
 
 export class PaymentService {
-  // Inisialisasi pembayaran via Midtrans (mock)
+  static midtransCoreApi: midtransClient.CoreApi;
+
+  // Init Midtrans CoreApi (optional, bisa dipakai untuk charge/query)
+  static initMidtrans() {
+    if (!this.midtransCoreApi) {
+      this.midtransCoreApi = new midtransClient.CoreApi({
+        isProduction: false,
+        serverKey: process.env.MIDTRANS_SERVER_KEY!,
+        clientKey: process.env.MIDTRANS_CLIENT_KEY!,
+      });
+    }
+    return this.midtransCoreApi;
+  }
+
+  // Initialize Midtrans Payment (Snap)
   static async initializeMidtransPayment(data: MidtransPaymentRequest) {
     if (!data.order_id) throw new Error('order_id is required');
+    if (!data.payment_method) throw new Error('payment_method is required');
 
     const order = await prisma.orders.findUnique({
       where: { id: data.order_id },
       include: { user: true },
     });
-
     if (!order) throw new Error('Order not found');
 
-    // Generate unique transaction_id menggunakan UUID
-    const transaction_id = `mt-${uuidv4()}`;
+    // Gunakan Snap API
+    const snap = new midtransClient.Snap({
+      isProduction: false,
+      serverKey: process.env.MIDTRANS_SERVER_KEY!,
+      clientKey: process.env.MIDTRANS_CLIENT_KEY!,
+    });
 
-    // Mock Midtrans response
-    const mockResponse = {
-      transaction_id,
-      payment_url: 'https://app.sandbox.midtrans.com/snap/v4/redirection/mock-payment',
-      status: 'pending',
+    // Build transaction payload
+    const parameter: any = {
+      transaction_details: {
+        order_id: `ORDER-${order.id}-${Date.now()}`,
+        gross_amount: Number(order.total_amount),
+      },
+      customer_details: {
+        first_name: order.user.name,
+        email: order.user.email,
+        phone: order.user.phone || '08123456789',
+      },
     };
 
-    // Update payment record
+    // Tentukan payment_type untuk Midtrans
+    switch (data.payment_method) {
+      case 'gopay':
+        parameter.payment_type = 'gopay';
+        break;
+      case 'bank_transfer':
+        parameter.payment_type = 'bank_transfer';
+        parameter.bank_transfer = { bank: 'bca' };
+        break;
+      case 'credit_card':
+        parameter.payment_type = 'credit_card';
+        parameter.credit_card = { secure: true };
+        break;
+      default:
+        throw new Error('Unsupported payment method');
+    }
+
+    // Create transaction di Midtrans Snap
+    const snapResponse = await snap.createTransaction(parameter);
+
+    // Simpan di DB, enum Prisma tetap aman
     await prisma.payments.updateMany({
-      where: { order_id: data.order_id },
+      where: { order_id: order.id },
       data: {
-        method: 'payment_gateway',
-        transaction_id,
+        method: 'payment_gateway', // semua non-manual disimpan sebagai payment_gateway
+        transaction_id: snapResponse.token,
         is_verified: false,
       },
     });
 
-    return mockResponse;
+    return {
+      transactionId: snapResponse.token,
+      redirectUrl: snapResponse.redirect_url,
+    };
   }
 
-  // Upload bukti pembayaran manual
+  // Upload Manual Payment
   static async uploadManualPayment(data: ManualPaymentRequest) {
-    if (!data.order_id) throw new Error('order_id is required');
-    if (!data.proof_image) throw new Error('proof_image is required');
+    if (!data.order_id || !data.proof_image) throw new Error('Missing required fields');
 
     const order = await prisma.orders.findUnique({ where: { id: data.order_id } });
     if (!order) throw new Error('Order not found');
@@ -63,17 +109,14 @@ export class PaymentService {
     return { message: 'Payment proof uploaded successfully', status: 'pending_verification' };
   }
 
-  // Ambil status pembayaran
+  // Get Payment Status
   static async getPaymentStatus(orderId: number) {
-    if (!orderId) throw new Error('orderId is required');
-
     const payment = await prisma.payments.findFirst({ where: { order_id: orderId } });
     if (!payment) throw new Error('Payment not found');
-
     return payment;
   }
 
-  // Webhook Midtrans untuk update status otomatis
+  // Handle Midtrans Webhook
   static async handleMidtransWebhook(payload: any) {
     console.log('Midtrans webhook received:', payload);
 
@@ -87,13 +130,11 @@ export class PaymentService {
         return { received: false };
       }
 
-      // Update payment verified
       await prisma.payments.update({
         where: { id: payment.id },
         data: { is_verified: true },
       });
 
-      // Update order status otomatis ke Diproses
       await prisma.orders.update({
         where: { id: payment.order_id },
         data: { status: 'Diproses' },
@@ -105,7 +146,7 @@ export class PaymentService {
     return { received: true };
   }
 
-  // Admin verify manual payment
+  // Admin Verify Manual Payment
   static async verifyManualPayment(orderId: number, adminId: number, isVerified: boolean) {
     const payment = await prisma.payments.findFirst({ where: { order_id: orderId } });
     if (!payment) throw new Error('Payment not found');

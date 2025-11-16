@@ -1,301 +1,249 @@
-import { ApiResponse, PaginationParams, ApiError } from './types/api/api';
-import { LoginResponse } from './types/auth/auth';
-import { CartItem } from './types/cart/cart';
-import { CreateOrderData, OrderResponse } from './types/order/order'
-import { MidtransPaymentResponse, PaymentStatusResponse } from './types/payment/payment';
-
-const API_BASE =
-  `${process.env.NEXT_PUBLIC_API_URL}api/` || 'http://localhost:5000/api';
-
-interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-interface ShippingCostResponse {
-  cost: number;
-  estimated_days: number;
-  service: string;
-  store: {
-    id: number;
-    name: string;
-    address: string;
-    city: string;
-    distance: number;
-  };
-}
-
-interface Address {
-  id: number;
-  label: string;
-  address_detail: string;
-  province: string;
-  city: string;
-  district: string;
-  subdistrict: string;
-  latitude?: string;
-  longitude?: string;
-  is_main?: boolean;
-}
-
-interface ShippingMethod {
-  id: number;
-  name: string;
-  provider: string;
-  base_cost: string | number;
-  cost_per_km: string | number;
-}
+// apps/frontend/src/lib/api.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL + "api";
 
 class ApiClient {
   private token: string | null = null;
 
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', token);
+  constructor() {
+    if (typeof window !== "undefined") {
+      this.token = localStorage.getItem("token");
     }
   }
 
-  getToken(): string | null {
-    if (!this.token && typeof window !== 'undefined') {
-      this.token = localStorage.getItem('token');
+  setToken(token: string) {
+    this.token = token;
+    if (typeof window !== "undefined") localStorage.setItem("token", token);
+  }
+
+  getToken() {
+    if (!this.token && typeof window !== "undefined") {
+      this.token = localStorage.getItem("token");
     }
     return this.token;
   }
 
-  clearToken() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    const url = `${API_BASE}${endpoint}`;
-    const token = this.getToken();
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      if (!response.ok) {
-        const errorData: ApiError = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `HTTP error! status: ${response.status}`
-        );
-      }
-
-      const data: ApiResponse<T> = await response.json();
-      return data;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Network error occurred');
-    }
-  }
-
-  // Auth API
-  async login(email: string, password: string) {
-    return this.request<LoginResponse>('auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
-  async register(email: string, name: string) {
-    return this.request<{ message: string }>('auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, name }),
-    });
-  }
-
-  // Cart API
-  async getCart() {
-    const url = `${API_BASE}cart`;
-    const token = this.getToken();
-
+  private buildHeaders(isFormData = false) {
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!isFormData) headers["Content-Type"] = "application/json";
 
-    const response = await fetch(url, { headers });
+    const token = this.getToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch cart, status: ${response.status}`);
-    }
+    return headers;
+  }
 
-    return await response.json();
+  // ---------- CART ----------
+  async getCart() {
+    const res = await fetch(`${API_BASE}/cart`, { headers: this.buildHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch cart");
+    return res.json(); 
   }
 
   async addToCart(productId: number, quantity: number) {
-    return this.request<CartItem[]>('cart', {
-      method: 'POST',
-      body: JSON.stringify({ product_id: productId, quantity }),
+    const res = await fetch(`${API_BASE}/cart`, {
+      method: "POST",
+      headers: this.buildHeaders(),
+      body: JSON.stringify({ productId, quantity }),
     });
+    if (!res.ok) throw new Error("Failed to add to cart");
+    return res.json();
   }
 
-  async updateCartItem(cartId: number, quantity: number) {
-    return this.request<CartItem[]>(`cart/${cartId}`, {
-      method: 'PATCH',
+  async updateCart(cartId: number, quantity: number) {
+    const res = await fetch(`${API_BASE}/cart/${cartId}`, {
+      method: "PATCH",
+      headers: this.buildHeaders(),
       body: JSON.stringify({ quantity }),
     });
+    if (!res.ok) throw new Error("Failed to update cart");
+    return res.json();
   }
 
-  async removeFromCart(cartId: number) {
-    return this.request<CartItem[]>(`cart/${cartId}`, {
-      method: 'DELETE',
+  async removeCart(cartId: number) {
+    const res = await fetch(`${API_BASE}/cart/${cartId}`, {
+      method: "DELETE",
+      headers: this.buildHeaders(),
     });
+    if (!res.ok) throw new Error("Failed to delete cart");
+    return res.json();
   }
 
   async clearCart() {
-    return this.request<[]>("cart/clear", {
+    const res = await fetch(`${API_BASE}/cart/clear`, {
       method: "DELETE",
+      headers: this.buildHeaders(),
     });
+    if (!res.ok) throw new Error("Failed to clear cart");
+    return res.json();
   }
 
-  // Orders API
-  async createOrder(orderData: CreateOrderData) {
-    return this.request<{ data: OrderResponse }>('orders', {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-    });
+  // ---------- ADDRESSES ----------
+  async getAddresses() {
+    const res = await fetch(`${API_BASE}/addresses`, { headers: this.buildHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch addresses");
+    const json = await res.json();
+    return json.data;
   }
 
-  async getOrders(params?: PaginationParams) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
+  // ---------- SHIPPING ----------
+  async getShippingMethods() {
+    const res = await fetch(`${API_BASE}/shipping/methods`, { headers: this.buildHeaders() });
+    const json = await res.json();
+    return json.data;
+  }
 
-    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(
-      `orders?${queryParams}`
-    );
+  async calculateShippingCost(payload: any) {
+    const res = await fetch(`${API_BASE}/shipping/calculate`, {
+      method: "POST",
+      headers: this.buildHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    return json.data;
+  }
+
+  // ---------- VOUCHER ----------
+  async applyVoucher(code: string, cartItems: any[], totalAmount: number) {
+    const res = await fetch(`${API_BASE}/voucher/apply`, {
+      method: "POST",
+      headers: this.buildHeaders(),
+      body: JSON.stringify({ code, cartItems, totalAmount }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to apply voucher");
+    return json.data; // { discountAmount: number, type: 'nominal' | 'percentage' }
+  }
+
+  async validateVoucher(code: string, userId: number, cartItems: any[], totalAmount: number) {
+    const res = await fetch(`${API_BASE}/vouchers/validate`, {
+      method: "POST",
+      headers: this.buildHeaders(),
+      body: JSON.stringify({ code, userId, cartItems, totalAmount }),
+    });
+    const json = await res.json();
+    return json.data; // { voucher: { code, type, value } }
+  }
+
+  // ---------- ORDERS ----------
+  async createOrder(data: {
+    addressId: number;
+    shippingMethodId: number;
+    voucherCode?: string;
+    notes?: string;
+    paymentMethod: 'manual_transfer' | 'payment_gateway';
+  }) {
+    const res = await fetch(`${API_BASE}/orders`, {
+      method: "POST",
+      headers: this.buildHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to create order");
+
+    // jika payment_gateway, backend return { paymentUrl }
+    return json.data;
+  }
+
+  async getOrders(userId: number) {
+    const res = await fetch(`${API_BASE}/orders?userId=${userId}&limit=1000`, {
+      method: 'GET',
+      headers: this.buildHeaders(),
+    });
+    const json = await res.json();
+    return json.data;
   }
 
   async getOrderById(orderId: number) {
-    return this.request<{ data: OrderResponse }>(`orders/${orderId}`);
+    const res = await fetch(`${API_BASE}/orders/${orderId}`, {
+      method: "GET",
+      headers: this.buildHeaders(),
+    });
+    const json = await res.json();
+    return json.data;
+  }
+
+  async getOrderStatus(orderId: number) {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+      method: "GET",
+      headers: this.buildHeaders(),
+    });
+    const json = await res.json();
+    return json.data;
   }
 
   async cancelOrder(orderId: number, reason: string) {
-    return this.request<{ message: string }>(`orders/${orderId}/cancel`, {
-      method: 'PATCH',
+    const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+      method: "PATCH",
+      headers: this.buildHeaders(),
       body: JSON.stringify({ reason }),
     });
-  }
-
-  // Payment API
-  async initializeMidtransPayment(orderId: number, paymentMethod: string) {
-    return this.request<{ data: MidtransPaymentResponse }>(
-      'payments/midtrans/initialize',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          order_id: orderId,
-          payment_method: paymentMethod,
-        }),
-      }
-    );
-  }
-
-  async uploadManualPayment(orderId: number, proofImage: File) {
-    const formData = new FormData();
-    formData.append('order_id', orderId.toString());
-    formData.append('proof_image', proofImage);
-
-    return this.request<{ message: string }>('payments/manual/upload', {
-      method: 'POST',
-      headers: {}, // Let browser set Content-Type for FormData
-      body: formData,
-    });
-  }
-
-  // Admin API
-  async getAdminOrders(params?: PaginationParams & { storeId?: number }) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.storeId)
-      queryParams.append('storeId', params.storeId.toString());
-
-    return this.request<{ data: OrderResponse[]; pagination: PaginationInfo }>(
-      `admin/orders?${queryParams}`
-    );
+    const json = await res.json();
+    return json.data;
   }
 
   async updateOrderStatus(orderId: number, status: string) {
-    return this.request<{ message: string }>(`admin/orders/${orderId}/status`, {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
       method: 'PATCH',
+      headers: this.buildHeaders(),
       body: JSON.stringify({ status }),
     });
+    const json = await res.json();
+    return json.data;
+  }  
+
+  async confirmOrderDelivery(orderId: number) {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/confirm`, {
+      method: "PATCH",
+      headers: this.buildHeaders(),
+    });
+    const json = await res.json();
+    return json.data;
   }
 
-  async verifyPayment(orderId: number, isVerified: boolean) {
-    return this.request<{ message: string }>(
-      `admin/orders/${orderId}/verify-payment`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ isVerified }),
-      }
-    );
+  // ---------- DISCOUNT ----------
+  async getAdminDiscounts() {
+    const res = await fetch(`${API_BASE}/admin/discount`, { headers: this.buildHeaders() });
+    const json = await res.json();
+    return json.data;
   }
-
-  // Payment API - tambahkan method ini
-  async getPaymentStatus(transactionId: string) {
-    return this.request<{ data: PaymentStatusResponse }>(
-      `payments/status/${transactionId}`
-    );
-  }
-
-  async createPayment(paymentData: {
-    order_id: number;
-    payment_method: string;
-  }) {
-    return this.request<{ data: MidtransPaymentResponse }>('payments/create', {
+  // ---------- PAYMENT ----------
+  async initializeMidtransPayment(orderId: number) {
+    const res = await fetch(`${API_BASE}/payment/midtrans/initialize`, {
       method: 'POST',
-      body: JSON.stringify(paymentData),
+      headers: this.buildHeaders(),
+      body: JSON.stringify({ order_id: orderId }),
     });
+    const json = await res.json();
+    return json.data; // { transaction_id, payment_url, status }
   }
 
-  // Addresses
-  async getAddresses() {
-    return this.request<{ data: Address[] }>('addresses', {
-      method: 'GET',
-    });
-  }
+  async uploadManualPayment(orderId: number, file: File) {
+    const formData = new FormData();
+    formData.append('order_id', orderId.toString());
+    formData.append('file', file);
 
-  // Shipping methods
-  async getShippingMethods() {
-    return this.request<{ data: ShippingMethod[] }>('shipping/methods', {
-      method: 'GET',
-    });
-  }
-
-  // calculateShippingCost
-  async calculateShippingCost(payload: {
-    addressId: number;
-    shippingMethodId: number;
-    items: { product_id: number; quantity: number; weight?: number }[];
-  }) {
-    return this.request<{ data: ShippingCostResponse }>('shipping/calculate', {
+    const res = await fetch(`${API_BASE}/payment/manual/upload`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      headers: this.buildHeaders(true), // FormData
+      body: formData,
     });
+    const json = await res.json();
+    
+    if (!json.success) {
+      throw new Error(json.error || 'Upload failed');
+    }
+
+    return json.data; // { message, status }
   }
+
+  async getPaymentStatus(orderId: number) {
+    const res = await fetch(`${API_BASE}/payment/status/${orderId}`, {
+      headers: this.buildHeaders(),
+    });
+    const json = await res.json();
+    return json.data; // payment info
+  }
+
 }
 
 export const apiClient = new ApiClient();
