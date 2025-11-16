@@ -79,7 +79,11 @@ export default function AuthPage() {
         });
       } else if (mode === 'verify' || mode === 'login') {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         setMessage('Success! Redirecting...');
+        
+        // 🔥 ADD THIS LINE - Dispatch custom event to notify navbar
+        window.dispatchEvent(new Event('authStateChange'));
         
         // Check user role and redirect accordingly
         if (data.user.role === 'store_admin' || data.user.role === 'super_admin') {
@@ -95,6 +99,7 @@ export default function AuthPage() {
     }
   };
 
+  // ... rest of your component remains exactly the same
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };

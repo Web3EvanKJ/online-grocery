@@ -12,11 +12,8 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    // Set client-side flag
-    setIsClient(true);
-    
-    // Check if user is logged in on component mount
+  // Function to check auth status
+  const checkAuth = () => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
@@ -26,11 +23,35 @@ export default function Navbar() {
         setUser(JSON.parse(userData));
       } catch (error) {
         console.error('Error parsing user data:', error);
-        // Clear invalid data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
     }
+  };
+
+  useEffect(() => {
+    // Set client-side flag
+    setIsClient(true);
+    
+    // Initial auth check
+    checkAuth();
+
+    // Listen for auth state changes (from login)
+    const handleAuthChange = () => {
+      console.log('Auth state changed - updating navbar');
+      checkAuth();
+    };
+
+    // Add event listener
+    window.addEventListener('authStateChange', handleAuthChange);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('authStateChange', handleAuthChange);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -38,8 +59,10 @@ export default function Navbar() {
     localStorage.removeItem('user');
     setIsLoggedIn(false);
     setUser(null);
+    
+    // Notify other components about logout
+    window.dispatchEvent(new Event('authStateChange'));
     router.push('/');
-    // Remove router.refresh() as it can cause issues
   };
 
   const getDashboardLink = () => {
