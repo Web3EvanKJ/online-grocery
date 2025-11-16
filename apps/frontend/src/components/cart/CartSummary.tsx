@@ -28,7 +28,7 @@ export const CartSummary = () => {
         <Link
           href="/checkout"
           className={`block text-center py-3 px-4 rounded-lg font-semibold ${
-            total > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            total > 0 ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
           {loading ? 'Updating...' : (total > 0 ? 'Proceed to Checkout' : 'Cart is empty')}

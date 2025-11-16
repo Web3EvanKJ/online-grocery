@@ -80,7 +80,13 @@ export default function AuthPage() {
       } else if (mode === 'verify' || mode === 'login') {
         localStorage.setItem('token', data.token);
         setMessage('Success! Redirecting...');
-        router.push(`/dashboarduser/${data.user.id}`);
+        
+        // Check user role and redirect accordingly
+        if (data.user.role === 'store_admin' || data.user.role === 'super_admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push(`/dashboarduser/${data.user.id}`);
+        }
       }
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : 'An unknown error occurred');

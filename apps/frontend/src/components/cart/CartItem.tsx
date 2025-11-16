@@ -5,6 +5,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 export function CartItem({ item }: { item: any }) {
   const updateCartItem = useCartStore(state => state.updateCartItem);
@@ -67,7 +68,7 @@ export function CartItem({ item }: { item: any }) {
             className="w-8 h-8 rounded-md border flex items-center justify-center disabled:opacity-50"
             aria-label="Decrease"
           >
-            {isUpdating ? <span className="animate-spin">⏳</span> : <Minus size={16} />}
+            {isUpdating ? <LoadingSpinner size="sm"/> : <Minus size={16} />}
           </button>
 
           <div className="min-w-[2rem] text-center font-medium">{item.quantity}</div>
@@ -78,7 +79,7 @@ export function CartItem({ item }: { item: any }) {
             className="w-8 h-8 rounded-md border flex items-center justify-center disabled:opacity-50"
             aria-label="Increase"
           >
-            {isUpdating ? <span className="animate-spin">⏳</span> : <Plus size={16} />}
+            {isUpdating ? <LoadingSpinner size="sm"/> : <Plus size={16} />}
           </button>
         </div>
       </div>

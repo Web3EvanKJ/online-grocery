@@ -13,7 +13,7 @@ export function PurchaseBox({
   product_id: number;
 }) {
   const [quantity, setQuantity] = useState(1);
-  const { addToCart, loading } = useCartStore();
+  const { addItem, loading } = useCartStore();
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = async () => {
@@ -21,7 +21,7 @@ export function PurchaseBox({
 
     setIsAdding(true);
     try {
-      const success = await addToCart(product_id, quantity);
+      const success = await addItem(product_id, quantity);
       if (success) {
         console.log('Product added to cart successfully!');
         setQuantity(1); // reset quantity

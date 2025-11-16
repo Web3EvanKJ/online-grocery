@@ -181,7 +181,7 @@ class ApiClient {
     return json.data;
   }
 
-  async updateOrderStatus(orderId: number, status: string) {
+  async updateOrderStatus(orderId: number, status: string, reason?: string) {
     const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
       method: 'PATCH',
       headers: this.buildHeaders(),

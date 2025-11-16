@@ -5,11 +5,11 @@ import { useCartStore } from '@/store/cartStore';
 import { useEffect } from 'react';
 
 export default function Navbar() {
-  const cartCount = useCartStore((s) => s.cartCount);
+  const totalQuantity = useCartStore((s) => s.totalQuantity); // pakai totalQuantity
   const fetchCart = useCartStore((s) => s.fetchCart);
 
   useEffect(() => {
-    fetchCart(); // hanya sekali saat navbar mount
+    fetchCart(); // fetch sekali saat mount
   }, [fetchCart]);
 
   return (
@@ -27,9 +27,9 @@ export default function Navbar() {
                 Cart
               </Link>
 
-              {cartCount > 0 && (
+              {totalQuantity > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                  {cartCount}
+                  {totalQuantity}
                 </span>
               )}
             </div>

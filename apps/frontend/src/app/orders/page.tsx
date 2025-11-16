@@ -1,66 +1,83 @@
 'use client';
-import { useEffect } from 'react';
-import { useOrdersStore } from '@/store/ordersStore';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useRouter } from 'next/navigation';
+
+import { useEffect, useState } from "react";
+import { useOrdersStore } from "@/store/ordersStore";
 
 export default function OrdersPage() {
-  const { orders, loading, getOrders, error } = useOrdersStore();
-  const router = useRouter();
+  const { orders, getOrders, cancelOrder } = useOrdersStore();
+  const [cancelInputOrderId, setCancelInputOrderId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   useEffect(() => {
     getOrders();
   }, [getOrders]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-50">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  const handleCancel = async (orderId: number) => {
+    if (!cancelReason.trim()) {
+      alert("Please provide a reason");
+      return;
+    }
+    try {
+      await cancelOrder(orderId, cancelReason);
+      setCancelInputOrderId(null);
+      setCancelReason("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-blue-50 py-8">
-      <div className="container mx-auto max-w-4xl px-4">
-        <h1 className="text-3xl font-bold mb-6 text-gray-900">My Orders</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">My Orders</h1>
 
-        {error && <p className="text-red-600 mb-4">{error}</p>}
+      {orders.length === 0 ? (
+        <p className="text-gray-600 text-center py-10">You have no orders yet.</p>
+      ) : (
+        <div className="grid gap-4">
+          {orders.map((order) => (
+            <div key={order.id} className="border rounded p-4 flex flex-col gap-2">
+              <p>Order #{order.id} - {order.status}</p>
+              <p>Total: {order.total_amount}</p>
 
-        {orders || length === 0 ? (
-          <p className="text-gray-600 text-center py-10">You have no orders yet.</p>
-        ) : (
-          <div className="grid gap-4">
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                onClick={() => router.push(`/orders/${order.id}`)}
-                className="p-4 border rounded-lg bg-white shadow cursor-pointer hover:bg-blue-50 transition-colors"
-              >
-                <div className="flex justify-between items-center">
-                  <p className="font-medium text-gray-900">Order #{order.id}</p>
-                  <span
-                    className={`font-semibold ${
-                      order.status === 'pending'
-                        ? 'text-blue-600'
-                        : order.status === 'verified'
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                </div>
-                <div className="mt-2 text-sm text-gray-600">
-                  <p>Payment: {order.payment_method}</p>
-                  <p>Total: Rp {order.total_amount.toLocaleString()}</p>
-                  <p>Created at: {new Date(order.created_at).toLocaleString()}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              {/* Cancel button */}
+              {order.status !== "Dibatalkan" && (
+                <>
+                  {!cancelInputOrderId || cancelInputOrderId !== order.id ? (
+                    <button
+                      onClick={() => setCancelInputOrderId(order.id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded"
+                    >
+                      Cancel Order
+                    </button>
+                  ) : (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        placeholder="Enter reason"
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className="border p-2 rounded flex-1"
+                      />
+                      <button
+                        onClick={() => handleCancel(order.id)}
+                        className="bg-red-600 text-white px-4 py-2 rounded"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => { setCancelInputOrderId(null); setCancelReason(""); }}
+                        className="bg-gray-300 px-4 py-2 rounded"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

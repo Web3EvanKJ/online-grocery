@@ -18,6 +18,7 @@ interface OrdersState {
   cancelOrder: (orderId: number, reason: string) => Promise<void>;
   confirmOrderDelivery: (orderId: number) => Promise<void>;
   getOrderStatus: (orderId: number) => Promise<void>;
+  updateOrderStatus: (orderId: number, status: string) => Promise<void>;
 
   clearOrderDetails: () => void;
 }
@@ -36,10 +37,8 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   createOrder: async (data) => {
     try {
       set({ loading: true, error: null });
-
       const res = await apiClient.createOrder(data);
       set({ orderDetails: res });
-
       return res;
     } catch (err: any) {
       set({ error: err?.message || "Failed to create order" });
@@ -49,35 +48,17 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // Tambahkan method updateOrderStatus untuk admin
-    updateOrderStatus: async (orderId: number, status: 'pending' | 'verified' | 'cancelled') => {
-      try {
-        set({ loading: true, error: null });
-
-        await apiClient.updateOrderStatus(orderId, status);
-
-    // Refresh order details
-    await get().getOrderById(orderId);
-  } catch (err: any) {
-    set({ error: err?.message || 'Failed to update order status' });
-    throw err;
-  } finally {
-    set({ loading: false });
-  }
-},
-
-
   // ===========================
   // GET ORDERS
   // ===========================
-   getOrders: async () => {
+  getOrders: async (page = 1, limit = 20) => {
     try {
       set({ loading: true, error: null });
-      const userId = Number(localStorage.getItem('userId')); // pastikan userId ada
+      const userId = Number(localStorage.getItem("userId"));
       const data = await apiClient.getOrders(userId);
       set({ orders: data });
     } catch (err: any) {
-      set({ error: err?.message || 'Failed to fetch orders' });
+      set({ error: err?.message || "Failed to fetch orders" });
     } finally {
       set({ loading: false });
     }
@@ -89,7 +70,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   getOrderById: async (orderId: number) => {
     try {
       set({ loading: true, error: null });
-
       const res = await apiClient.getOrderById(orderId);
       set({ orderDetails: res });
     } catch (err: any) {
@@ -100,17 +80,13 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   },
 
   // ===========================
-  // CANCEL ORDER (User/Admin)
+  // CANCEL ORDER
   // ===========================
   cancelOrder: async (orderId: number, reason: string) => {
     try {
       set({ loading: true, error: null });
-
       await apiClient.cancelOrder(orderId, reason);
-
-      // Refresh orders
-      const { getOrders } = get();
-      await getOrders();
+      await get().getOrders();
     } catch (err: any) {
       set({ error: err?.message || "Failed to cancel order" });
       throw err;
@@ -125,10 +101,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   confirmOrderDelivery: async (orderId: number) => {
     try {
       set({ loading: true, error: null });
-
       await apiClient.confirmOrderDelivery(orderId);
-
-      // Refresh details
       await get().getOrderById(orderId);
     } catch (err: any) {
       set({ error: err?.message || "Failed to confirm order" });
@@ -143,7 +116,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   getOrderStatus: async (orderId: number) => {
     try {
       set({ loading: true, error: null });
-
       const res = await apiClient.getOrderStatus(orderId);
       set({ orderStatus: res });
     } catch (err: any) {
@@ -153,5 +125,24 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  clearOrderDetails: () => set({ orderDetails: null, orderStatus: null })
+  // ===========================
+  // UPDATE ORDER STATUS (Admin)
+  // ===========================
+  updateOrderStatus: async (orderId: number, status: string) => {
+    try {
+      set({ loading: true, error: null });
+      await apiClient.updateOrderStatus(orderId, status);
+      await get().getOrderById(orderId);
+    } catch (err: any) {
+      set({ error: err?.message || "Failed to update order status" });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  // ===========================
+  // CLEAR DETAILS
+  // ===========================
+  clearOrderDetails: () => set({ orderDetails: null, orderStatus: null }),
 }));

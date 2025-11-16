@@ -1,7 +1,12 @@
+import React from "react";
+import LandingPage from "@/components/LandingPage";
+
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
-    <div className="container mx-auto flex min-h-screen items-center justify-center">
-      Welcome to Grocery Store (Landing Page)
-    </div>
+<div>
+  <LandingPage/>
+</div>
   );
 }
