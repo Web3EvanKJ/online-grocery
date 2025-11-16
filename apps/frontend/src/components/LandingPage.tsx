@@ -1,18 +1,9 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 import { SearchHeader } from './find/SearchHeader';
 
 export default function LandingPage() {
-  const handleShopNow = () => {
-    // Add navigation logic here
-    console.log('Navigate to shop');
-  };
-
-  const handleLearnMore = () => {
-    // Add learn more logic here
-    console.log('Learn more clicked');
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -24,13 +15,13 @@ export default function LandingPage() {
           <p className="text-lg text-gray-600 mb-8">
             Fresh groceries delivered to your door in hours
           </p>
-          <button 
-            onClick={handleShopNow}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
+          <Link 
+            href="/find"
+            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
             aria-label="Start shopping"
           >
             Start Shopping
-          </button>
+          </Link>
         </div>
       </section>
 
@@ -82,21 +73,14 @@ export default function LandingPage() {
           <p className="mb-6">
             Join thousands of happy customers
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={handleShopNow}
+          <div className="flex justify-center">
+            <Link 
+              href="/find"
               className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
               aria-label="Shop now"
             >
               Shop Now
-            </button>
-            <button 
-              onClick={handleLearnMore}
-              className="border border-white text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-              aria-label="Learn more about our service"
-            >
-              Learn More
-            </button>
+            </Link>
           </div>
         </div>
       </section>
