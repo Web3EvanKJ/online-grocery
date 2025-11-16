@@ -16,7 +16,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-green-50 py-16 px-4">
+      <section className="bg-blue-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Groceries Delivered
@@ -26,7 +26,7 @@ export default function LandingPage() {
           </p>
           <button 
             onClick={handleShopNow}
-            className="bg-green-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-700 transition"
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
             aria-label="Start shopping"
           >
             Start Shopping
@@ -74,7 +74,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 px-4 bg-green-600 text-white">
+      <section className="py-12 px-4 bg-blue-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-4">
             Ready to Get Started?
@@ -85,14 +85,14 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={handleShopNow}
-              className="bg-white text-green-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
+              className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
               aria-label="Shop now"
             >
               Shop Now
             </button>
             <button 
               onClick={handleLearnMore}
-              className="border border-white text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition"
+              className="border border-white text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
               aria-label="Learn more about our service"
             >
               Learn More
