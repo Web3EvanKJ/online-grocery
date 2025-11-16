@@ -1,6 +1,7 @@
 // components/LandingPage.tsx
-import { SearchHeader } from "@/components/find/SearchHeader";
-import { ProductCard } from "@/components/ProductCard"; // Adjust import path as needed
+import Image from 'next/image';
+import { SearchHeader } from '@/components/find/SearchHeader';
+import { ProductCard } from '@/components/ProductCard'; // Adjust import path as needed
 
 // Mock API function - replace with your actual API call
 async function getFeaturedProducts() {
@@ -11,26 +12,26 @@ async function getFeaturedProducts() {
   // Mock data for demonstration
   return [
     {
-      id: "1",
-      slug: "organic-bananas",
-      name: "Organic Bananas",
+      id: '1',
+      slug: 'organic-bananas',
+      name: 'Organic Bananas',
       price: 4.99,
       originalPrice: 6.99,
-      image: "/api/placeholder/300/200",
-      category: "Fresh Produce",
+      image: '/api/placeholder/300/200',
+      category: 'Fresh Produce',
       discount: 29,
-      discountInputType: "percentage",
+      discountInputType: 'percentage',
       isb1g1: false,
       stock: 50
     },
     {
-      id: "2", 
-      slug: "fresh-milk",
-      name: "Fresh Whole Milk",
+      id: '2', 
+      slug: 'fresh-milk',
+      name: 'Fresh Whole Milk',
       price: 3.49,
       originalPrice: null,
-      image: "/api/placeholder/300/200",
-      category: "Dairy & Eggs",
+      image: '/api/placeholder/300/200',
+      category: 'Dairy & Eggs',
       discount: null,
       discountInputType: null,
       isb1g1: true,
@@ -55,13 +56,12 @@ export async function LandingPage() {
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl">
             Get the freshest produce, dairy, and pantry essentials delivered straight to your doorstep. 
-            Quality you can trust, convenience you'll love.
+            Quality you can trust, convenience you&apos;ll love.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
             <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 transform hover:-translate-y-1 shadow-lg hover:shadow-xl">
               <a href="/find">Start Shopping Now</a>
             </button>
-
           </div>
         </div>
         
@@ -70,10 +70,13 @@ export async function LandingPage() {
             <div className="absolute -top-4 -left-4 w-64 h-64 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
             <div className="absolute -bottom-8 -right-4 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
             <div className="relative bg-white rounded-2xl shadow-2xl p-8 transform rotate-3 hover:rotate-0 transition-transform duration-300">
-              <img 
+              <Image 
                 src="/api/placeholder/400/300" 
                 alt="Fresh Groceries"
+                width={400}
+                height={300}
                 className="rounded-lg w-full h-64 object-cover"
+                priority
               />
               <div className="mt-6 text-center">
                 <h3 className="text-2xl font-bold text-gray-900">Farm Fresh Quality</h3>
@@ -93,19 +96,19 @@ export async function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                icon: "🚚",
-                title: "Fast Delivery",
-                description: "Get your groceries delivered in under 2 hours"
+                icon: '🚚',
+                title: 'Fast Delivery',
+                description: 'Get your groceries delivered in under 2 hours'
               },
               {
-                icon: "🌟",
-                title: "Quality Guaranteed",
-                description: "Fresh produce with 100% satisfaction guarantee"
+                icon: '🌟',
+                title: 'Quality Guaranteed',
+                description: 'Fresh produce with 100% satisfaction guarantee'
               },
               {
-                icon: "💰",
-                title: "Best Prices",
-                description: "Competitive prices with regular discounts and offers"
+                icon: '💰',
+                title: 'Best Prices',
+                description: 'Competitive prices with regular discounts and offers'
               }
             ].map((feature, index) => (
               <div key={index} className="text-center p-6 rounded-lg hover:shadow-lg transition-shadow duration-300">
