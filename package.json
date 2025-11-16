@@ -39,6 +39,7 @@
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "opencage-api-client": "^2.1.0",
-    "readable-stream": "^4.7.0"
+    "readable-stream": "^4.7.0",
+    "resend": "^6.4.2"
   }
 }

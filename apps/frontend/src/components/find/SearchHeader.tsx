@@ -65,8 +65,6 @@ export function SearchHeader() {
   return (
     <header className="w-full border-b bg-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-        {/* Logo */}
-        <div className="text-xl font-bold text-sky-600">Logo</div>
 
         {/* Category Dropdown */}
         <div className="relative">

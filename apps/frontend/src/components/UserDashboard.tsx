@@ -7,9 +7,14 @@ import AddressManager from './AddressManager';
 export default function DashboardPage({ params }: { params: { id: string } }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<'profile' | 'addresses'>(
-    'profile'
-  );
+  const [activeSection, setActiveSection] = useState<'profile' | 'addresses' | 'change-password'>('profile');
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -34,6 +39,73 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    setPasswordMessage('');
+
+    // Validation
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage('New passwords do not match');
+      setPasswordLoading(false);
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6 || passwordForm.newPassword.length > 10) {
+      setPasswordMessage('Password must be 6-10 characters long');
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/auth/change-password`,
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}` 
+          },
+          body: JSON.stringify({
+            currentPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to change password');
+      }
+
+      setPasswordMessage('Password changed successfully!');
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      // Optionally switch back to profile after success
+      setTimeout(() => {
+        setActiveSection('profile');
+      }, 2000);
+
+    } catch (error: unknown) {
+      setPasswordMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordForm(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   if (loading)
@@ -81,7 +153,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Content */}
-        {activeSection === 'profile' ? (
+        {activeSection === 'profile' && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="rounded-lg bg-white p-6 shadow-md">
               <h3 className="mb-4 text-lg font-semibold text-gray-900">
@@ -125,7 +197,10 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                 <button className="w-full rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50">
                   Edit Profile
                 </button>
-                <button className="w-full rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50">
+                <button 
+                  onClick={() => setActiveSection('change-password')}
+                  className="w-full rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+                >
                   Change Password
                 </button>
                 <button
@@ -137,8 +212,105 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
               </div>
             </div>
           </div>
-        ) : (
-          <AddressManager />
+        )}
+
+        {activeSection === 'addresses' && <AddressManager />}
+
+        {activeSection === 'change-password' && (
+          <div className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <button
+                onClick={() => setActiveSection('profile')}
+                className="flex items-center text-sm text-blue-600 hover:text-blue-500"
+              >
+                <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Profile
+              </button>
+              <h3 className="mt-4 text-xl font-semibold text-gray-900">Change Password</h3>
+              <p className="mt-1 text-sm text-gray-600">Update your password to keep your account secure.</p>
+            </div>
+
+            <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
+              <div>
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  id="currentPassword"
+                  required
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordInputChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  id="newPassword"
+                  required
+                  minLength={6}
+                  maxLength={10}
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordInputChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">Password must be 6-10 characters long</p>
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  id="confirmPassword"
+                  required
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordInputChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              {passwordMessage && (
+                <div
+                  className={`rounded-md p-3 text-sm ${
+                    passwordMessage.includes('successfully')
+                      ? 'border border-green-200 bg-green-50 text-green-700'
+                      : 'border border-red-200 bg-red-50 text-red-700'
+                  }`}
+                >
+                  {passwordMessage}
+                </div>
+              )}
+
+              <div className="flex space-x-3">
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {passwordLoading ? 'Changing Password...' : 'Change Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('profile')}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </div>
     </div>
