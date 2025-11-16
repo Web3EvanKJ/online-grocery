@@ -10,15 +10,26 @@ export default function Navbar() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Set client-side flag
+    setIsClient(true);
+    
     // Check if user is logged in on component mount
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
     if (token && userData) {
-      setIsLoggedIn(true);
-      setUser(JSON.parse(userData));
+      try {
+        setIsLoggedIn(true);
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
   }, []);
 
@@ -28,7 +39,7 @@ export default function Navbar() {
     setIsLoggedIn(false);
     setUser(null);
     router.push('/');
-    router.refresh();
+    // Remove router.refresh() as it can cause issues
   };
 
   const getDashboardLink = () => {
@@ -50,6 +61,29 @@ export default function Navbar() {
       return 'My Dashboard';
     }
   };
+
+  // Don't render anything during SSR to avoid hydration mismatches
+  if (!isClient) {
+    return (
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="shrink-0">
+              <Link href="/" className="text-xl font-bold text-gray-900">
+                Grocify
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Show minimal content during SSR */}
+              <div className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium opacity-0">
+                Loading...
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
