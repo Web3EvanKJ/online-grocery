@@ -1,4 +1,4 @@
-// lib/types/order.ts
+// lib/types/order/order.ts
 export interface CreateOrderData {
   address_id: number;
   shipping_method_id: number;

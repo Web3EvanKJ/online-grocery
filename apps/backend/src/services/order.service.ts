@@ -5,6 +5,7 @@ import { OrderCalculationService } from './order-calculation.service';
 import { OrderTransactionService } from './order-transaction.service';
 import { CreateOrderRequest, OrderResponse } from '../types/order';
 import { ShippingService } from './shipping.service';
+import { OrderStatus } from '@prisma/client';
 
 export class OrderService {
   static async createOrder(userId: number, data: CreateOrderRequest): Promise<OrderResponse> {
@@ -66,7 +67,10 @@ export class OrderService {
               } 
             } 
           }, 
-          payments: true 
+          payments: true,
+          address: true,
+          shipping_method: true,
+          store: true 
         },
         orderBy: { created_at: 'desc' },
         skip, 
@@ -92,7 +96,11 @@ export class OrderService {
             } 
           } 
         }, 
-        payments: true 
+        payments: true,
+        address: true,
+        shipping_method: true,
+        store: true
+
       }
     });
 
@@ -203,4 +211,24 @@ export class OrderService {
 
     return order;
   }
+  static async updateOrderStatus(orderId: number, status: string) {
+    const order = await prisma.orders.findUnique({ where: { id: orderId } });
+    if (!order) throw new Error('Order not found');
+
+    // Optional: validasi status baru
+    const allowedStatuses = ['Menunggu_Pembayaran', 'Dikirim', 'Pesanan_Dikonfirmasi', 'Selesai', 'Dibatalkan'];
+    if (!allowedStatuses.includes(status)) {
+      throw new Error('Invalid status');
+    }
+
+    const updated = await prisma.orders.update({
+      where: { id: orderId },
+      data: { status: status as OrderStatus },
+      include: { order_items: true, payments: true, address: true, shipping_method: true, store: true }
+    });
+
+    return DecimalHelper.convertToNumber(updated);
+  }
+
+
 }

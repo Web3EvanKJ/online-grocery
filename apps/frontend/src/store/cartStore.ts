@@ -1,4 +1,3 @@
-// store/cartStore.ts
 import { create } from 'zustand';
 import { CartItem } from '../lib/types/cart/cart';
 import { apiClient } from '../lib/api';
@@ -9,6 +8,7 @@ interface CartState {
   error: string | null;
   cartCount: number;
   cartTotal: number;
+  updatingIds: number[]; // ADDED: track items being updated
 
   fetchCart: () => Promise<void>;
   addToCart: (productId: number, quantity: number) => Promise<boolean>;
@@ -19,14 +19,13 @@ interface CartState {
   clearError: () => void;
 }
 
-export const useCartStore = create<CartState>((set) => {
+export const useCartStore = create<CartState>((set, get) => {
   const updateTotals = (cart: CartItem[]) => {
     const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
     const cartTotal = cart.reduce(
       (total, item) => total + item.product.price * item.quantity,
       0
     );
-
     set({ cart, cartCount, cartTotal });
   };
 
@@ -36,6 +35,7 @@ export const useCartStore = create<CartState>((set) => {
     error: null,
     cartCount: 0,
     cartTotal: 0,
+    updatingIds: [], // ADDED
 
     fetchCart: async () => {
       set({ loading: true, error: null });
@@ -59,9 +59,7 @@ export const useCartStore = create<CartState>((set) => {
         updateTotals(cartData);
         return true;
       } catch (err) {
-        set({
-          error: err instanceof Error ? err.message : 'Failed to add to cart',
-        });
+        set({ error: err instanceof Error ? err.message : 'Failed to add to cart' });
         return false;
       } finally {
         set({ loading: false });
@@ -69,19 +67,29 @@ export const useCartStore = create<CartState>((set) => {
     },
 
     updateCartItem: async (cartId, quantity) => {
-      set({ loading: true, error: null });
+      const { cart, updatingIds } = get();
+
+      // 1️⃣ Update lokal langsung
+      const prevCart = [...cart];
+      const updatedCart = cart.map(item =>
+        item.id === cartId ? { ...item, quantity } : item
+      );
+      updateTotals(updatedCart);
+
+      // 2️⃣ Tambah cartId ke updatingIds
+      set({ updatingIds: [...updatingIds, cartId] });
+
       try {
         await apiClient.updateCartItem(cartId, quantity);
-        const cartData = (await apiClient.getCart()) as CartItem[];
-        updateTotals(cartData);
         return true;
       } catch (err) {
-        set({
-          error: err instanceof Error ? err.message : 'Failed to update cart',
-        });
+        // 3️⃣ Revert jika gagal
+        updateTotals(prevCart);
+        set({ error: err instanceof Error ? err.message : 'Failed to update cart' });
         return false;
       } finally {
-        set({ loading: false });
+        // 4️⃣ Hapus cartId dari updatingIds
+        set(state => ({ updatingIds: state.updatingIds.filter(id => id !== cartId) }));
       }
     },
 
@@ -93,9 +101,7 @@ export const useCartStore = create<CartState>((set) => {
         updateTotals(cartData);
         return true;
       } catch (err) {
-        set({
-          error: err instanceof Error ? err.message : 'Failed to remove item',
-        });
+        set({ error: err instanceof Error ? err.message : 'Failed to remove item' });
         return false;
       } finally {
         set({ loading: false });
@@ -108,9 +114,7 @@ export const useCartStore = create<CartState>((set) => {
         await apiClient.clearCart();
         updateTotals([]);
       } catch (err) {
-        set({
-          error: err instanceof Error ? err.message : 'Failed to clear cart',
-        });
+        set({ error: err instanceof Error ? err.message : 'Failed to clear cart' });
       } finally {
         set({ loading: false });
       }
@@ -119,11 +123,3 @@ export const useCartStore = create<CartState>((set) => {
     clearError: () => set({ error: null }),
   };
 });
-
-// Load initial cart (optional)
-(async () => {
-  try {
-    const store = useCartStore.getState();
-    await store.fetchCart();
-  } catch {}
-})();

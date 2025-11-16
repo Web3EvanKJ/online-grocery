@@ -5,13 +5,20 @@ import { AuthRequest } from '../middleware/auth';
 export class OrderController {
   static async createOrder(req: AuthRequest, res: Response) {
     try {
+
       const userId = req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const order = await OrderService.createOrder(userId, req.body);
-      res.status(201).json(order);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      
+      // Return consistent structure
+      res.status(201).json({
+        success: true,
+        data: order
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create order';
+      res.status(400).json({ success: false, error: message });
     }
   }
 
@@ -24,9 +31,16 @@ export class OrderController {
       const limit = parseInt(req.query.limit as string) || 10;
 
       const result = await OrderService.getOrders(userId, page, limit);
-      res.json(result);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      
+      // Return consistent structure
+      res.json({
+        success: true,
+        data: result.orders,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch orders';
+      res.status(500).json({ success: false, error: message });
     }
   }
 
@@ -38,9 +52,15 @@ export class OrderController {
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const order = await OrderService.getOrderById(orderId, userId);
-      res.json(order);
-    } catch (error: any) {
-      res.status(404).json({ error: error.message });
+      
+      // Return consistent structure
+      res.json({
+        success: true,
+        data: order
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Order not found';
+      res.status(404).json({ success: false, error: message });
     }
   }
 
@@ -54,9 +74,10 @@ export class OrderController {
       if (!reason) return res.status(400).json({ error: 'Cancellation reason is required' });
 
       const result = await OrderService.cancelOrder(orderId, userId, reason);
-      res.json(result);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      res.json({ success: true, ...result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel order';
+      res.status(400).json({ success: false, error: message });
     }
   }
 
@@ -68,9 +89,10 @@ export class OrderController {
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const result = await OrderService.confirmOrderDelivery(orderId, userId);
-      res.json(result);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      res.json({ success: true, ...result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to confirm order';
+      res.status(400).json({ success: false, error: message });
     }
   }
 
@@ -82,9 +104,31 @@ export class OrderController {
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const status = await OrderService.getOrderStatus(orderId, userId);
-      res.json(status);
-    } catch (error: any) {
-      res.status(404).json({ error: error.message });
+      res.json({ success: true, data: status });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to get order status';
+      res.status(404).json({ success: false, error: message });
     }
   }
+
+  static async updateOrderStatus(req: AuthRequest, res: Response) {
+    try {
+      const userRole = req.user.role; // pastikan role di JWT
+      if (!['admin', 'super_admin'].includes(userRole)) {
+        return res.status(403).json({ success: false, error: 'Forbidden: insufficient permissions' });
+      }
+
+      const orderId = parseInt(req.params.id);
+      const { status } = req.body;
+      if (!status) return res.status(400).json({ success: false, error: 'Status is required' });
+
+      const updatedOrder = await OrderService.updateOrderStatus(orderId, status);
+
+      res.json({ success: true, data: updatedOrder });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update order status';
+      res.status(400).json({ success: false, error: message });
+    }
+  }
+
 }

@@ -16,6 +16,7 @@ import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
 import paymentRoutes from './routes/payment.routes';
 import shippingRoutes from './routes/shipping.routes';
+import adminPaymentRoutes from './routes/admin-payment.routes';
 import userAdminRouter from './routers/userAdmin.router';
 import productAdminRouter from './routers/productAdmin.router';
 import categoryAdminRouter from './routers/categoryAdmin.router';
@@ -52,8 +53,9 @@ class Application {
     this.app.use('/api/addresses', addressRoutes);
     this.app.use('/api/cart', cartRoutes);
     this.app.use('/api/orders', orderRoutes);
-    this.app.use('/api/payments', paymentRoutes);
+    this.app.use('/api/payment', paymentRoutes);
     this.app.use('/api/shipping', shippingRoutes);
+    this.app.use('/api/admin/payment', adminPaymentRoutes);
     this.app.use('/api/admin/users', userAdminRouter);
     this.app.use('/api/admin/products', productAdminRouter);
     this.app.use('/api/admin/categories', categoryAdminRouter);

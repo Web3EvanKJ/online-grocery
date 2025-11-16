@@ -1,4 +1,3 @@
-// routes/payment.routes.ts
 import { Router } from 'express';
 import { PaymentController } from '../controllers/payment.controller';
 import { authenticateToken } from '../middleware/auth';
@@ -6,19 +5,16 @@ import { uploadPaymentProof } from '../middleware/upload.middleware';
 
 const router = Router();
 
-// Semua route pakai auth
-router.use(authenticateToken);
-
-// Midtrans initialize
-router.post('/midtrans/initialize', PaymentController.initializeMidtransPayment);
-
-// Manual upload
-router.post('/manual/upload', uploadPaymentProof, PaymentController.uploadManualPayment);
-
-// Get payment status
-router.get('/status/:orderId', PaymentController.getPaymentStatus);
-
-// Midtrans webhook
+// ==================
+// Routes tanpa auth
+// ==================
 router.post('/webhook/midtrans', PaymentController.handleWebhook);
+
+// ==================
+// Routes dengan auth
+// ==================
+router.post('/midtrans/initialize', authenticateToken, PaymentController.initializeMidtransPayment);
+router.post('/manual/upload', authenticateToken, uploadPaymentProof, PaymentController.uploadManualPayment);
+router.get('/status/:orderId', authenticateToken, PaymentController.getPaymentStatus);
 
 export default router;

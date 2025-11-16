@@ -19,15 +19,6 @@ export interface ManualPaymentResponse {
 }
 
 export interface PaymentStatusResponse {
-  // id: number;
-  // order_id: number;
-  // amount: number;
-  // payment_method: string;
-  // status: string;
-  // proof_image?: string;
-  // transaction_id: string;
-  // is_verified: boolean;
-  // created_at: string;
   status: string;
   transaction_id: string;
   order_id: number;

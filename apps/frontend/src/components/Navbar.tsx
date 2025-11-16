@@ -2,9 +2,15 @@
 
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
+import { useEffect } from 'react';
 
 export default function Navbar() {
   const cartCount = useCartStore((s) => s.cartCount);
+  const fetchCart = useCartStore((s) => s.fetchCart);
+
+  useEffect(() => {
+    fetchCart(); // hanya sekali saat navbar mount
+  }, [fetchCart]);
 
   return (
     <nav className="bg-white shadow-sm border-b sticky top-0 z-50">

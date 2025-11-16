@@ -1,29 +1,30 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useCart } from '@/hooks/useCart';
 import { CartItem } from '@/components/cart/CartItem';
 import { CartSummary } from '@/components/cart/CartSummary';
 import { EmptyCart } from '@/components/cart/EmptyCart';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useCartStore } from '@/store/cartStore';
 
 export default function CartPage() {
-  const { 
-    cart, 
-    loading, 
-    error, 
-    refreshCart,
-    clearError 
-  } = useCart();
+  // Ambil state & actions dari cartStore
+  const cart = useCartStore((s) => s.cart);
+  const loading = useCartStore((s) => s.loading);
+  const error = useCartStore((s) => s.error);
+  const fetchCart = useCartStore((s) => s.fetchCart);
+  const clearError = useCartStore((s) => s.clearError);
 
+  // Fetch cart sekali saat mount
   useEffect(() => {
-    refreshCart();
-  }, [refreshCart]);
+    fetchCart();
+  }, [fetchCart]);
 
+  // Log error jika ada
   useEffect(() => {
     if (error) {
       console.error('Cart error:', error);
-      // Bisa tambahkan toast notification di sini
+      // Optional: tampilkan toast notification di sini
     }
   }, [error]);
 
@@ -43,8 +44,8 @@ export default function CartPage() {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => {
-              clearError?.();
-              refreshCart();
+              clearError();
+              fetchCart();
             }}
             className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
           >
@@ -75,10 +76,7 @@ export default function CartPage() {
               
               <div className="divide-y">
                 {cart.map((item) => (
-                  <CartItem 
-                    key={item.id} 
-                    item={item} 
-                  />
+                  <CartItem key={item.id} item={item} />
                 ))}
               </div>
             </div>

@@ -3,8 +3,16 @@ import { prisma } from '../utils/prisma';
 export class OrderTransactionService {
   static async createOrderTransaction(
     userId: number, 
-    orderData: any, 
-    orderItems: any[]
+    orderData: {
+      storeId: number;
+      addressId: number;
+      shippingMethodId: number;
+      totalAmount: number;
+      shippingCost: number;
+      discountAmount?: number;
+      paymentMethod: string;
+    }, 
+    orderItems: { product_id: number; quantity: number; price: number }[]
   ) {
     return await prisma.$transaction(async (tx) => {
       // Create order
@@ -21,10 +29,10 @@ export class OrderTransactionService {
         }
       });
 
-      // Create order items
-      await this.createOrderItems(tx, order.id, orderItems);
+      // Create order items and reduce stock
+      await this.createOrderItems(tx, order.id, order.store_id, orderItems);
 
-      // Create payment
+      // Create payment record
       await this.createPayment(tx, order.id, orderData.paymentMethod);
 
       // Clear cart
@@ -34,7 +42,13 @@ export class OrderTransactionService {
     });
   }
 
-  private static async createOrderItems(tx: any, orderId: number, items: any[]) {
+  private static async createOrderItems(
+    tx: any, 
+    orderId: number, 
+    storeId: number,
+    items: { product_id: number; quantity: number; price: number }[]
+  ) {
+    // Create order items
     await tx.order_items.createMany({
       data: items.map(item => ({
         order_id: orderId,
@@ -44,11 +58,43 @@ export class OrderTransactionService {
         discount: 0
       }))
     });
+
+    // Reduce stock for each item
+    for (const item of items) {
+      const inventory = await tx.inventories.findFirst({
+        where: {
+          product_id: item.product_id,
+          store_id: storeId
+        }
+      });
+
+      if (inventory) {
+        // Decrease stock
+        await tx.inventories.update({
+          where: { id: inventory.id },
+          data: { stock: { decrement: item.quantity } }
+        });
+
+        // Create stock journal
+        await tx.stock_journals.create({
+          data: {
+            inventory_id: inventory.id,
+            type: 'out',
+            quantity: item.quantity,
+            note: `Order #${orderId} created`
+          }
+        });
+      }
+    }
   }
 
   private static async createPayment(tx: any, orderId: number, method: string) {
     await tx.payments.create({
-      data: { order_id: orderId, method: method }
+      data: { 
+        order_id: orderId, 
+        method: method,
+        is_verified: false // Always start as unverified
+      }
     });
   }
 

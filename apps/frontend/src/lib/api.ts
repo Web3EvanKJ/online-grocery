@@ -4,7 +4,6 @@ import { CartItem } from './types/cart/cart';
 import { CreateOrderData, OrderResponse } from './types/order/order'
 import { MidtransPaymentResponse, PaymentStatusResponse } from './types/payment/payment';
 
-
 const API_BASE =
   `${process.env.NEXT_PUBLIC_API_URL}api/` || 'http://localhost:5000/api';
 
@@ -13,6 +12,40 @@ interface PaginationInfo {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+interface ShippingCostResponse {
+  cost: number;
+  estimated_days: number;
+  service: string;
+  store: {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    distance: number;
+  };
+}
+
+interface Address {
+  id: number;
+  label: string;
+  address_detail: string;
+  province: string;
+  city: string;
+  district: string;
+  subdistrict: string;
+  latitude?: string;
+  longitude?: string;
+  is_main?: boolean;
+}
+
+interface ShippingMethod {
+  id: number;
+  name: string;
+  provider: string;
+  base_cost: string | number;
+  cost_per_km: string | number;
 }
 
 class ApiClient {
@@ -107,9 +140,8 @@ class ApiClient {
       throw new Error(`Failed to fetch cart, status: ${response.status}`);
     }
 
-    return await response.json(); // <-- langsung array
+    return await response.json();
   }
-
 
   async addToCart(productId: number, quantity: number) {
     return this.request<CartItem[]>('cart', {
@@ -132,8 +164,8 @@ class ApiClient {
   }
 
   async clearCart() {
-  return this.request<[]>("cart/clear", {
-    method: "DELETE",
+    return this.request<[]>("cart/clear", {
+      method: "DELETE",
     });
   }
 
@@ -241,33 +273,29 @@ class ApiClient {
 
   // Addresses
   async getAddresses() {
-    return this.request<{ data: any[] }>('addresses', {
+    return this.request<{ data: Address[] }>('addresses', {
       method: 'GET',
     });
   }
 
   // Shipping methods
   async getShippingMethods() {
-    return this.request<{ data: any[] }>('shipping/methods', {
+    return this.request<{ data: ShippingMethod[] }>('shipping/methods', {
       method: 'GET',
     });
   }
 
- // calculateShippingCost
-async calculateShippingCost(payload: {
-  addressId: number;
-  shippingMethodId: number;
-  items: { product_id: number; quantity: number; weight?: number }[];
-}) {
-  return this.request<{
-    data: { cost: number; estimated_days: number; service: string; store: any };
-  }>('shipping/calculate', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-
+  // calculateShippingCost
+  async calculateShippingCost(payload: {
+    addressId: number;
+    shippingMethodId: number;
+    items: { product_id: number; quantity: number; weight?: number }[];
+  }) {
+    return this.request<{ data: ShippingCostResponse }>('shipping/calculate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
