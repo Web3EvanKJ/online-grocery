@@ -53,7 +53,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome, {user?.name}!
               </h1>
-              <p className="text-gray-600">User ID: {params.id}</p>
+              <p className="text-gray-600">User ID: {user?.id}</p>
             </div>
             <div className="flex space-x-4">
               <button
