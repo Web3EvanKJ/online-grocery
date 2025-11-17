@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/useCart';
 import { useState, useEffect } from 'react';
