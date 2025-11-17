@@ -1,144 +1,87 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useOrders } from '@/hooks/useOrders';
-import { OrderCard } from '@/components/orders/OrderCard';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useEffect, useState } from "react";
+import { useOrdersStore } from "@/store/ordersStore";
+import { useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/format";
 
 export default function OrdersPage() {
-  const { orders, loading, error, pagination, fetchOrders, cancelOrder } = useOrders();
-  const [cancellingOrderId, setCancellingOrderId] = useState<number | null>(null);
+  const router = useRouter();
+  const { orders, getOrders, cancelOrder } = useOrdersStore();
+  const [cancelInputOrderId, setCancelInputOrderId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
-  const handleCancelOrder = async (orderId: number, reason: string) => {
-    setCancellingOrderId(orderId);
+  useEffect(() => {
+    getOrders();
+  }, [getOrders]);
+
+  const handleCancel = async (orderId: number) => {
+    if (!cancelReason.trim()) {
+      alert("Please provide a reason");
+      return;
+    }
     try {
-      const success = await cancelOrder(orderId, reason);
-      if (success) {
-        // Success handled in the hook via refetch
-        console.log('Order cancelled successfully');
-      }
-    } finally {
-      setCancellingOrderId(null);
+      await cancelOrder(orderId, cancelReason);
+      setCancelInputOrderId(null);
+      setCancelReason("");
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handlePageChange = (newPage: number) => {
-    fetchOrders(newPage, pagination.limit);
-  };
-
-  if (loading && orders.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="bg-white rounded-lg shadow-sm border">
-          {/* Header */}
-          <div className="p-6 border-b">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
-                <p className="text-gray-600 mt-1">
-                  Track and manage your orders
-                </p>
-              </div>
-              <Link
-                href="/"
-                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-              >
-                Continue Shopping
-              </Link>
-            </div>
-          </div>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">My Orders</h1>
 
-          {/* Error Display */}
-          {error && (
-            <div className="m-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
+      {orders.length === 0 ? (
+        <p className="text-gray-600 text-center py-10">You have no orders yet.</p>
+      ) : (
+        <div className="grid gap-4">
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className="border rounded p-4 flex flex-col gap-2 cursor-pointer hover:bg-gray-50"
+              onClick={() => router.push(`/orders/${order.id}`)}
+            >
+              <p>Order #{order.id} - {order.status}</p>
+              <p>Total: {formatPrice(order.total_amount)}</p>
 
-          {/* Orders List */}
-          <div className="divide-y">
-            {orders.length === 0 && !loading ? (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg 
-                    className="w-12 h-12 text-gray-400" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
+              {/* Cancel button hanya muncul untuk status tertentu */}
+              {["Pending", "Menunggu Pembayaran"].includes(order.status) &&
+                (!cancelInputOrderId || cancelInputOrderId !== order.id ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCancelInputOrderId(order.id); }}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={1.5} 
-                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" 
+                    Cancel Order
+                  </button>
+                ) : (
+                  <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      placeholder="Enter reason"
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className="border p-2 rounded flex-1"
                     />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-                <p className="text-gray-600 mb-6">Start shopping to see your orders here</p>
-                <Link
-                  href="/"
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-                >
-                  Start Shopping
-                </Link>
-              </div>
-            ) : (
-              orders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  onCancelOrder={handleCancelOrder}
-                  isCancelling={cancellingOrderId === order.id}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="px-6 py-4 border-t bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Showing page {pagination.page} of {pagination.totalPages}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page <= 1}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+                    <button
+                      onClick={() => handleCancel(order.id)}
+                      className="bg-red-600 text-white px-4 py-2 rounded"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => { setCancelInputOrderId(null); setCancelReason(""); }}
+                      className="bg-gray-300 px-4 py-2 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ))}
             </div>
-          )}
-
-          {/* Loading overlay for pagination */}
-          {loading && orders.length > 0 && (
-            <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
-              <LoadingSpinner size="md" />
-            </div>
-          )}
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

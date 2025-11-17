@@ -16,26 +16,18 @@ export class CartService {
   }
 
   static async addToCart(userId: number, data: AddToCartRequest) {
-    // Check product existence and stock
     const product = await prisma.products.findUnique({
       where: { id: data.product_id },
       include: { inventories: true }
     });
 
-    if (!product) {
-      throw new Error('Product not found');
-    }
+    if (!product) throw new Error('Product not found');
 
-    // Check if item already in cart
     const existingCart = await prisma.carts.findFirst({
-      where: {
-        user_id: userId,
-        product_id: data.product_id
-      }
+      where: { user_id: userId, product_id: data.product_id }
     });
 
     if (existingCart) {
-      // Update quantity
       return await prisma.carts.update({
         where: { id: existingCart.id },
         data: { quantity: existingCart.quantity + data.quantity },
@@ -43,7 +35,6 @@ export class CartService {
       });
     }
 
-    // Add new item
     return await prisma.carts.create({
       data: {
         user_id: userId,
@@ -55,28 +46,30 @@ export class CartService {
   }
 
   static async updateCartItem(cartId: number, userId: number, data: UpdateCartRequest) {
+    const cart = await prisma.carts.findUnique({ where: { id: cartId } });
+
+    if (!cart) throw new Error(`Cart not found for id ${cartId}`);
+    if (cart.user_id !== userId) throw new Error(`Cart does not belong to user ${userId}`);
+
     return await prisma.carts.update({
-      where: { 
-        id: cartId,
-        user_id: userId 
-      },
+      where: { id: cart.id },
       data: { quantity: data.quantity },
       include: { product: { include: { images: true } } }
     });
   }
 
   static async removeFromCart(cartId: number, userId: number) {
-    return await prisma.carts.delete({
-      where: { 
-        id: cartId,
-        user_id: userId 
-      }
-    });
+    const cart = await prisma.carts.findUnique({ where: { id: cartId } });
+
+    if (!cart) throw new Error(`Cart not found for id ${cartId}`);
+    if (cart.user_id !== userId) throw new Error(`Cart does not belong to user ${userId}`);
+
+    return await prisma.carts.delete({ where: { id: cart.id } });
   }
 
   static async clearCart(userId: number) {
     return await prisma.carts.deleteMany({
-      where: { user_id: userId }
+      where: { user_id: userId },
     });
   }
 }

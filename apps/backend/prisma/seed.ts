@@ -382,7 +382,7 @@ async function main() {
         discount_value: 10,
         max_discount: 15000,
         product_id: null,
-        expired_at: new Date('2024-12-31')
+        expired_at: new Date('2025-12-31')
       },
       {
         code: 'GRATISONGKIR',
@@ -391,7 +391,7 @@ async function main() {
         discount_value: 10000,
         max_discount: 10000,
         product_id: null,
-        expired_at: new Date('2024-12-31')
+        expired_at: new Date('2025-12-31')
       },
       {
         code: 'DISKONROTI',
@@ -400,7 +400,25 @@ async function main() {
         discount_value: 20,
         max_discount: 5000,
         product_id: productList[9].id, // Roti Tawar
-        expired_at: new Date('2024-12-31')
+        expired_at: new Date('2025-12-31')
+      },
+      {
+        code: 'DISKONTEST1',
+        type: 'total',
+        discount_type: 'percentage',
+        discount_value: 110,
+        max_discount: 10000000,
+        product_id: null, // Roti Tawar
+        expired_at: new Date('2025-12-31')
+      },
+      {
+        code: 'DISKONTEST2',
+        type: 'total',
+        discount_type: 'nominal',
+        discount_value: 1000000,
+        max_discount: 10000000,
+        product_id: null, // Roti Tawar
+        expired_at: new Date('2025-12-31')
       }
     ]
   })

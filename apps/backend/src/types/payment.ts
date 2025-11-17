@@ -9,9 +9,9 @@ export interface PaymentResponse {
   created_at: Date;
 }
 
-export interface MidtransPaymentRequest {
+export type MidtransPaymentRequest = {
   order_id: number;
-  payment_method: string; // 'gopay', 'shopeepay', 'bank_transfer', etc.
+  payment_method: 'gopay' | 'bank_transfer' | 'credit_card'
 }
 
 export interface ManualPaymentRequest {
