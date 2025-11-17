@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
 import AddressManager from './AddressManager';
 
-export default function DashboardPage({ params }: { params: { id: string } }) {
+export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<'profile' | 'addresses'>(
@@ -53,7 +53,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome, {user?.name}!
               </h1>
-              <p className="text-gray-600">User ID: {params.id}</p>
+              <p className="text-gray-600">User ID: {user?.id}</p>
             </div>
             <div className="flex space-x-4">
               <button
