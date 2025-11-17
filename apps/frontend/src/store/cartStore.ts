@@ -1,4 +1,4 @@
-// apps/frontend/src/store/cartStore.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { create } from 'zustand';

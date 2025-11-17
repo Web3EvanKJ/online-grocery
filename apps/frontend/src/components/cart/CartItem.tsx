@@ -1,13 +1,28 @@
-// apps/frontend/src/components/cart/CartItem.tsx
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
-export function CartItem({ item }: { item: any }) {
+type ProductImage = {
+  image_url: string;
+};
+
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  images?: ProductImage[];
+};
+
+export type CartItemType = {
+  id: number;
+  product: Product;
+  quantity: number;
+};
+
+export function CartItem({ item }: { item: CartItemType }) {
   const updateCartItem = useCartStore(state => state.updateCartItem);
   const removeFromCart = useCartStore(state => state.removeFromCart);
   const updatingIds = useCartStore(state => state.updatingIds);
@@ -35,7 +50,6 @@ export function CartItem({ item }: { item: any }) {
     <div className="flex items-center gap-4 p-4">
       <div className="w-20 h-20 rounded-md bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
         {imageUrl ? (
-          // next/image might need domain config; fallback to img if not configured
           <img src={imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
         ) : (
           <div className="text-gray-400 text-sm">No image</div>
@@ -47,13 +61,13 @@ export function CartItem({ item }: { item: any }) {
           <div>
             <h4 className="font-medium text-sm truncate">{item.product.name}</h4>
             <div className="text-xs text-gray-500 mt-1">
-              Rp {Number(item.product.price).toLocaleString()}
+              Rp {item.product.price.toLocaleString()}
             </div>
           </div>
 
           <div className="text-right">
             <div className="text-sm font-semibold">
-              Rp {(Number(item.product.price) * item.quantity).toLocaleString()}
+              Rp {(item.product.price * item.quantity).toLocaleString()}
             </div>
             <button onClick={remove} className="text-xs text-red-500 mt-1 flex items-center gap-1">
               <Trash2 size={14} /> Remove
@@ -68,7 +82,7 @@ export function CartItem({ item }: { item: any }) {
             className="w-8 h-8 rounded-md border flex items-center justify-center disabled:opacity-50"
             aria-label="Decrease"
           >
-            {isUpdating ? <LoadingSpinner size="sm"/> : <Minus size={16} />}
+            {isUpdating ? <LoadingSpinner size="sm" /> : <Minus size={16} />}
           </button>
 
           <div className="min-w-[2rem] text-center font-medium">{item.quantity}</div>
@@ -79,7 +93,7 @@ export function CartItem({ item }: { item: any }) {
             className="w-8 h-8 rounded-md border flex items-center justify-center disabled:opacity-50"
             aria-label="Increase"
           >
-            {isUpdating ? <LoadingSpinner size="sm"/> : <Plus size={16} />}
+            {isUpdating ? <LoadingSpinner size="sm" /> : <Plus size={16} />}
           </button>
         </div>
       </div>

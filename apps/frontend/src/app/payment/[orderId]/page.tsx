@@ -7,17 +7,22 @@ import ManualPaymentPage from '@/components/payment/ManualTransferPayment';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { apiClient } from '@/lib/api';
 
-interface PaymentWrapperProps {
-  params: { orderId: string };
+interface PageProps {
+  params: Promise<{
+    orderId: string;
+  }>;
 }
 
-export default function PaymentWrapper({ params }: PaymentWrapperProps) {
+export default function PaymentWrapper({ params }: PageProps) {
   const router = useRouter();
-  const { orderId } = params;
   const { method, setPayment } = usePaymentStore();
 
   useEffect(() => {
     const init = async () => {
+      // Resolve the params promise
+      const resolvedParams = await params;
+      const orderId = resolvedParams.orderId;
+      
       if (!method) {
         try {
           const payment = await apiClient.getPaymentStatus(Number(orderId));
@@ -45,7 +50,7 @@ export default function PaymentWrapper({ params }: PaymentWrapperProps) {
       }
     };
     init();
-  }, [orderId, method, setPayment, router]);
+  }, [params, method, setPayment, router]);
 
   if (!method) {
     return (

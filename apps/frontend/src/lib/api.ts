@@ -1,4 +1,4 @@
-// apps/frontend/src/lib/api.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL + "api";
 
 class ApiClient {
@@ -181,15 +181,61 @@ class ApiClient {
     return json.data;
   }
 
-  async updateOrderStatus(orderId: number, status: string, reason?: string) {
-    const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
-      method: 'PATCH',
-      headers: this.buildHeaders(),
-      body: JSON.stringify({ status }),
-    });
-    const json = await res.json();
-    return json.data;
-  }  
+// Admin orders - fetches ALL orders (no userId needed)
+async getAdminOrders(page = 1, limit = 50) {
+  const res = await fetch(`${API_BASE}/admin/orders?page=${page}&limit=${limit}`, {
+    method: 'GET',
+    headers: this.buildHeaders(),
+  });
+  const json = await res.json();
+  return json.data;
+}
+
+// Admin order details
+async getAdminOrderDetails(orderId: number) {
+  const res = await fetch(`${API_BASE}/admin/orders/${orderId}`, {
+    method: 'GET',
+    headers: this.buildHeaders(),
+  });
+  const json = await res.json();
+  return json.data;
+}
+
+// Admin update order status
+async updateOrderStatus(orderId: number, status: string) {
+  const res = await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: this.buildHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to update order status');
+  return json.data;
+}
+
+// Admin verify payment
+async verifyPayment(orderId: number, isVerified: boolean) {
+  const res = await fetch(`${API_BASE}/admin/orders/${orderId}/verify-payment`, {
+    method: 'PATCH',
+    headers: this.buildHeaders(),
+    body: JSON.stringify({ isVerified }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to verify payment');
+  return json.data;
+}
+
+// Admin cancel order
+async adminCancelOrder(orderId: number, reason: string) {
+  const res = await fetch(`${API_BASE}/admin/orders/${orderId}/cancel`, {
+    method: 'PATCH',
+    headers: this.buildHeaders(),
+    body: JSON.stringify({ reason }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to cancel order');
+  return json.data;
+}
 
   async confirmOrderDelivery(orderId: number) {
     const res = await fetch(`${API_BASE}/orders/${orderId}/confirm`, {

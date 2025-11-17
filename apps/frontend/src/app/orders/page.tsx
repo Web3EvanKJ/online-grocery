@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useOrdersStore } from "@/store/ordersStore";
+import { useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/format";
 
 export default function OrdersPage() {
+  const router = useRouter();
   const { orders, getOrders, cancelOrder } = useOrdersStore();
   const [cancelInputOrderId, setCancelInputOrderId] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -35,45 +38,46 @@ export default function OrdersPage() {
       ) : (
         <div className="grid gap-4">
           {orders.map((order) => (
-            <div key={order.id} className="border rounded p-4 flex flex-col gap-2">
+            <div
+              key={order.id}
+              className="border rounded p-4 flex flex-col gap-2 cursor-pointer hover:bg-gray-50"
+              onClick={() => router.push(`/orders/${order.id}`)}
+            >
               <p>Order #{order.id} - {order.status}</p>
-              <p>Total: {order.total_amount}</p>
+              <p>Total: {formatPrice(order.total_amount)}</p>
 
-              {/* Cancel button */}
-              {order.status !== "Dibatalkan" && (
-                <>
-                  {!cancelInputOrderId || cancelInputOrderId !== order.id ? (
+              {/* Cancel button hanya muncul untuk status tertentu */}
+              {["Pending", "Menunggu Pembayaran"].includes(order.status) &&
+                (!cancelInputOrderId || cancelInputOrderId !== order.id ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCancelInputOrderId(order.id); }}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
+                  >
+                    Cancel Order
+                  </button>
+                ) : (
+                  <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      placeholder="Enter reason"
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className="border p-2 rounded flex-1"
+                    />
                     <button
-                      onClick={() => setCancelInputOrderId(order.id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded"
+                      onClick={() => handleCancel(order.id)}
+                      className="bg-red-600 text-white px-4 py-2 rounded"
                     >
-                      Cancel Order
+                      Confirm
                     </button>
-                  ) : (
-                    <div className="flex gap-2 mt-2">
-                      <input
-                        type="text"
-                        placeholder="Enter reason"
-                        value={cancelReason}
-                        onChange={(e) => setCancelReason(e.target.value)}
-                        className="border p-2 rounded flex-1"
-                      />
-                      <button
-                        onClick={() => handleCancel(order.id)}
-                        className="bg-red-600 text-white px-4 py-2 rounded"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => { setCancelInputOrderId(null); setCancelReason(""); }}
-                        className="bg-gray-300 px-4 py-2 rounded"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
+                    <button
+                      onClick={() => { setCancelInputOrderId(null); setCancelReason(""); }}
+                      className="bg-gray-300 px-4 py-2 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ))}
             </div>
           ))}
         </div>

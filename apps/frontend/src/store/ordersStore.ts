@@ -1,4 +1,4 @@
-// apps/frontend/src/store/ordersStore.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { apiClient } from "@/lib/api";
 import { CreateOrderRequest, OrderResponse } from "@/lib/types/order/order";
@@ -11,14 +11,20 @@ interface OrdersState {
   loading: boolean;
   error: string | null;
 
-  // ===== METHODS =====
+  // User methods
   createOrder: (data: CreateOrderRequest) => Promise<OrderResponse>;
   getOrders: (page?: number, limit?: number) => Promise<void>;
   getOrderById: (orderId: number) => Promise<void>;
   cancelOrder: (orderId: number, reason: string) => Promise<void>;
   confirmOrderDelivery: (orderId: number) => Promise<void>;
   getOrderStatus: (orderId: number) => Promise<void>;
+
+  // Admin methods
+  getAdminOrders: (page?: number, limit?: number) => Promise<void>;
+  getAdminOrderDetails: (orderId: number) => Promise<void>;
   updateOrderStatus: (orderId: number, status: string) => Promise<void>;
+  verifyPayment: (orderId: number, isVerified: boolean) => Promise<void>;
+  adminCancelOrder: (orderId: number, reason: string) => Promise<void>;
 
   clearOrderDetails: () => void;
 }
@@ -27,13 +33,11 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   orders: [],
   orderDetails: null,
   orderStatus: null,
-
   loading: false,
   error: null,
 
-  // ===========================
-  // CREATE ORDER (CHECKOUT)
-  // ===========================
+  // ===== USER METHODS =====
+  
   createOrder: async (data) => {
     try {
       set({ loading: true, error: null });
@@ -48,13 +52,9 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // GET ORDERS
-  // ===========================
-  getOrders: async (page = 1, limit = 20) => {
+   getOrders: async (userId) => {
     try {
       set({ loading: true, error: null });
-      const userId = Number(localStorage.getItem("userId"));
       const data = await apiClient.getOrders(userId);
       set({ orders: data });
     } catch (err: any) {
@@ -64,9 +64,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // GET ORDER BY ID
-  // ===========================
   getOrderById: async (orderId: number) => {
     try {
       set({ loading: true, error: null });
@@ -79,9 +76,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // CANCEL ORDER
-  // ===========================
   cancelOrder: async (orderId: number, reason: string) => {
     try {
       set({ loading: true, error: null });
@@ -95,9 +89,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // CONFIRM DELIVERY (User)
-  // ===========================
   confirmOrderDelivery: async (orderId: number) => {
     try {
       set({ loading: true, error: null });
@@ -110,9 +101,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // GET ORDER STATUS (Live Tracking)
-  // ===========================
   getOrderStatus: async (orderId: number) => {
     try {
       set({ loading: true, error: null });
@@ -125,14 +113,37 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // UPDATE ORDER STATUS (Admin)
-  // ===========================
+  // ===== ADMIN METHODS =====
+
+  getAdminOrders: async (page = 1, limit = 50) => {
+    try {
+      set({ loading: true, error: null });
+      const data = await apiClient.getAdminOrders(page, limit);
+      set({ orders: data });
+    } catch (err: any) {
+      set({ error: err?.message || "Failed to fetch admin orders" });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  getAdminOrderDetails: async (orderId: number) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await apiClient.getAdminOrderDetails(orderId);
+      set({ orderDetails: res });
+    } catch (err: any) {
+      set({ error: err?.message || "Failed to fetch order details" });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   updateOrderStatus: async (orderId: number, status: string) => {
     try {
       set({ loading: true, error: null });
       await apiClient.updateOrderStatus(orderId, status);
-      await get().getOrderById(orderId);
+      await get().getAdminOrderDetails(orderId);
     } catch (err: any) {
       set({ error: err?.message || "Failed to update order status" });
       throw err;
@@ -141,8 +152,31 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
-  // ===========================
-  // CLEAR DETAILS
-  // ===========================
+  verifyPayment: async (orderId: number, isVerified: boolean) => {
+    try {
+      set({ loading: true, error: null });
+      await apiClient.verifyPayment(orderId, isVerified);
+      await get().getAdminOrderDetails(orderId);
+    } catch (err: any) {
+      set({ error: err?.message || "Failed to verify payment" });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  adminCancelOrder: async (orderId: number, reason: string) => {
+    try {
+      set({ loading: true, error: null });
+      await apiClient.adminCancelOrder(orderId, reason);
+      await get().getAdminOrders();
+    } catch (err: any) {
+      set({ error: err?.message || "Failed to cancel order" });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   clearOrderDetails: () => set({ orderDetails: null, orderStatus: null }),
 }));

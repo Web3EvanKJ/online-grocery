@@ -1,4 +1,4 @@
-// lib/types/order/order.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface CreateOrderData {
   address_id: number;
   shipping_method_id: number;
@@ -6,7 +6,6 @@ export interface CreateOrderData {
   notes?: string;
   payment_method?: string;
 }
-// lib/types/order/order.ts
 export interface CreateOrderRequest {
   addressId: number;
   shippingMethodId: number;

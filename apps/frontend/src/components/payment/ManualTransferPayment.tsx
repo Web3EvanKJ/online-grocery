@@ -4,11 +4,15 @@ import { usePaymentStore } from '@/store/paymentStore';
 import { apiClient } from '@/lib/api';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
+interface UploadResponse {
+  message: string;
+  status: string;
+}
+
 export default function ManualTransferPayment() {
   const { orderId, status, setStatus } = usePaymentStore();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   if (!orderId) return <p>Invalid order</p>;
 
@@ -21,15 +25,19 @@ export default function ManualTransferPayment() {
   };
 
   const handleUpload = async () => {
-    if (!file) return alert('Please select a file');
+    if (!file) {
+      alert('Please select a file');
+      return;
+    }
+    
     setLoading(true);
     try {
-      const res = await apiClient.uploadManualPayment(orderId, file);
+      const res: UploadResponse = await apiClient.uploadManualPayment(orderId, file);
       setStatus('pending');
       alert(res.message);
-    } catch (err: any) {
-      setError(err.message);
-      alert(err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
