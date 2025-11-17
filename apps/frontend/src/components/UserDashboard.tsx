@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
 import AddressManager from './AddressManager';
 
-export default function DashboardPage({ params }: { params: { id: string } }) {
+export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<'profile' | 'addresses'>(

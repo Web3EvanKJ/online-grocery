@@ -4,8 +4,6 @@ import './globals.css';
 import 'leaflet/dist/leaflet.css';
 import Navbar from '@/components/Navbar';
 
-export const dynamic = 'force-dynamic'
-
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
