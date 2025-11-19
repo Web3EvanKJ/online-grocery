@@ -1,38 +1,86 @@
 // src/services/order.service.ts
 import { prisma } from '../utils/prisma';
-import { DecimalHelper } from '../utils/decimal';
 import { OrderValidationService } from './order-validation.service';
 import { OrderCalculationService } from './order-calculation.service';
 import { OrderTransactionService } from './order-transaction.service';
 import { CreateOrderRequest, OrderResponse } from '../types/order';
 import { ShippingService } from './shipping.service';
+import { OrderStatus } from '@prisma/client';
+import { VoucherService } from './voucher.service';
 
 export class OrderService {
+  // Helper to convert Prisma Decimal to number
+  private static convertDecimalsToNumbers(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.convertDecimalsToNumbers(item));
+    }
+    
+    if (typeof obj === 'object') {
+      // Check if it's a Prisma Decimal
+      if (obj.constructor && obj.constructor.name === 'Decimal') {
+        return Number(obj.toString());
+      }
+      
+      // Recursively convert nested objects
+      const converted: any = {};
+      for (const key in obj) {
+        converted[key] = this.convertDecimalsToNumbers(obj[key]);
+      }
+      return converted;
+    }
+    
+    return obj;
+  }
+
   static async createOrder(userId: number, data: CreateOrderRequest): Promise<OrderResponse> {
+    // 1) Validate address belongs to user
     const address = await OrderValidationService.validateAddress(data.addressId, userId);
+
+    // 2) Get cart items (throws if empty)
     const cartItems = await OrderValidationService.validateCart(userId);
+
+    // 3) Find nearest store to address
     const nearestStore = await OrderValidationService.findNearestStore(
-      Number(address.latitude), 
+      Number(address.latitude),
       Number(address.longitude)
     );
 
+    // 4) Validate stock in that store
     await OrderValidationService.validateStock(cartItems, nearestStore.id);
 
+    // 5) Calculate items total and build orderItems
     const { totalAmount, orderItems } = OrderCalculationService.calculateItemsTotal(cartItems);
-    
-    // FIX: Get shipping cost object and extract the cost
+
+    // 6) Calculate shipping cost
     const shippingResult = await ShippingService.calculateShippingCost({
       addressId: data.addressId,
       shippingMethodId: data.shippingMethodId,
-      items: cartItems.map(item => ({
+      items: cartItems.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
-        weight: 100 // 100g per item, simplified
+        weight: 100
       }))
     });
 
+    if (!shippingResult || typeof shippingResult.cost !== 'number') {
+      throw new Error('Failed to calculate shipping cost');
+    }
+
     const shippingCost = shippingResult.cost;
-    const totalAmountWithShipping = totalAmount + shippingCost;
+
+
+    // 7) Validate voucher
+    const { discountAmount, voucher } = await VoucherService.validateVoucher(
+      data.voucherCode || '',
+      userId,
+      cartItems,
+      totalAmount
+    );
+
+    // 8) Total final
+    const totalAmountWithShipping = Number(totalAmount) + Number(shippingCost) - (discountAmount || 0);
 
     const transactionData = {
       storeId: nearestStore.id,
@@ -40,75 +88,56 @@ export class OrderService {
       shippingMethodId: data.shippingMethodId,
       totalAmount: totalAmountWithShipping,
       shippingCost: shippingCost,
-      paymentMethod: data.paymentMethod
+      paymentMethod: data.paymentMethod || 'payment_gateway',
+      voucherId: voucher?.id,
+      discountAmount: discountAmount
     };
 
-    const order = await OrderTransactionService.createOrderTransaction(
+    // 9) Create order transaction
+    const createdOrder = await OrderTransactionService.createOrderTransaction(
       userId, 
       transactionData, 
       orderItems
     );
 
-    const orderDetails = await this.getOrderById(order.id, userId);
-    return DecimalHelper.simpleConvert(orderDetails) as OrderResponse;
+    // 10) Fetch full order details and convert decimals
+    const orderWithDetails = await this.getOrderById(createdOrder.id, userId);
+    return orderWithDetails as OrderResponse;
   }
 
   static async getOrders(userId: number, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
+    console.log('📦 Fetching orders for userId:', userId);
+
     const [orders, total] = await Promise.all([
       prisma.orders.findMany({
         where: { user_id: userId },
-        include: { 
-          order_items: { 
-            include: { 
-              product: { 
-                include: { images: true } 
-              } 
-            } 
-          }, 
+        include: {
+          order_items: {
+            include: {
+              product: {
+                include: { images: true }
+              }
+            }
+          },
           payments: true,
-          store: {
-            select: {
-              id: true,
-              name: true,
-              address: true
-            }
-          },
-          address: {
-            select: {
-              id: true,
-              label: true,
-              address_detail: true
-            }
-          },
-          shipping_method: {
-            select: {
-              id: true,
-              name: true,
-              provider: true
-            }
-          }
+          address: true,
+          shipping_method: true,
+          store: true
         },
         orderBy: { created_at: 'desc' },
-        skip, 
+        skip,
         take: limit
       }),
       prisma.orders.count({ where: { user_id: userId } })
     ]);
 
-    // Convert Decimal values to numbers
-    const convertedOrders = orders.map(order => ({
-      ...order,
-      total_amount: Number(order.total_amount),
-      shipping_cost: Number(order.shipping_cost),
-      discount_amount: order.discount_amount ? Number(order.discount_amount) : 0,
-      order_items: order.order_items.map(item => ({
-        ...item,
-        price: Number(item.price),
-        discount: item.discount ? Number(item.discount) : 0
-      }))
-    }));
+    console.log('📦 Found orders count:', orders.length);
+    console.log('📦 Total in DB:', total);
+
+    // Convert decimals to numbers
+    const convertedOrders = this.convertDecimalsToNumbers(orders);
 
     return {
       orders: convertedOrders,
@@ -117,69 +146,33 @@ export class OrderService {
   }
 
   static async getOrderById(orderId: number, userId: number) {
+    console.log('📦 Fetching order:', orderId, 'for user:', userId);
+
     const order = await prisma.orders.findFirst({
       where: { id: orderId, user_id: userId },
-      include: { 
-        order_items: { 
-          include: { 
-            product: { 
-              include: { images: true } 
-            } 
-          } 
-        }, 
+      include: {
+        order_items: {
+          include: {
+            product: {
+              include: { images: true }
+            }
+          }
+        },
         payments: true,
-        store: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            city: true
-          }
-        },
-        address: {
-          select: {
-            id: true,
-            label: true,
-            address_detail: true,
-            province: true,
-            city: true,
-            district: true
-          }
-        },
-        shipping_method: {
-          select: {
-            id: true,
-            name: true,
-            provider: true
-          }
-        },
-        voucher: {
-          select: {
-            id: true,
-            code: true,
-            type: true
-          }
-        }
+        address: true,
+        shipping_method: true,
+        store: true
       }
     });
 
-    if (!order) throw new Error('Order not found');
-    
-    // Convert Decimal values manually
-    return {
-      ...order,
-      total_amount: Number(order.total_amount),
-      shipping_cost: Number(order.shipping_cost),
-      discount_amount: order.discount_amount ? Number(order.discount_amount) : 0,
-      order_items: order.order_items.map(item => ({
-        ...item,
-        price: Number(item.price),
-        discount: item.discount ? Number(item.discount) : 0
-      }))
-    };
-  }
+    console.log('📦 Order found:', order ? 'YES' : 'NO');
 
-  // ... rest of the methods remain the same
+    if (!order) throw new Error('Order not found');
+
+    // Convert decimals to numbers
+    return this.convertDecimalsToNumbers(order);
+  }
+  
   static async cancelOrder(orderId: number, userId: number, reason: string) {
     const order = await prisma.orders.findFirst({
       where: { id: orderId, user_id: userId },
@@ -190,7 +183,6 @@ export class OrderService {
       throw new Error('Order not found');
     }
 
-    // Validate cancellation rules
     if (order.status !== 'Menunggu_Pembayaran') {
       throw new Error('Cannot cancel order after payment');
     }
@@ -199,9 +191,7 @@ export class OrderService {
       throw new Error('Cannot cancel order with verified payment');
     }
 
-    // Return stock and update order status
     await prisma.$transaction(async (tx) => {
-      // Return stock to inventory
       for (const item of order.order_items) {
         const inventory = await tx.inventories.findFirst({
           where: { 
@@ -216,7 +206,6 @@ export class OrderService {
             data: { stock: { increment: item.quantity } }
           });
 
-          // Create stock journal
           await tx.stock_journals.create({
             data: {
               inventory_id: inventory.id,
@@ -228,7 +217,6 @@ export class OrderService {
         }
       }
 
-      // Update order status
       await tx.orders.update({
         where: { id: order.id },
         data: { status: 'Dibatalkan' }
@@ -282,5 +270,43 @@ export class OrderService {
     }
 
     return order;
+  }
+
+  static async updateOrderStatus(orderId: number, status: string) {
+    const order = await prisma.orders.findUnique({ where: { id: orderId } });
+    if (!order) throw new Error('Order not found');
+
+    const allowedStatuses = [
+      'Menunggu_Pembayaran', 
+      'Menunggu_Konfirmasi_Pembayaran',
+      'Diproses',
+      'Dikirim', 
+      'Pesanan_Dikonfirmasi', 
+      'Dibatalkan'
+    ];
+    
+    if (!allowedStatuses.includes(status)) {
+      throw new Error('Invalid status');
+    }
+
+    const updated = await prisma.orders.update({
+      where: { id: orderId },
+      data: { status: status as OrderStatus },
+      include: { 
+        order_items: {
+          include: {
+            product: {
+              include: { images: true }
+            }
+          }
+        }, 
+        payments: true, 
+        address: true, 
+        shipping_method: true, 
+        store: true 
+      }
+    });
+
+    return this.convertDecimalsToNumbers(updated);
   }
 }

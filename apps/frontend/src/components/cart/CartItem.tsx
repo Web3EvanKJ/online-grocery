@@ -1,97 +1,102 @@
-// components/cart/CartItem.tsx
 'use client';
-import { useState } from 'react';
-import Image from 'next/image';
-import { apiClient } from '@/lib/api';
-import { CartItem as CartItemType } from '../../lib/types/cart/cart';
-import { useCart } from '../../hooks/useCart';
 
-interface CartItemProps {
-  item: CartItemType;
-}
+import React from 'react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import { useCartStore } from '@/store/cartStore';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
-export const CartItem = ({ item }: CartItemProps) => {
-  const { refreshCart } = useCart();
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
+type ProductImage = {
+  image_url: string;
+};
 
-  const handleQuantityChange = async (newQuantity: number) => {
-    if (newQuantity < 1) return;
-    
-    try {
-      setIsUpdating(true);
-      await apiClient.updateCartItem(item.id, newQuantity);
-      refreshCart(); // Refresh cart using hook
-    } catch (error) {
-      console.error('Failed to update cart item:', error);
-    } finally {
-      setIsUpdating(false);
-    }
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  images?: ProductImage[];
+};
+
+export type CartItemType = {
+  id: number;
+  product: Product;
+  quantity: number;
+};
+
+export function CartItem({ item }: { item: CartItemType }) {
+  const updateCartItem = useCartStore(state => state.updateCartItem);
+  const removeFromCart = useCartStore(state => state.removeFromCart);
+  const updatingIds = useCartStore(state => state.updatingIds);
+
+  const isUpdating = updatingIds.includes(item.id);
+
+  const decrease = () => {
+    if (item.quantity <= 1 || isUpdating) return;
+    updateCartItem(item.id, item.quantity - 1);
   };
 
-  const handleRemove = async () => {
-    try {
-      setIsRemoving(true);
-      await apiClient.removeFromCart(item.id);
-      refreshCart(); // Refresh cart using hook
-    } catch (error) {
-      console.error('Failed to remove cart item:', error);
-    } finally {
-      setIsRemoving(false);
-    }
+  const increase = () => {
+    if (isUpdating) return;
+    updateCartItem(item.id, item.quantity + 1);
   };
+
+  const remove = () => {
+    if (isUpdating) return;
+    removeFromCart(item.id);
+  };
+
+  const imageUrl = item?.product?.images?.[0]?.image_url;
 
   return (
-    <div className="flex items-center gap-4 py-4 border-b">
-      <div className="relative w-20 h-20">
-        <Image 
-          src={item.product.images[0]?.image_url || '/placeholder-image.jpg'} 
-          alt={item.product.name}
-          fill
-          className="object-cover rounded"
-          sizes="80px"
-        />
-      </div>
-      
-      <div className="flex-1">
-        <h3 className="font-semibold">{item.product.name}</h3>
-        <p className="text-green-600 font-medium">
-          Rp {item.product.price.toLocaleString()}
-        </p>
+    <div className="flex items-center gap-4 p-4">
+      <div className="w-20 h-20 rounded-md bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+        {imageUrl ? (
+          <img src={imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="text-gray-400 text-sm">No image</div>
+        )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => handleQuantityChange(item.quantity - 1)}
-          disabled={isUpdating || item.quantity <= 1}
-          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          -
-        </button>
-        <span className="w-8 text-center">
-          {isUpdating ? '...' : item.quantity}
-        </span>
-        <button
-          onClick={() => handleQuantityChange(item.quantity + 1)}
-          disabled={isUpdating}
-          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          +
-        </button>
-      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="font-medium text-sm truncate">{item.product.name}</h4>
+            <div className="text-xs text-gray-500 mt-1">
+              Rp {item.product.price.toLocaleString()}
+            </div>
+          </div>
 
-      <div className="text-right">
-        <p className="font-semibold">
-          Rp {(item.product.price * item.quantity).toLocaleString()}
-        </p>
-        <button
-          onClick={handleRemove}
-          disabled={isRemoving}
-          className="text-red-500 text-sm hover:text-red-700 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isRemoving ? 'Removing...' : 'Remove'}
-        </button>
+          <div className="text-right">
+            <div className="text-sm font-semibold">
+              Rp {(item.product.price * item.quantity).toLocaleString()}
+            </div>
+            <button onClick={remove} className="text-xs text-red-500 mt-1 flex items-center gap-1">
+              <Trash2 size={14} /> Remove
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={decrease}
+            disabled={isUpdating || item.quantity <= 1}
+            className="w-8 h-8 rounded-md border flex items-center justify-center disabled:opacity-50"
+            aria-label="Decrease"
+          >
+            {isUpdating ? <LoadingSpinner size="sm" /> : <Minus size={16} />}
+          </button>
+
+          <div className="min-w-[2rem] text-center font-medium">{item.quantity}</div>
+
+          <button
+            onClick={increase}
+            disabled={isUpdating}
+            className="w-8 h-8 rounded-md border flex items-center justify-center disabled:opacity-50"
+            aria-label="Increase"
+          >
+            {isUpdating ? <LoadingSpinner size="sm" /> : <Plus size={16} />}
+          </button>
+        </div>
       </div>
     </div>
   );
-};
+}

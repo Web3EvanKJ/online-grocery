@@ -1,36 +1,39 @@
-// components/cart/CartSummary.tsx
+// apps/frontend/src/components/cart/CartSummary.tsx
 'use client';
-import { useCart } from '../../hooks/useCart';
+
+import React from 'react';
 import Link from 'next/link';
+import { useCartStore } from '@/store/cartStore';
 
 export const CartSummary = () => {
-  const { cartTotal, cartCount } = useCart();
+  const total = useCartStore(s => s.totalPrice);
+  const qty = useCartStore(s => s.totalQuantity);
+  const loading = useCartStore(s => s.loading);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
+    <div className="bg-white rounded-lg shadow p-6 border">
       <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-      
-      <div className="space-y-2 mb-4">
-        <div className="flex justify-between">
-          <span>Items ({cartCount})</span>
-          <span>Rp {cartTotal.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Shipping</span>
-          <span className="text-gray-600">Calculated at checkout</span>
-        </div>
-        <div className="flex justify-between border-t pt-2 font-semibold">
-          <span>Total</span>
-          <span>Rp {cartTotal.toLocaleString()}</span>
-        </div>
+
+      <div className="flex justify-between text-sm mb-2">
+        <span>Items</span>
+        <span>{qty}</span>
       </div>
 
-      <Link
-        href="/checkout"
-        className="block w-full bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 transition-colors"
-      >
-        Proceed to Checkout
-      </Link>
+      <div className="flex justify-between text-sm mb-4">
+        <span>Subtotal</span>
+        <span>Rp {total.toLocaleString()}</span>
+      </div>
+
+      <div className="border-t pt-4">
+        <Link
+          href="/checkout"
+          className={`block text-center py-3 px-4 rounded-lg font-semibold ${
+            total > 0 ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {loading ? 'Updating...' : (total > 0 ? 'Proceed to Checkout' : 'Cart is empty')}
+        </Link>
+      </div>
     </div>
   );
 };

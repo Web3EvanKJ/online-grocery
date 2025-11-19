@@ -35,31 +35,48 @@ export class CartController {
     try {
       const userId = req.user.userId;
       const cartId = parseInt(req.params.id);
-      
+
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const cartItem = await CartService.updateCartItem(cartId, userId, req.body);
-      res.json(cartItem);
+      await CartService.updateCartItem(cartId, userId, req.body);
+
+      const updatedCart = await CartService.getCart(userId);
+      return res.json(updatedCart);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   }
 
+
   static async removeFromCart(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.userId;
       const cartId = parseInt(req.params.id);
-      
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
 
       await CartService.removeFromCart(cartId, userId);
-      res.status(204).send();
+
+      const updatedCart = await CartService.getCart(userId);
+      return res.json(updatedCart);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  }
+
+    static async clearCart(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      await CartService.clearCart(userId);
+
+      return res.json({ message: "Cart cleared successfully" });
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
     }
   }
 }

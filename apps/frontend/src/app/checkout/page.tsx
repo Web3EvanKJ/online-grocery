@@ -1,61 +1,89 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCart } from '@/hooks/useCart';
-import { useOrders } from '@/hooks/useOrders';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 import OrderSummary from '@/components/checkout/OrderSummary';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useCartStore } from '@/store/cartStore';
+import { useOrdersStore } from '@/store/ordersStore';
+import { usePaymentStore } from '@/store/paymentStore';
+import { apiClient } from '@/lib/api';
 
-// Define proper type for order data
+// tipe untuk orderData
 interface OrderData {
-  address_id: number;
-  shipping_method_id: number;
-  voucher_code?: string;
-  shippingAddress: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    city: string;
-    postalCode: string;
-  };
-  paymentMethod: string;
+  addressId: number;
+  shippingMethodId: number;
+  voucherCode?: string;
   notes?: string;
+  paymentMethod: 'manual_transfer' | 'payment_gateway';
+}
+
+// tipe order result dari createOrder
+interface OrderResult {
+  id: number;
+}
+
+// Tipe untuk snap result
+interface SnapResult {
+  transactionId: string;
+  redirectUrl: string;
 }
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, cartTotal, loading: cartLoading, refreshCart } = useCart();
-  const { createOrder, loading: orderLoading } = useOrders();
-  
+  const { items, loading: cartLoading, fetchCart, clearCart } = useCartStore();
+  const { createOrder, loading: orderLoading } = useOrdersStore();
+  const { setPayment } = usePaymentStore();
+
+  const [selectedAddressId, setSelectedAddressId] = useState<number | undefined>();
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<number | undefined>();
+  const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'payment_gateway'>('payment_gateway');
+  const [voucherCode, setVoucherCode] = useState('');
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreateOrder = async (orderData: OrderData) => {
+  useEffect(() => {
+    fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCheckout = async () => {
+    if (!selectedAddressId || !selectedShippingMethodId || items.length === 0) {
+      setError('Please complete all required fields.');
+      return;
+    }
+
     try {
       setError(null);
-      const response = await createOrder(orderData);
-      
-      // Proper null/undefined check
-      if (response?.data?.id) {
-        await refreshCart();
-        router.push(`/payment?orderId=${response.data.id}`);
+
+      const orderData: OrderData = {
+        addressId: selectedAddressId,
+        shippingMethodId: selectedShippingMethodId,
+        voucherCode: voucherCode || undefined,
+        notes: notes || undefined,
+        paymentMethod,
+      };
+
+      const order: OrderResult = await createOrder(orderData);
+
+      await clearCart();
+
+      // Set payment info in store
+      setPayment(order.id, paymentMethod);
+
+      if (paymentMethod === 'payment_gateway') {
+        const snapResult: SnapResult = await apiClient.initializeMidtransPayment(order.id);
+        // pastikan snapResult memiliki transactionId & redirectUrl
+        setPayment(order.id, 'gopay', snapResult.transactionId);
+        window.location.href = snapResult.redirectUrl;
       } else {
-        throw new Error('Failed to create order: No order ID received');
+        router.push(`/payment/${order.id}`);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create order';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create order.';
       setError(errorMessage);
     }
   };
-
-  // Redirect if cart empty
-  useEffect(() => {
-    if (!cartLoading && (!cart || cart.length === 0)) {
-      router.push('/cart');
-    }
-  }, [cart, cartLoading, router]);
 
   if (cartLoading) {
     return (
@@ -65,39 +93,56 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!cart || cart.length === 0) {
-    return null; // Will redirect in useEffect
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Cart empty
+      </div>
+    );
   }
 
-  const isLoading = cartLoading || orderLoading;
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Checkout Form Section */}
-          <div className="lg:w-2/3">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
-              
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-                  {error}
-                </div>
-              )}
+    <div className="min-h-screen bg-blue-50 py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <h1 className="text-3xl font-bold text-blue-900 mb-8">Checkout</h1>
 
-              <CheckoutForm 
-                onSubmit={handleCreateOrder}
-                isLoading={isLoading}
-              />
+        {error && (
+          <div className="mb-6 p-4 bg-blue-100 border border-blue-300 rounded-lg text-blue-800">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border">
+            <CheckoutForm
+              onAddressChange={setSelectedAddressId}
+              onShippingChange={setSelectedShippingMethodId}
+              onPaymentMethodChange={setPaymentMethod}
+              selectedAddressId={selectedAddressId}
+              selectedShippingMethodId={selectedShippingMethodId}
+              paymentMethod={paymentMethod}
+              voucherCode={voucherCode}
+              onVoucherCodeChange={setVoucherCode}
+              notes={notes}
+              onNotesChange={setNotes}
+            />
+            <div className="mt-6 pt-6 border-t">
+              <button
+                onClick={handleCheckout}
+                disabled={orderLoading || !selectedAddressId || !selectedShippingMethodId}
+                className="w-full py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {orderLoading ? <LoadingSpinner size="sm" /> : 'Place Order'}
+              </button>
             </div>
           </div>
 
-          {/* Order Summary Section */}
-          <div className="lg:w-1/3">
-            <OrderSummary 
-              cartItems={cart}
-              cartTotal={cartTotal}
+          <div className="lg:col-span-1">
+            <OrderSummary
+              cartItems={items}
+              selectedAddressId={selectedAddressId}
+              selectedShippingMethodId={selectedShippingMethodId}
+              voucherCode={voucherCode}
             />
           </div>
         </div>

@@ -1,58 +1,94 @@
 'use client';
+import { useEffect, useState } from 'react';
+import { apiClient } from '@/lib/api';
+import { CartItem } from '@/store/cartStore';
 
-import { CartItem } from '@/lib/types/cart/cart';
-
-interface OrderSummaryProps {
+interface Props {
   cartItems: CartItem[];
-  cartTotal: number;
+  selectedAddressId?: number;
+  selectedShippingMethodId?: number;
+  voucherCode?: string;
 }
 
-export default function OrderSummary({ cartItems, cartTotal }: OrderSummaryProps) {
-  const shippingCost = 15000; // Example fixed shipping cost
-  const tax = cartTotal * 0.1; // 10% tax
-  const grandTotal = cartTotal + shippingCost + tax;
+interface ShippingCostResponse {
+  cost: number;
+}
+
+interface VoucherResponse {
+  discountAmount: number;
+}
+
+export default function OrderSummary({ cartItems, selectedAddressId, selectedShippingMethodId, voucherCode }: Props) {
+  const [shippingCost, setShippingCost] = useState(0);
+  const [discount, setDiscount] = useState(0);
+
+  const subtotal = cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
+
+  useEffect(() => {
+    const calcShipping = async () => {
+      if (selectedAddressId && selectedShippingMethodId) {
+        try {
+          const res: ShippingCostResponse = await apiClient.calculateShippingCost({
+            addressId: selectedAddressId,
+            shippingMethodId: selectedShippingMethodId,
+            items: cartItems.map(i => ({ product_id: i.product.id, quantity: i.quantity, weight: 100 }))
+          });
+          setShippingCost(res.cost || 0);
+        } catch (error) {
+          setShippingCost(0);
+          console.error('Failed to calculate shipping cost', error);
+        }
+      }
+    };
+    calcShipping();
+  }, [selectedAddressId, selectedShippingMethodId, cartItems]);
+
+  useEffect(() => {
+    const calcDiscount = async () => {
+      if (voucherCode) {
+        try {
+          const res: VoucherResponse = await apiClient.applyVoucher(voucherCode, cartItems, subtotal);
+          setDiscount(res.discountAmount || 0);
+        } catch (error) {
+          setDiscount(0);
+          console.error('Failed to apply voucher', error);
+        }
+      } else {
+        setDiscount(0);
+      }
+    };
+    calcDiscount();
+  }, [voucherCode, cartItems, subtotal]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-      
-      {/* Cart Items */}
-      <div className="space-y-3 mb-4">
-        {cartItems.map((item) => (
-          <div key={item.id} className="flex justify-between items-start">
-            <div className="flex-1">
-              <p className="font-medium text-sm">{item.product.name}</p>
-              <p className="text-gray-600 text-sm">
-                {item.quantity} × Rp {item.product.price.toLocaleString()}
-              </p>
-            </div>
-            <p className="font-semibold text-sm">
-              Rp {(item.product.price * item.quantity).toLocaleString()}
-            </p>
+    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-2 sticky top-4">
+      <h3 className="text-lg font-semibold text-blue-900 mb-2">Order Summary</h3>
+      <div className="space-y-1">
+        {cartItems.map(item => (
+          <div key={item.id} className="flex justify-between text-sm">
+            <span>{item.product.name} x{item.quantity}</span>
+            <span>Rp {(item.product.price * item.quantity).toLocaleString()}</span>
           </div>
         ))}
       </div>
-
-      {/* Price Breakdown */}
-      <div className="space-y-2 border-t pt-4">
+      <div className="border-t pt-2 space-y-1">
         <div className="flex justify-between text-sm">
           <span>Subtotal</span>
-          <span>Rp {cartTotal.toLocaleString()}</span>
+          <span>Rp {subtotal.toLocaleString()}</span>
         </div>
-        
         <div className="flex justify-between text-sm">
           <span>Shipping</span>
           <span>Rp {shippingCost.toLocaleString()}</span>
         </div>
-        
-        <div className="flex justify-between text-sm">
-          <span>Tax (10%)</span>
-          <span>Rp {tax.toLocaleString()}</span>
-        </div>
-        
-        <div className="flex justify-between font-semibold text-lg border-t pt-2">
+        {discount > 0 && (
+          <div className="flex justify-between text-sm text-green-600">
+            <span>Discount</span>
+            <span>- Rp {discount.toLocaleString()}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-bold text-blue-900">
           <span>Total</span>
-          <span>Rp {grandTotal.toLocaleString()}</span>
+          <span>Rp {(subtotal + shippingCost - discount).toLocaleString()}</span>
         </div>
       </div>
     </div>

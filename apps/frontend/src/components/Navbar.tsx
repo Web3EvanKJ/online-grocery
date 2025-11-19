@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useCartStore } from '@/store/cartStore';
 import { useRouter } from 'next/navigation';
-import { useCart } from '@/hooks/useCart';
 import { useState, useEffect } from 'react';
 
 export default function Navbar() {
-  const { cartCount } = useCart();
+  const totalQuantity = useCartStore((s) => s.totalQuantity); // pakai totalQuantity
+  const fetchCart = useCartStore((s) => s.fetchCart);
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
@@ -53,6 +54,10 @@ export default function Navbar() {
       window.removeEventListener('authStateChange', handleAuthChange);
     };
   }, []);
+
+  useEffect(() => {
+    fetchCart(); // hanya sekali saat navbar mount
+  }, [fetchCart]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -163,9 +168,9 @@ export default function Navbar() {
               className="relative bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
             >
               Cart
-              {cartCount > 0 && (
+              {totalQuantity > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                  {cartCount}
+                  {totalQuantity}
                 </span>
               )}
             </Link>
