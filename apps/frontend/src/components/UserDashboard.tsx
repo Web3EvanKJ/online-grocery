@@ -1,23 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '@/lib/types';
 import AddressManager from './AddressManager';
+import ChangePassword from './ChangePassword';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<'profile' | 'addresses'>(
-    'profile'
-  );
+  const [activeSection, setActiveSection] = useState<'profile' | 'addresses'>('profile');
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}api/user/profile`,
         {
@@ -28,20 +30,30 @@ export default function DashboardPage() {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
+      } else {
+        console.error('Failed to fetch profile:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch profile', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  if (loading)
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+        <div 
+          className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"
+          aria-label="Loading"
+        />
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -63,6 +75,7 @@ export default function DashboardPage() {
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
+                aria-pressed={activeSection === 'profile'}
               >
                 Profile
               </button>
@@ -73,6 +86,7 @@ export default function DashboardPage() {
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
+                aria-pressed={activeSection === 'addresses'}
               >
                 Addresses
               </button>
@@ -84,9 +98,9 @@ export default function DashboardPage() {
         {activeSection === 'profile' ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="rounded-lg bg-white p-6 shadow-md">
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
                 Account Info
-              </h3>
+              </h2>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
@@ -118,14 +132,17 @@ export default function DashboardPage() {
             </div>
 
             <div className="rounded-lg bg-white p-6 shadow-md">
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
                 Quick Actions
-              </h3>
+              </h2>
               <div className="space-y-3">
                 <button className="w-full rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50">
                   Edit Profile
                 </button>
-                <button className="w-full rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50">
+                <button 
+                  onClick={() => setShowChangePassword(true)}
+                  className="w-full rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50"
+                >
                   Change Password
                 </button>
                 <button
@@ -140,6 +157,13 @@ export default function DashboardPage() {
         ) : (
           <AddressManager />
         )}
+
+        {/* Change Password Modal */}
+        <ChangePassword
+          userEmail={user?.email || ''}
+          isOpen={showChangePassword}
+          onClose={() => setShowChangePassword(false)}
+        />
       </div>
     </div>
   );
