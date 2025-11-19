@@ -73,7 +73,7 @@ export function ProductCard({
           {/* Product Info */}
           <div className="flex flex-1 flex-col justify-between text-center">
             {/* Name + Category */}
-            <div className="mb-3 min-h-[2rem]">
+            <div className="mb-3 min-h-8">
               <h3 className="line-clamp-1 text-sm leading-tight font-medium text-gray-800">
                 {name}
               </h3>
@@ -83,7 +83,7 @@ export function ProductCard({
             </div>
 
             {/* Price Section */}
-            <div className="flex min-h-[3.5rem] flex-col items-center justify-end">
+            <div className="flex min-h-14 flex-col items-center justify-end">
               <p
                 className={`text-lg ${
                   hasDiscount
